@@ -1,0 +1,582 @@
+{
+  "generated_at": "2026-10-22T12:23:59+00:00",
+  "engine": "WNTR 1.5.0 (Python)",
+  "network_version": "ugtwin-v1",
+  "detector_version": "rules-v1",
+  "presets": [
+    "normal",
+    "holiday",
+    "heatwave",
+    "leak_gradual",
+    "leak_sudden",
+    "sensor_drift",
+    "sensor_stuck",
+    "pump_outage",
+    "leak_plus_sensor_drift"
+  ],
+  "results": [
+    {
+      "scenario_id": "normal",
+      "description": "Baseline 48 h, no faults. Used to measure false alerts.",
+      "network_version": "ugtwin-v1",
+      "seed": 101,
+      "ticks": 576,
+      "timestep_minutes": 5,
+      "runtime_seconds": 5.56,
+      "output_hash": "2669e0433d6f791bdb558666c5ba7948013b771696e4a8bbb3c5607436fc737c",
+      "fault_free": true,
+      "incident_count": 0,
+      "incidents": [],
+      "alert_ticks": 0,
+      "watch_ticks": 69,
+      "alert_tick_fraction": 0.0,
+      "detection": null,
+      "quality": {
+        "faulted_sensor": null,
+        "fault_window_ticks": 0,
+        "flagged_ticks": 0,
+        "flag_coverage": null,
+        "bad_ticks": 0,
+        "suspect_ticks": 0,
+        "false_flags_on_fault_free_run": 6924
+      },
+      "labels": {
+        "incidents": "MODEL",
+        "alert_ticks": "MODEL",
+        "latency": "MODEL",
+        "quality": "MODEL",
+        "ground_truth_faults": "ASSUMPTION"
+      }
+    },
+    {
+      "scenario_id": "holiday",
+      "description": "Government demand assumed 40% lower all day.",
+      "network_version": "ugtwin-v1",
+      "seed": 102,
+      "ticks": 576,
+      "timestep_minutes": 5,
+      "runtime_seconds": 6.48,
+      "output_hash": "be93a0a54e9aa71f8d50bd0f25f69c20d412fb242dc0b6d56794af3243a539aa",
+      "fault_free": true,
+      "incident_count": 0,
+      "incidents": [],
+      "alert_ticks": 0,
+      "watch_ticks": 68,
+      "alert_tick_fraction": 0.0,
+      "detection": null,
+      "quality": {
+        "faulted_sensor": null,
+        "fault_window_ticks": 0,
+        "flagged_ticks": 0,
+        "flag_coverage": null,
+        "bad_ticks": 0,
+        "suspect_ticks": 0,
+        "false_flags_on_fault_free_run": 6924
+      },
+      "labels": {
+        "incidents": "MODEL",
+        "alert_ticks": "MODEL",
+        "latency": "MODEL",
+        "quality": "MODEL",
+        "ground_truth_faults": "ASSUMPTION"
+      }
+    },
+    {
+      "scenario_id": "heatwave",
+      "description": "All demand assumed 25% higher all day.",
+      "network_version": "ugtwin-v1",
+      "seed": 103,
+      "ticks": 576,
+      "timestep_minutes": 5,
+      "runtime_seconds": 8.9,
+      "output_hash": "ff687ac27790d74e7708eddbfecb3bb2571dfa36d93542a8965ef914faf7316a",
+      "fault_free": true,
+      "incident_count": 0,
+      "incidents": [],
+      "alert_ticks": 0,
+      "watch_ticks": 58,
+      "alert_tick_fraction": 0.0,
+      "detection": null,
+      "quality": {
+        "faulted_sensor": null,
+        "fault_window_ticks": 0,
+        "flagged_ticks": 0,
+        "flag_coverage": null,
+        "bad_ticks": 0,
+        "suspect_ticks": 0,
+        "false_flags_on_fault_free_run": 6924
+      },
+      "labels": {
+        "incidents": "MODEL",
+        "alert_ticks": "MODEL",
+        "latency": "MODEL",
+        "quality": "MODEL",
+        "ground_truth_faults": "ASSUMPTION"
+      }
+    },
+    {
+      "scenario_id": "leak_gradual",
+      "description": "6 cm2 leak ramping over 24 h on PIPE_17, starts hour 12.",
+      "network_version": "ugtwin-v1",
+      "seed": 104,
+      "ticks": 576,
+      "timestep_minutes": 5,
+      "runtime_seconds": 9.12,
+      "output_hash": "7dc9a3fb4d3759434cbd950f8c8d33c34ac26e4eb14557663801ae20545e865e",
+      "fault_free": false,
+      "incident_count": 1,
+      "incidents": [
+        {
+          "id": "inc_eval-lea_002",
+          "diagnosis": "leak",
+          "suspected_location": "pipe:PIPE_11",
+          "severity": "high",
+          "first_detected_tick": 183,
+          "first_detected_time": "2026-01-01T15:15:00",
+          "tick_count": 358,
+          "candidates": [
+            {
+              "pipe": "PIPE_11",
+              "score": 0.389
+            },
+            {
+              "pipe": "PIPE_38",
+              "score": 0.376
+            },
+            {
+              "pipe": "PIPE_37",
+              "score": 0.374
+            }
+          ]
+        }
+      ],
+      "alert_ticks": 397,
+      "watch_ticks": 32,
+      "alert_tick_fraction": 0.688,
+      "detection": {
+        "expected_diagnosis": "leak",
+        "expected_location": "pipe:PIPE_17",
+        "fault_start_tick": 144,
+        "detected": true,
+        "matched_incident_id": "inc_eval-lea_002",
+        "latency_ticks": 39,
+        "latency_minutes": 195.0,
+        "location_correct": false,
+        "candidate_top3_contains_truth": false,
+        "localisation_error_m": 145.3,
+        "matching_rule": "diagnosis == leak"
+      },
+      "quality": {
+        "faulted_sensor": null,
+        "fault_window_ticks": 0,
+        "flagged_ticks": 0,
+        "flag_coverage": null,
+        "bad_ticks": 0,
+        "suspect_ticks": 0,
+        "false_flags_on_fault_free_run": 0
+      },
+      "labels": {
+        "incidents": "MODEL",
+        "alert_ticks": "MODEL",
+        "latency": "MODEL",
+        "quality": "MODEL",
+        "ground_truth_faults": "ASSUMPTION"
+      }
+    },
+    {
+      "scenario_id": "leak_sudden",
+      "description": "8 cm2 leak appears at hour 12 on PIPE_17.",
+      "network_version": "ugtwin-v1",
+      "seed": 105,
+      "ticks": 576,
+      "timestep_minutes": 5,
+      "runtime_seconds": 6.62,
+      "output_hash": "dfbcf369ee7c74d3c78f08fb152e796854d2a576e0caac9423d6930550b12c2e",
+      "fault_free": false,
+      "incident_count": 1,
+      "incidents": [
+        {
+          "id": "inc_eval-lea_001",
+          "diagnosis": "leak",
+          "suspected_location": "pipe:PIPE_11",
+          "severity": "high",
+          "first_detected_tick": 145,
+          "first_detected_time": "2026-01-01T12:05:00",
+          "tick_count": 432,
+          "candidates": [
+            {
+              "pipe": "PIPE_11",
+              "score": 1.131
+            },
+            {
+              "pipe": "PIPE_43",
+              "score": 1.095
+            },
+            {
+              "pipe": "PIPE_37",
+              "score": 1.082
+            }
+          ]
+        }
+      ],
+      "alert_ticks": 432,
+      "watch_ticks": 17,
+      "alert_tick_fraction": 0.7487,
+      "detection": {
+        "expected_diagnosis": "leak",
+        "expected_location": "pipe:PIPE_17",
+        "fault_start_tick": 144,
+        "detected": true,
+        "matched_incident_id": "inc_eval-lea_001",
+        "latency_ticks": 1,
+        "latency_minutes": 5.0,
+        "location_correct": false,
+        "candidate_top3_contains_truth": false,
+        "localisation_error_m": 145.3,
+        "matching_rule": "diagnosis == leak"
+      },
+      "quality": {
+        "faulted_sensor": null,
+        "fault_window_ticks": 0,
+        "flagged_ticks": 0,
+        "flag_coverage": null,
+        "bad_ticks": 0,
+        "suspect_ticks": 0,
+        "false_flags_on_fault_free_run": 0
+      },
+      "labels": {
+        "incidents": "MODEL",
+        "alert_ticks": "MODEL",
+        "latency": "MODEL",
+        "quality": "MODEL",
+        "ground_truth_faults": "ASSUMPTION"
+      }
+    },
+    {
+      "scenario_id": "sensor_drift",
+      "description": "P05 drifts +0.3 m/h from hour 10 (physics unaffected).",
+      "network_version": "ugtwin-v1",
+      "seed": 106,
+      "ticks": 576,
+      "timestep_minutes": 5,
+      "runtime_seconds": 5.77,
+      "output_hash": "7474d585df2fe3edd34d2cce2b947bb80b084e5283fbe3751ec73eee051acbe0",
+      "fault_free": false,
+      "incident_count": 1,
+      "incidents": [
+        {
+          "id": "inc_eval-sen_001",
+          "diagnosis": "sensor_fault",
+          "suspected_location": "P05",
+          "severity": "low",
+          "first_detected_tick": 138,
+          "first_detected_time": "2026-01-01T11:30:00",
+          "tick_count": 329,
+          "candidates": []
+        }
+      ],
+      "alert_ticks": 435,
+      "watch_ticks": 25,
+      "alert_tick_fraction": 0.7539,
+      "detection": {
+        "expected_diagnosis": "sensor_fault",
+        "expected_location": "P05",
+        "fault_start_tick": 120,
+        "detected": true,
+        "matched_incident_id": "inc_eval-sen_001",
+        "latency_ticks": 18,
+        "latency_minutes": 90.0,
+        "location_correct": true,
+        "candidate_top3_contains_truth": null,
+        "localisation_error_m": null,
+        "matching_rule": "diagnosis == sensor_fault and suspected_location == P05"
+      },
+      "quality": {
+        "faulted_sensor": "P05",
+        "fault_window_ticks": 457,
+        "flagged_ticks": 457,
+        "flag_coverage": 1.0,
+        "bad_ticks": 0,
+        "suspect_ticks": 440,
+        "false_flags_on_fault_free_run": 0
+      },
+      "labels": {
+        "incidents": "MODEL",
+        "alert_ticks": "MODEL",
+        "latency": "MODEL",
+        "quality": "MODEL",
+        "ground_truth_faults": "ASSUMPTION"
+      }
+    },
+    {
+      "scenario_id": "sensor_stuck",
+      "description": "P02 freezes at its hour-20 value for 6 h.",
+      "network_version": "ugtwin-v1",
+      "seed": 107,
+      "ticks": 576,
+      "timestep_minutes": 5,
+      "runtime_seconds": 6.02,
+      "output_hash": "a59aac94a3e03d1f7ffc0a8fd30bde86c67cd982b0ce6532b661cfa2d57087a0",
+      "fault_free": false,
+      "incident_count": 1,
+      "incidents": [
+        {
+          "id": "inc_eval-sen_001",
+          "diagnosis": "sensor_fault",
+          "suspected_location": "P02",
+          "severity": "low",
+          "first_detected_tick": 245,
+          "first_detected_time": "2026-01-01T20:25:00",
+          "tick_count": 67,
+          "candidates": []
+        }
+      ],
+      "alert_ticks": 69,
+      "watch_ticks": 57,
+      "alert_tick_fraction": 0.1196,
+      "detection": {
+        "expected_diagnosis": "sensor_fault",
+        "expected_location": "P02",
+        "fault_start_tick": 240,
+        "detected": true,
+        "matched_incident_id": "inc_eval-sen_001",
+        "latency_ticks": 5,
+        "latency_minutes": 25.0,
+        "location_correct": true,
+        "candidate_top3_contains_truth": null,
+        "localisation_error_m": null,
+        "matching_rule": "diagnosis == sensor_fault and suspected_location == P02"
+      },
+      "quality": {
+        "faulted_sensor": "P02",
+        "fault_window_ticks": 73,
+        "flagged_ticks": 73,
+        "flag_coverage": 1.0,
+        "bad_ticks": 67,
+        "suspect_ticks": 0,
+        "false_flags_on_fault_free_run": 0
+      },
+      "labels": {
+        "incidents": "MODEL",
+        "alert_ticks": "MODEL",
+        "latency": "MODEL",
+        "quality": "MODEL",
+        "ground_truth_faults": "ASSUMPTION"
+      }
+    },
+    {
+      "scenario_id": "pump_outage",
+      "description": "Duty pump PUMP_1 trips at hour 18 for 4 h; standby is not automatic.",
+      "network_version": "ugtwin-v1",
+      "seed": 108,
+      "ticks": 576,
+      "timestep_minutes": 5,
+      "runtime_seconds": 5.88,
+      "output_hash": "128b7cec36f81f751a7a379c9a0aa601bac6db7e2bef3cfdd35ae0c2cdc20b71",
+      "fault_free": false,
+      "incident_count": 1,
+      "incidents": [
+        {
+          "id": "inc_eval-pum_001",
+          "diagnosis": "pump_issue",
+          "suspected_location": "PUMP_1",
+          "severity": "high",
+          "first_detected_tick": 217,
+          "first_detected_time": "2026-01-01T18:05:00",
+          "tick_count": 48,
+          "candidates": []
+        }
+      ],
+      "alert_ticks": 298,
+      "watch_ticks": 33,
+      "alert_tick_fraction": 0.5165,
+      "detection": {
+        "expected_diagnosis": "pump_issue",
+        "expected_location": "PUMP_1",
+        "fault_start_tick": 216,
+        "detected": true,
+        "matched_incident_id": "inc_eval-pum_001",
+        "latency_ticks": 1,
+        "latency_minutes": 5.0,
+        "location_correct": true,
+        "candidate_top3_contains_truth": null,
+        "localisation_error_m": null,
+        "matching_rule": "diagnosis == pump_issue"
+      },
+      "quality": {
+        "faulted_sensor": null,
+        "fault_window_ticks": 0,
+        "flagged_ticks": 0,
+        "flag_coverage": null,
+        "bad_ticks": 0,
+        "suspect_ticks": 0,
+        "false_flags_on_fault_free_run": 0
+      },
+      "labels": {
+        "incidents": "MODEL",
+        "alert_ticks": "MODEL",
+        "latency": "MODEL",
+        "quality": "MODEL",
+        "ground_truth_faults": "ASSUMPTION"
+      }
+    },
+    {
+      "scenario_id": "leak_plus_sensor_drift",
+      "description": "Gradual PIPE_17 leak plus P05 drift; ambiguous case.",
+      "network_version": "ugtwin-v1",
+      "seed": 109,
+      "ticks": 576,
+      "timestep_minutes": 5,
+      "runtime_seconds": 7.56,
+      "output_hash": "fa89d593402ba0550f8bd81e68defc6ef9e878ef570fd459d2d1f0bc07844f84",
+      "fault_free": false,
+      "incident_count": 2,
+      "incidents": [
+        {
+          "id": "inc_eval-lea_001",
+          "diagnosis": "sensor_fault",
+          "suspected_location": "P05",
+          "severity": "low",
+          "first_detected_tick": 142,
+          "first_detected_time": "2026-01-01T11:50:00",
+          "tick_count": 16,
+          "candidates": []
+        },
+        {
+          "id": "inc_eval-lea_003",
+          "diagnosis": "leak",
+          "suspected_location": "pipe:PIPE_47",
+          "severity": "high",
+          "first_detected_tick": 180,
+          "first_detected_time": "2026-01-01T15:00:00",
+          "tick_count": 309,
+          "candidates": [
+            {
+              "pipe": "PIPE_47",
+              "score": 0.649
+            },
+            {
+              "pipe": "PIPE_19",
+              "score": 0.623
+            },
+            {
+              "pipe": "PIPE_53",
+              "score": 0.612
+            }
+          ]
+        }
+      ],
+      "alert_ticks": 434,
+      "watch_ticks": 16,
+      "alert_tick_fraction": 0.7522,
+      "detection": {
+        "expected_diagnosis": "sensor_fault",
+        "expected_location": "P05",
+        "fault_start_tick": 120,
+        "detected": true,
+        "matched_incident_id": "inc_eval-lea_001",
+        "latency_ticks": 22,
+        "latency_minutes": 110.0,
+        "location_correct": true,
+        "candidate_top3_contains_truth": null,
+        "localisation_error_m": null,
+        "matching_rule": "diagnosis == sensor_fault and suspected_location == P05"
+      },
+      "quality": {
+        "faulted_sensor": "P05",
+        "fault_window_ticks": 457,
+        "flagged_ticks": 457,
+        "flag_coverage": 1.0,
+        "bad_ticks": 0,
+        "suspect_ticks": 438,
+        "false_flags_on_fault_free_run": 0
+      },
+      "labels": {
+        "incidents": "MODEL",
+        "alert_ticks": "MODEL",
+        "latency": "MODEL",
+        "quality": "MODEL",
+        "ground_truth_faults": "ASSUMPTION"
+      }
+    }
+  ],
+  "summary": {
+    "scenarios": 9,
+    "fault_scenarios": 6,
+    "fault_scenarios_detected": 6,
+    "detection_rate": 1.0,
+    "mean_latency_minutes": 71.7,
+    "leaks_detected": 2,
+    "leaks_total": 2,
+    "leak_localisation_top1": 0,
+    "leak_localisation_top3": 0,
+    "fault_free_incidents": 0,
+    "fault_free_alert_tick_fraction": 0.0,
+    "notes": [
+      "Detection uses the declared fault start, not a hand-labelled event.",
+      "A detection counts only if the top-level diagnosis class matches.",
+      "Fault-free presets are normal, holiday and heatwave demand scenarios.",
+      "This is a synthetic benchmark on one hypothetical network."
+    ]
+  },
+  "determinism": {
+    "scenario_id": "normal",
+    "first_hash": "2669e0433d6f791bdb558666c5ba7948013b771696e4a8bbb3c5607436fc737c",
+    "second_hash": "2669e0433d6f791bdb558666c5ba7948013b771696e4a8bbb3c5607436fc737c",
+    "identical": true,
+    "seed": 101
+  },
+  "decisions": [
+    {
+      "scenario_id": "leak_gradual",
+      "incident_id": "inc_eval-lea_002",
+      "recommended_action": "repair_isolate",
+      "expected_costs": {
+        "monitor": 29715.93,
+        "inspect": 11849.47,
+        "repair_isolate": 10436.19
+      },
+      "savings_vs_monitor": 19279.74,
+      "break_even": {
+        "Isolate and repair now": 0.2373,
+        "Inspect, then repair if confirmed": 0.048
+      },
+      "constraints_ok": true,
+      "decision_runtime_seconds": 13.12,
+      "assumptions_version": "1.0",
+      "labels": {
+        "impacts": "SIMULATION",
+        "costs": "CALCULATED",
+        "unit_prices": "ASSUMPTION",
+        "recommendation": "MODEL",
+        "savings": "CALCULATED"
+      }
+    },
+    {
+      "scenario_id": "leak_sudden",
+      "incident_id": "inc_eval-lea_001",
+      "recommended_action": "repair_isolate",
+      "expected_costs": {
+        "monitor": 37099.81,
+        "inspect": 11989.67,
+        "repair_isolate": 10603.3
+      },
+      "savings_vs_monitor": 26496.51,
+      "break_even": {
+        "Isolate and repair now": 0.1846,
+        "Inspect, then repair if confirmed": 0.0346
+      },
+      "constraints_ok": true,
+      "decision_runtime_seconds": 15.51,
+      "assumptions_version": "1.0",
+      "labels": {
+        "impacts": "SIMULATION",
+        "costs": "CALCULATED",
+        "unit_prices": "ASSUMPTION",
+        "recommendation": "MODEL",
+        "savings": "CALCULATED"
+      }
+    }
+  ],
+  "disclaimer": "Virtual utility twin. Hypothetical network, simulated data. Metrics describe this prototype on its own synthetic network only."
+}

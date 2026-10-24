@@ -218,3 +218,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- UtilityGuard Twin additions ---
+# The Python template above ignores any directory named lib/. The baseline frontend keeps source in src/lib/.
+!freebuff/frontend/src/lib/
+.DS_Store
+freebuff/.freebuff/

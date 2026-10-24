@@ -1,0 +1,108 @@
+# UtilityGuard Twin finance assumptions.
+#
+# EVERY value here is an ASSUMPTION, not a real tariff or contractor price.
+# Values are obvious placeholders in "CU" (placeholder currency units) and
+# ranges are deliberately wide. The ranges are used for triangular Monte Carlo
+# sampling and sensitivity analysis. Do not present these as market prices.
+version: "1.0"
+currency: "CU (placeholder currency units)"
+updated_at: "2026-10-21"
+assumptions:
+  water_price_per_m3:
+    value: 1.20
+    unit: "CU/m3"
+    low: 0.40
+    high: 4.00
+    label: ASSUMPTION
+    description: "Marginal value of water lost; placeholder utility tariff."
+  unserved_water_penalty_per_m3:
+    value: 8.00
+    unit: "CU/m3"
+    low: 2.00
+    high: 30.00
+    label: ASSUMPTION
+    description: "Penalty for demand not served; placeholder regulatory/economic cost."
+  electricity_price_per_kwh:
+    value: 0.25
+    unit: "CU/kWh"
+    low: 0.08
+    high: 0.60
+    label: ASSUMPTION
+    description: "Pump electricity tariff; placeholder."
+  inspection_cost:
+    value: 900.0
+    unit: "CU/inspection"
+    low: 300.0
+    high: 3000.0
+    label: ASSUMPTION
+    description: "Crew and equipment cost for one inspection."
+  repair_cost_planned:
+    value: 6000.0
+    unit: "CU/repair"
+    low: 2000.0
+    high: 20000.0
+    label: ASSUMPTION
+    description: "Planned repair cost."
+  repair_cost_emergency:
+    value: 18000.0
+    unit: "CU/repair"
+    low: 6000.0
+    high: 60000.0
+    label: ASSUMPTION
+    description: "Emergency repair cost after prolonged inaction."
+  crew_response_hours:
+    value: 3.0
+    unit: "h"
+    low: 0.5
+    high: 12.0
+    label: ASSUMPTION
+    description: "Time until a crew can reach the site."
+  repair_duration_hours:
+    value: 6.0
+    unit: "h"
+    low: 1.0
+    high: 24.0
+    label: ASSUMPTION
+    description: "Repair duration after isolation."
+  intervention_effectiveness:
+    value: 0.90
+    unit: "fraction"
+    low: 0.60
+    high: 1.00
+    label: ASSUMPTION
+    description: "Fraction of the estimated leak flow stopped by the intervention."
+  inspection_duration_hours:
+    value: 1.0
+    unit: "h"
+    low: 0.25
+    high: 4.0
+    label: ASSUMPTION
+    description: "Additional delay when an inspection must confirm the leak before repair."
+  low_pressure_threshold_m:
+    value: 15.0
+    unit: "m"
+    low: 5.0
+    high: 25.0
+    label: ASSUMPTION
+    description: "Pressure below which a node is counted as low-pressure."
+  max_unserved_m3:
+    value: 150.0
+    unit: "m3"
+    low: 0.0
+    high: 1000.0
+    label: ASSUMPTION
+    description: "Decision constraint: maximum acceptable unserved demand over the horizon."
+  decision_horizon_hours:
+    value: 72.0
+    unit: "h"
+    low: 6.0
+    high: 72.0
+    label: ASSUMPTION
+    description: "Evaluation horizon for cost and impact comparisons."
+  monte_carlo_samples:
+    value: 300.0
+    unit: "samples"
+    low: 100.0
+    high: 1000.0
+    label: ASSUMPTION
+    description: "Number of Monte Carlo cost samples."
