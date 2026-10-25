@@ -66,7 +66,7 @@ Everything is built fresh at the repo root; nothing is imported from `freebuff/`
 **Order:** 001 first (single agent). Then, in parallel where owners differ: Claude 002, 003, 005, 008, 012; Codex 006 (after 001), 007 (after 002), 004 (after 002 and 003), 009 (after 001 and 008). Claude 010, then Codex 011. Then 013.
 
 ### T-A1-001: Repository skeleton and packaging
-Status: ready   Owner: claude   Reviewer: codex   Tier: T1   Branch: `claude/a1-skeleton`   Spec refs: section 14, 4.7
+Status: **done 2026-10-25** (PR #4 merged; verified from a fresh clone; Codex review: no actionable defects)   Owner: claude   Reviewer: codex   Tier: T1   Branch: `claude/a1-skeleton`   Spec refs: section 14, 4.7
 **Goal:** The directory structure of Spec section 14 exists and installs, with `platform/` a plain folder.
 **Allowed:** root `Makefile`, root `README.md`, `platform/**`, `domains/**`, `contracts/` (placeholder), `assumptions/` (placeholder), `docs/adr/`, `deploy/`, `.github/`, `frontend/` (placeholder), `scripts/`. **Forbidden:** `freebuff/**`, other `docs/**`, `AGENTS.md`.
 **Acceptance:**
@@ -139,7 +139,7 @@ Status: ready after 001 and 008   Owner: codex   Reviewer: claude   Tier: T1   B
 **Budget:** 1 session.
 
 ### T-A1-010: Shell skeleton: honesty banner, Fidelity badge, stream-source indicator
-Status: ready after 001 and 002 (wording per the owner's F1 ruling, D-005, once PR #3 is merged)   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-shell`   Spec refs: 1.4, 2 (rules 1 and 2), 13   Pitfalls: P-04, P-17
+Status: ready after 001 and 002 (wording per the owner's F1 ruling, D-005; Spec updated in PR #3, merged)   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-shell`   Spec refs: 1.4, 2 (rules 1 and 2), 13   Pitfalls: P-04, P-17
 **Allowed:** `frontend/src/app/**`, `frontend/src/ui/**` (minimal tokens only), `frontend/index.html`, `frontend/package.json`, test config. Packages named in Spec section 4.7 only (React, TypeScript, Vite, Vitest, Testing Library). **Forbidden:** the full design system and map engine (B2).
 **Behaviour:** permanent banner and Fidelity badge. The badge shows the level of the network actually loaded (Master Spec 1.4): `No network loaded` in A1, `Fidelity F0: Generic synthetic` for the procedural fallback, and `Fidelity F1: Public capital layout, inferred pipes, synthetic hydraulics` only for a network whose geometry carries `PUBLIC_GEOMETRY` provenance. The stream-source indicator reads `REPLAY|SIMULATED|LIVE` from the stream envelope type and defaults to `REPLAY`; loading and error states render the same banner. All UI strings are English and live in one module (no literals scattered through components), so the Arabic translation can be added later (`AGENTS.md` Language).
 **Acceptance:** `make test-frontend` passes: a component test renders the shell at every route, in the loading state and in the error state, and asserts banner, badge text (`No network loaded` with no network; the F1 text only when the network declares F1 provenance) and indicator are present each time; `LIVE` is never shown unless the envelope says so; `grep -RIn "https\?://" frontend/index.html frontend/dist | grep -viE "localhost|127.0.0.1|w3.org"` prints nothing (offline-first).
@@ -185,7 +185,7 @@ After P3 the lead proposes changes to the ownership map in `docs/COLLABORATION.m
 ---
 
 ## 6. Open questions for the human
-1. **F1 wording (D-005): RESOLVED.** Owner ruling: F1 is the real public layout of the capital with inferred pipes and synthetic hydraulics. The Spec change is PR #3. One line is still open: Master Spec section 2 lists eight evidence labels and `AGENTS.md` nine (adds `PUBLIC_GEOMETRY`, which F1 now relies on). Recommended: add it to Spec section 2. Card T-A1-003 assumes nine.
+1. **F1 wording (D-005): RESOLVED.** Owner ruling: F1 is the real public layout of the capital with inferred pipes and synthetic hydraulics. The Spec change is PR #3 (merged). One line is still open: Master Spec section 2 lists eight evidence labels and `AGENTS.md` nine (adds `PUBLIC_GEOMETRY`, which F1 now relies on). Recommended: add it to Spec section 2. Card T-A1-003 assumes nine.
 2. **Branch protection** on `dev` and `main` is not set (read-only check). GitHub settings, human action, if the plan allows.
 3. **Dependencies for A1: APPROVED (D-007).** The packages Master Spec section 4.7 names, plus `json-schema-to-typescript@16.0.0` (details in T-A1-007). Anything else asks first.
 4. **Commit email.** Every commit, including the "Initial commit" GitHub created from your account, carries your GitHub account email in its metadata, which is public. History is not rewritten. Optional: turn on "Keep my email addresses private" in GitHub settings and set a no-reply address as `user.email` for new commits. I will not change git identity without your OK.

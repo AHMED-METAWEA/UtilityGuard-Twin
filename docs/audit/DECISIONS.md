@@ -32,8 +32,8 @@ Every change of stance, every reuse from `freebuff/`, and every proposed deletio
 
 ### D-005: Meaning of fidelity F1 and the banner wording (2026-10-25, resolved by the owner)
 - **Ruling (owner):** F1 is the real public layout of the capital (real districts and roads from public sources, inferred pipes, synthetic hydraulics). It is not ACUD's network and not a survey of it.
-- **Applied:** Master Spec sections 1.4 and 5.1 rewritten in PR #3: F1 geometry carries provenance and the `PUBLIC_GEOMETRY` label; the procedural generator becomes the F0 fallback and test fixture; the F1 provider is `OsmCapitalProvider` (Phase B1, after a geometry feasibility test). Banner text: `Fidelity F1: Public capital layout, inferred pipes, synthetic hydraulics`.
-- **Added by the lead, for the owner's confirmation in PR #3:** the badge states the level of the network actually loaded and never claims a higher one, so the A1 shell shows `No network loaded` until a network exists.
+- **Applied:** Master Spec sections 1.4 and 5.1 rewritten in PR #3 (merged 2026-10-25): F1 geometry carries provenance and the `PUBLIC_GEOMETRY` label; the procedural generator becomes the F0 fallback and test fixture; the F1 provider is `OsmCapitalProvider` (Phase B1, after a geometry feasibility test). Banner text: `Fidelity F1: Public capital layout, inferred pipes, synthetic hydraulics`.
+- **Added by the lead in PR #3 (merged without change, so recorded as accepted):** the badge states the level of the network actually loaded and never claims a higher one, so the A1 shell shows `No network loaded` until a network exists.
 - **Still open (one line):** Spec section 2 lists eight evidence labels, `AGENTS.md` nine (adds `PUBLIC_GEOMETRY`). Recommended: add `PUBLIC_GEOMETRY` to Spec section 2. Card T-A1-003 assumes nine.
 
 ### D-006: Language convention (2026-10-25)
