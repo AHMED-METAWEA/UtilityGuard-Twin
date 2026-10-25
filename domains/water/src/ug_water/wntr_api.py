@@ -15,8 +15,10 @@ from __future__ import annotations
 import importlib
 import inspect
 import json
+import os
 import re
 from importlib import resources
+from pathlib import Path
 from typing import Any
 
 MANIFEST_SCHEMA_VERSION = "1"
@@ -194,12 +196,30 @@ def symbol_count(manifest: dict[str, Any]) -> int:
     )
 
 
+MANIFEST_ENV = "UG_WNTR_MANIFEST"
+
+
+def manifest_location() -> str:
+    """Where the manifest is read from: the packaged file, or the file named by UG_WNTR_MANIFEST.
+
+    The variable is a test and diagnosis hook (`ug doctor` against an edited copy). It cannot make
+    a wrong environment look right: whatever file is named is verified against the installed WNTR
+    and against the symbols declared in this module, exactly like the packaged one.
+    """
+    override = os.environ.get(MANIFEST_ENV)
+    return override if override else f"ug_water/{MANIFEST_RESOURCE}"
+
+
 def load_manifest() -> dict[str, Any]:
-    text = (
-        resources.files("ug_water")
-        .joinpath(MANIFEST_RESOURCE)
-        .read_text(encoding="utf-8")
-    )
+    override = os.environ.get(MANIFEST_ENV)
+    if override:
+        text = Path(override).read_text(encoding="utf-8")
+    else:
+        text = (
+            resources.files("ug_water")
+            .joinpath(MANIFEST_RESOURCE)
+            .read_text(encoding="utf-8")
+        )
     loaded = json.loads(text)
     if not isinstance(loaded, dict):
         raise ValueError("WNTR API manifest must be a JSON object")
