@@ -64,18 +64,16 @@ def test_exactly_nine_labels_matching_the_honesty_rules_text() -> None:
     assert {label.value for label in EvidenceLabel} == listed
 
 
-def test_master_spec_labels_are_a_subset_of_the_code_labels() -> None:
-    """The Spec section 2 table lists eight labels; the code has nine (adds PUBLIC_GEOMETRY).
-
-    This guards against drift in one direction only: a label the Spec names must exist in code.
-    """
+def test_master_spec_labels_equal_the_code_labels() -> None:
+    """Master Spec section 2 lists the nine labels (PUBLIC_GEOMETRY added in PR #6): the table
+    and the code cannot drift apart in either direction."""
     spec = (REPO_ROOT / "docs" / "UtilityGuard_Master_Spec.md").read_text(
         encoding="utf-8"
     )
     table = spec.split("## 2. Honesty rules", 1)[1].split("## 3.", 1)[0]
     in_spec = set(re.findall(r"^\| `([A-Z_]+)` \|", table, flags=re.MULTILINE))
     assert in_spec, "no labels found in the Spec table"
-    assert in_spec <= {label.value for label in EvidenceLabel}
+    assert in_spec == {label.value for label in EvidenceLabel}
 
 
 def test_unknown_label_is_rejected() -> None:
