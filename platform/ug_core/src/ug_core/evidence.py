@@ -19,17 +19,13 @@ class EvidenceLabel(StrEnum):
 
     OBSERVED = "OBSERVED"  # measured by a real source
     BENCHMARK = "BENCHMARK"  # from a public benchmark dataset (itself model-generated)
-    PUBLIC_GEOMETRY = (
-        "PUBLIC_GEOMETRY"  # layout taken from public sources, with provenance
-    )
+    PUBLIC_GEOMETRY = "PUBLIC_GEOMETRY"  # public-source layout, with provenance
     SIMULATION = "SIMULATION"  # output of the physical solver
     SENSOR_SIM = "SENSOR_SIM"  # output of the measurement simulator
     MODEL = "MODEL"  # output of a detector or statistical model, with version
     ASSUMPTION = "ASSUMPTION"  # a user-editable, versioned input
     CALCULATED = "CALCULATED"  # derived from the above by a displayed formula
-    INSUFFICIENT_EVIDENCE = (
-        "INSUFFICIENT_EVIDENCE"  # the system declines to produce a number
-    )
+    INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"  # the system declines a number
 
 
 T = TypeVar("T")
