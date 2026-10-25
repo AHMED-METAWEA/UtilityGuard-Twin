@@ -78,6 +78,11 @@ Every change of stance, every reuse from `freebuff/`, and every proposed deletio
 - Wave 1: core types (#8), WNTR manifest (#9), adapter and import lint (#10), assumptions (#11), contracts (#12).
 - Wave 2: conformance tests (#17), honesty suite (#18, the stream-independence test and mutation), shell (#19). Every one of these cards needed both rounds and found something new in the second. T-A1-013 (the A1 gate review) must review exactly this code, and `docs/reviews/` has one log per task listing the findings.
 
+### D-017: Owner approvals of 2026-10-25 (end of Wave 2)
+- T-A1-002c (close the 23 gaps between code and contracts) is approved. The frontend dependency set, the `legacy-peer-deps` workaround and `actions/setup-node@v7` are approved (D-014). The corrected T-A1-011 acceptance text is approved (D-015).
+- **Playwright is approved as a pinned dev dependency, for one browser test** in Wave 3 (card T-A1-014): `@playwright/test` 1.64.0 (Apache-2.0, published 2026-10-07). The card states the exact name, version, its one runtime dependency and the browser download before installation, as the owner required. Anything else asks first.
+- Lesson: a merge preview must run `make ci` on the merged result, not only look for conflicts. `dev` was red for a short time after #16 and #19 were merged together (generated types quoting "WebSocket" tripped the offline check); fixed by PR #21.
+
 ## Reuse log (REUSE and ADAPT only)
 
 No reuse has been decided yet. Candidates and likely verdicts are in `ADOPTION_PLAN.md` section 8. A line is added here, in the same PR that brings the code in, with: date, source file and lines in `freebuff/`, what was reused, verdict (REUSE or ADAPT), target path, tests added (including golden tests for the reused behavior), reviewer, and why it is better than writing it new.
