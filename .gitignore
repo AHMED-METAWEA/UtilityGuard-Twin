@@ -224,3 +224,8 @@ __marimo__/
 !freebuff/frontend/src/lib/
 .DS_Store
 freebuff/.freebuff/
+
+# Node tooling (frontend app and scripts/types): installed packages and build output are never committed.
+node_modules/
+frontend/dist/
+*.tsbuildinfo
