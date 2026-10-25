@@ -1,0 +1,133 @@
+/* Minimal tokens for the A1 shell. The full design system arrives in phase B2.
+   No web fonts and no external URLs: the application works offline (Master Spec P10). */
+:root {
+  color-scheme: dark;
+  --ug-bg: #0d1b2a;
+  --ug-surface: #14263a;
+  --ug-border: #24415f;
+  --ug-fg: #e8eef5;
+  --ug-muted: #9fb3c8;
+  --ug-accent: #58b4e6;
+  --ug-warn: #f2b84b;
+  --ug-radius: 8px;
+  --ug-gap: 12px;
+  --ug-font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--ug-bg);
+  color: var(--ug-fg);
+  font-family: var(--ug-font);
+  line-height: 1.5;
+}
+
+.ug-topbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--ug-gap);
+  padding: 10px 16px;
+  background: var(--ug-surface);
+  border-bottom: 1px solid var(--ug-border);
+}
+
+.ug-brand {
+  font-weight: 600;
+  margin-inline-end: auto;
+}
+
+.ug-badge,
+.ug-pill {
+  border: 1px solid var(--ug-border);
+  border-radius: var(--ug-radius);
+  padding: 4px 10px;
+  font-size: 0.9rem;
+}
+
+.ug-badge[data-level="none"] {
+  color: var(--ug-muted);
+}
+
+.ug-badge[data-downgraded="true"] {
+  border-color: var(--ug-warn);
+}
+
+.ug-pill {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.ug-pill-label,
+.ug-pill-note {
+  color: var(--ug-muted);
+  font-size: 0.8rem;
+}
+
+.ug-honesty {
+  display: flex;
+  align-items: center;
+  gap: var(--ug-gap);
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--ug-border);
+  background: #1b2a1d;
+  color: var(--ug-fg);
+}
+
+.ug-honesty p {
+  margin: 0;
+  flex: 1;
+}
+
+.ug-chip {
+  font-size: 0.85rem;
+  color: var(--ug-warn);
+}
+
+.ug-body {
+  display: flex;
+  min-height: 60vh;
+}
+
+nav {
+  padding: 16px;
+  border-inline-end: 1px solid var(--ug-border);
+}
+
+nav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+nav a {
+  color: var(--ug-fg);
+  text-decoration: none;
+}
+
+nav a[aria-current="page"] {
+  color: var(--ug-accent);
+  font-weight: 600;
+}
+
+main {
+  flex: 1;
+  padding: 16px 24px;
+}
+
+@media (max-width: 640px) {
+  .ug-body {
+    flex-direction: column;
+  }
+  nav {
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--ug-border);
+  }
+}
