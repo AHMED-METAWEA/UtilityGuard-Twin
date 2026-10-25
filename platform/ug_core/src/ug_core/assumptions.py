@@ -132,7 +132,7 @@ class AssumptionSet:
         return sha256_hex(canonical_json(self.to_dict()))
 
 
-class _UniqueKeyLoader(yaml.SafeLoader):  # type: ignore[misc]
+class _UniqueKeyLoader(yaml.SafeLoader):
     """`safe_load` that rejects a repeated key instead of keeping the last one."""
 
     def construct_mapping(self, node: Any, deep: bool = False) -> dict[Any, Any]:
@@ -144,7 +144,7 @@ class _UniqueKeyLoader(yaml.SafeLoader):  # type: ignore[misc]
                     f"key {key!r} appears twice (line {key_node.start_mark.line + 1})"
                 )
             seen.add(key)
-        return super().construct_mapping(node, deep=deep)  # type: ignore[no-any-return]
+        return super().construct_mapping(node, deep=deep)
 
 
 def _mapping(value: Any, where: str, required: frozenset[str]) -> Mapping[str, Any]:
