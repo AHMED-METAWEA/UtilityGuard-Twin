@@ -49,7 +49,6 @@ export type {
   PowerLossFault,
   PumpDegradationFault,
   PumpOutageFault,
-  RunManifest,
   ScenarioConfiguration,
   SensorDriftFault,
   SensorDropoutFault,
@@ -57,27 +56,11 @@ export type {
   SensorOffsetFault,
   SensorStuckFault,
   ValveStateFault,
-} from './run-manifest';
+} from './scenario-config';
 
 export type {
-  BackgroundLeakageFault as ScenarioConfigBackgroundLeakageFault,
-  BurstFault as ScenarioConfigBurstFault,
-  CommsOutageFault as ScenarioConfigCommsOutageFault,
-  Fault as ScenarioConfigFault,
-  FireFlowFault as ScenarioConfigFireFlowFault,
-  LeakGradualFault as ScenarioConfigLeakGradualFault,
-  LeakSuddenFault as ScenarioConfigLeakSuddenFault,
-  PowerLossFault as ScenarioConfigPowerLossFault,
-  PumpDegradationFault as ScenarioConfigPumpDegradationFault,
-  PumpOutageFault as ScenarioConfigPumpOutageFault,
-  ScenarioConfiguration as ScenarioConfigScenarioConfiguration,
-  SensorDriftFault as ScenarioConfigSensorDriftFault,
-  SensorDropoutFault as ScenarioConfigSensorDropoutFault,
-  SensorNoiseGrowthFault as ScenarioConfigSensorNoiseGrowthFault,
-  SensorOffsetFault as ScenarioConfigSensorOffsetFault,
-  SensorStuckFault as ScenarioConfigSensorStuckFault,
-  ValveStateFault as ScenarioConfigValveStateFault,
-} from './scenario-config';
+  RunManifest,
+} from './run-manifest';
 
 export type {
   Quality as StreamEnvelopeQuality,
