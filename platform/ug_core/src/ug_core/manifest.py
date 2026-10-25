@@ -48,6 +48,12 @@ class Manifest:
             or self.seed < 0
         ):
             raise ValueError("seed must be a non-negative int")
+        # Plain strings only: a list here would stay mutable after construction and change
+        # the hash of a manifest that is already a dictionary key.
+        if not isinstance(self.schema_version, str) or not self.schema_version:
+            raise TypeError("schema_version must be a non-empty string")
+        if self.git_commit is not None and not isinstance(self.git_commit, str):
+            raise TypeError("git_commit must be a string or None")
         for name, mapping in (
             ("versions", self.versions),
             ("libraries", self.libraries),

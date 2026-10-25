@@ -560,3 +560,35 @@ def test_truth_event_ticks_must_be_plain_integers(bad: object) -> None:
         TruthEvent("leak", "p", bad, 4)  # type: ignore[arg-type]
     with pytest.raises((TypeError, ValueError)):
         TruthEvent("leak", "p", 0, bad)  # type: ignore[arg-type]
+
+
+def test_timebase_start_is_checked_for_whole_seconds_after_utc_conversion() -> None:
+    # Local time has no fractional second, but the offset does: in UTC the start is
+    # 23:59:59.5, which serialisation would silently truncate to 23:59:59.
+    odd_zone = timezone(timedelta(microseconds=500000))
+    with pytest.raises(ValueError):
+        Timebase(datetime(2026, 1, 1, tzinfo=odd_zone), 1, 2)
+    # A whole-second offset is still fine and converts exactly.
+    plus_two = timezone(timedelta(hours=2))
+    assert Timebase(datetime(2026, 1, 1, 2, tzinfo=plus_two), 1, 2).iso_at(0) == (
+        "2026-01-01T00:00:00Z"
+    )
+
+
+@pytest.mark.parametrize("bad", [[], ["1"], {"a": 1}, 1, b"x"])
+def test_manifest_identity_metadata_must_be_plain_strings(bad: object) -> None:
+    with pytest.raises((TypeError, ValueError)):
+        make_manifest(git_commit=bad)
+    with pytest.raises((TypeError, ValueError)):
+        make_manifest(schema_version=bad)
+
+
+def test_manifest_to_dict_cannot_reach_back_into_the_manifest() -> None:
+    manifest = make_manifest(git_commit="abc123")
+    before = manifest.input_hash()
+    payload = manifest.to_dict()
+    payload["schema_version"] = "tampered"
+    payload["unordered"].append("tampered")
+    payload["config"]["injected"] = 1
+    assert manifest.input_hash() == before
+    assert manifest.git_commit == "abc123" and manifest.schema_version == "1"

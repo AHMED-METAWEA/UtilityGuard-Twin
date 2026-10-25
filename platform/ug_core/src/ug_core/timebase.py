@@ -25,9 +25,12 @@ class Timebase:
     def __post_init__(self) -> None:
         if not isinstance(self.start, datetime) or self.start.tzinfo is None:
             raise ValueError("start must be a timezone-aware datetime")
-        if self.start.microsecond != 0:
-            raise ValueError("start must be a whole number of seconds")
-        object.__setattr__(self, "start", self.start.astimezone(UTC))
+        # Check after conversion: a zone offset with a fractional second would otherwise
+        # produce a fractional UTC start that serialisation silently truncates.
+        start = self.start.astimezone(UTC)
+        if start.microsecond != 0:
+            raise ValueError("start must be a whole number of seconds in UTC")
+        object.__setattr__(self, "start", start)
         if isinstance(self.step_seconds, bool) or not isinstance(
             self.step_seconds, int
         ):
