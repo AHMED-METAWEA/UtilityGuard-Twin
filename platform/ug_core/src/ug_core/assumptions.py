@@ -37,6 +37,8 @@ _TOP_KEYS = frozenset({"set_id", "parent", "note", "assumptions"})
 _ENTRY_KEYS = frozenset({"unit", "distribution", "source_note", "verified"})
 _DISTRIBUTION_KEYS = frozenset({"type", "min", "mode", "max"})
 _MAX_EXACT_INT = 2**53
+# Contract version of the `assumption-set` payload (contracts/v1/assumption-set.schema.json).
+SCHEMA_VERSION = "1"
 # A note that BEGINS with one of these, or says outright that there is no source, is not a source.
 # Hygiene only: the words are not searched anywhere else, because real citations mention them
 # ("replaces the placeholder in v1"), and a human decides whether a named source is real.
@@ -126,6 +128,10 @@ class AssumptionSet:
                 n: self.assumptions[n].to_dict() for n in sorted(self.assumptions)
             },
         }
+
+    def to_payload(self) -> dict[str, Any]:
+        """The set as the `assumption-set` contract payload: `to_dict()` plus `schema_version`."""
+        return {"schema_version": SCHEMA_VERSION, **self.to_dict()}
 
     def content_hash(self) -> str:
         """SHA-256 of the canonical content: the same values give the same hash in any order."""
