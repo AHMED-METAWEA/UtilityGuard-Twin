@@ -17,6 +17,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from typing import Any
 
+from ug_core import grammar
 from ug_core.canonical import canonical, canonical_json, freeze, sha256_hex, thaw
 
 MANIFEST_SCHEMA_VERSION = "1"
@@ -50,10 +51,21 @@ class Manifest:
             raise ValueError("seed must be a non-negative int")
         # Plain strings only: a list here would stay mutable after construction and change
         # the hash of a manifest that is already a dictionary key.
-        if not isinstance(self.schema_version, str) or not self.schema_version:
-            raise TypeError("schema_version must be a non-empty string")
-        if self.git_commit is not None and not isinstance(self.git_commit, str):
-            raise TypeError("git_commit must be a string or None")
+        if not isinstance(self.schema_version, str):
+            raise TypeError("schema_version must be a string")
+        if self.schema_version != MANIFEST_SCHEMA_VERSION:
+            raise ValueError(
+                f"only manifest schema_version {MANIFEST_SCHEMA_VERSION!r} is supported, "
+                f"got {self.schema_version!r}"
+            )
+        if self.git_commit is not None:
+            if not isinstance(self.git_commit, str):
+                raise TypeError("git_commit must be a string or None")
+            if not grammar.is_git_commit(self.git_commit):
+                raise ValueError(
+                    "git_commit must be 6 to 40 lower-case hex characters or None, "
+                    f"got {self.git_commit!r}"
+                )
         for name, mapping in (
             ("versions", self.versions),
             ("libraries", self.libraries),
@@ -63,7 +75,24 @@ class Manifest:
                 isinstance(k, str) and isinstance(v, str) for k, v in mapping.items()
             ):
                 raise TypeError(f"{name} must map strings to strings")
+        # Names are tokens, hashes are SHA-256: the same rules as the contract.
+        for name, mapping in (
+            ("versions", self.versions),
+            ("libraries", self.libraries),
+        ):
+            for key in mapping:
+                grammar.require_identifier(key, f"a key of {name}")
+        for key, digest in self.output_hashes.items():
+            grammar.require_identifier(key, "a key of output_hashes")
+            if not grammar.is_sha256(digest):
+                raise ValueError(
+                    f"output_hashes[{key!r}] must be 64 lower-case hex characters, got {digest!r}"
+                )
         unordered = tuple(self.unordered)
+        if not all(isinstance(item, str) and item.strip() for item in unordered):
+            raise ValueError("unordered must name config keys: non-empty strings")
+        if len(set(unordered)) != len(unordered):
+            raise ValueError(f"unordered names a key twice: {unordered!r}")
         # Store exactly what is hashed and serialised: plain JSON types, no lossy numbers.
         config = canonical(self.config)
         if not isinstance(config, dict):

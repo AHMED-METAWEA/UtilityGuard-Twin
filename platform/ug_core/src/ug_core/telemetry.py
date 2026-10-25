@@ -17,6 +17,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from types import MappingProxyType
 
+from ug_core import grammar
 from ug_core.canonical import canonical_json, sha256_hex
 from ug_core.evidence import EvidenceLabel
 from ug_core.numeric import finite, round_for_hash
@@ -53,6 +54,7 @@ class TelemetrySeries:
             )
         frozen: dict[str, tuple[float | None, ...]] = {}
         for sensor_id, values in self.readings.items():
+            grammar.require_identifier(sensor_id, "a sensor id")
             series = tuple(
                 None if v is None else finite(v, f"reading {sensor_id!r}")
                 for v in values
