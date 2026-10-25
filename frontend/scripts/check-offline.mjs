@@ -6,7 +6,7 @@ import { readFileSync, readdirSync, statSync } from "node:fs";
 import { extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { cssReferences, htmlReferences, jsReferences, requiredCsp } from "./offline-lib.mjs";
+import { cssReferences, htmlReferences, isScannedSource, jsReferences, requiredCsp } from "./offline-lib.mjs";
 
 const root = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 const problems = [];
@@ -36,7 +36,7 @@ function scan(path, { bundle }) {
 
 scan(join(root, "index.html"), { bundle: false });
 for (const file of walk(join(root, "src"))) {
-  if (/\.(tsx?|css|html|svg)$/.test(file) && !/\.test\.tsx?$/.test(file)) scan(file, { bundle: false });
+  if (isScannedSource(file)) scan(file, { bundle: false });
 }
 let built = [];
 try {
