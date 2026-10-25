@@ -5,6 +5,7 @@ inputs that used to pass, and with the nearest inputs that must still pass."""
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -18,7 +19,14 @@ from ug_core import (
     Timebase,
     grammar,
 )
-from ug_core.assumptions import AssumptionSet, load_assumptions, parse_assumptions
+from ug_core.assumptions import (
+    Assumption,
+    AssumptionSet,
+    Triangular,
+    load_assumptions,
+    parse_assumptions,
+)
+from ug_core.canonical import sha256_hex
 
 ROOT = Path(__file__).resolve().parents[3]
 COMMON = json.loads((ROOT / "contracts/v1/common.schema.json").read_text())["$defs"]
@@ -187,6 +195,57 @@ def test_other_currencies_and_other_spellings_are_refused(unit: str) -> None:
         evidenced(unit=unit, label=L.ASSUMPTION, value=8.0)
 
 
+# The contract's recogniser lists common codes; the code catches the rest (review of T-A1-002c):
+# every ISO 4217 code, a currency word, and spellings that break the letters apart or add a
+# metric prefix. Each of these used to pass as a plain unit.
+DISGUISED_CURRENCIES = [
+    "E-G-P/m3", "E..G..P", "e-g-p", "EG2P", "kLE/m3", "MLE", "kEGP", "MEGP", "CAD", "cad/m3",
+    "m3/CAD", "CAD*h", "AUD", "ZAR/kWh", "XOF", "JOD", "C-A-D", "L-E", "mUSD", "dinar",
+    "Dinar/m3", "rupee", "mdollar", "lira", "yuan", "shilling/kWh", "peso", "franc", "naira",
+]  # fmt: skip
+
+
+@pytest.mark.parametrize("unit", DISGUISED_CURRENCIES)
+@pytest.mark.parametrize(
+    "label", [L.SIMULATION, L.MODEL, L.SENSOR_SIM, L.PUBLIC_GEOMETRY, L.ASSUMPTION]
+)
+def test_a_disguised_or_unlisted_currency_is_refused_under_every_label(
+    unit: str, label: L
+) -> None:
+    with pytest.raises(ValueError, match="EGP"):
+        evidenced(unit=unit, label=label, value=8.0)
+
+
+def test_every_iso_4217_code_is_recognised_as_a_currency() -> None:
+    assert len(grammar.CURRENCY_CODES) >= 150
+    assert {"EGP", "CAD", "AUD", "ZAR", "XOF", "JOD", "MAD"} <= set(
+        grammar.CURRENCY_CODES
+    )
+    for code in grammar.CURRENCY_CODES:
+        for spelled in (code, code.lower(), f"{code}/m3", f"k{code}"):
+            assert grammar.looks_like_money(spelled), spelled
+            if spelled not in ("EGP", "EGP/m3"):
+                with pytest.raises(ValueError, match="EGP"):
+                    evidenced(unit=spelled, label=L.ASSUMPTION, value=1.0)
+
+
+ORDINARY_UNITS = [
+    "m", "m2", "m3", "m3/s", "m3/h", "m3/day", "L/s", "L/min", "l/h", "bar", "mbar", "kPa", "MPa",
+    "Pa", "psi", "mg/L", "ug/L", "g/L", "NTU", "pH", "degC", "K", "%", "pct", "ppm", "ppb", "kW",
+    "MW", "kWh", "MWh", "kWh/m3", "kVA", "kvar", "MVA", "kV", "V", "A", "mA", "Hz", "h", "min",
+    "s", "day", "month", "year", "kg", "g", "t", "km", "mm", "cm", "ha", "m/s", "kg/m3", "W/m2",
+    "1/s", "uS/cm", "mS/cm", "mgd", "gpm", "cfs", "cms", "MGD", "mmHg", "kgf/cm2", "N.m", "kg.m2",
+    "m3/h/m", "kg/ha/day", "m^3", "m-1", "rpm", "BTU", "kcal", "J", "kJ/kg", "tonne", "tons/day",
+    "count", "1", "unitless", "ratio", "fraction", "events/year", "hours", "days", "sensors",
+]  # fmt: skip
+
+
+@pytest.mark.parametrize("unit", ORDINARY_UNITS)
+def test_ordinary_physical_units_are_not_mistaken_for_currencies(unit: str) -> None:
+    assert not grammar.looks_like_money(unit), unit
+    assert evidenced(unit=unit, label=L.SIMULATION, value=2.0).unit == unit
+
+
 def test_a_declined_money_value_is_still_representable() -> None:
     declined = Evidenced(None, L.INSUFFICIENT_EVIDENCE, "ev_cost_1", unit="EGP")
     assert declined.value is None
@@ -319,6 +378,125 @@ def test_a_directly_built_set_cannot_be_empty_or_malformed() -> None:
     with pytest.raises(ValueError):
         AssumptionSet("v1", None, " ", dict(entries))
     assert AssumptionSet("v1", None, "note", dict(entries)).set_id == "v1"
+
+
+def an_assumption(**changes: Any) -> Assumption:
+    fields: dict[str, Any] = {
+        "name": "x_cost",
+        "unit": "EGP",
+        "distribution": Triangular(1.0, 2.0, 3.0),
+        "source_note": "Vendor quotation 2026-05, ref Q-1042",
+        "verified": True,
+    }
+    fields.update(changes)
+    return Assumption(**fields)
+
+
+@pytest.mark.parametrize(
+    "bad", [True, False, float("nan"), float("inf"), "1", None, 2**53 + 1]
+)
+def test_a_triangular_distribution_takes_finite_non_boolean_numbers(bad: Any) -> None:
+    for slot in ("min", "mode", "max"):
+        numbers_ = {"min": 1.0, "mode": 2.0, "max": 3.0, slot: bad}
+        with pytest.raises((ValueError, TypeError)):
+            Triangular(**numbers_)
+
+
+def test_a_triangular_distribution_stores_floats() -> None:
+    dist = Triangular(1, 2, 3)
+    assert [type(v) for v in (dist.min, dist.mode, dist.max)] == [float] * 3
+
+
+@pytest.mark.parametrize("note", ["", "   ", None, 7])
+def test_an_assumption_needs_a_note_when_built_directly(note: Any) -> None:
+    with pytest.raises(ValueError):
+        an_assumption(source_note=note, verified=False)
+
+
+@pytest.mark.parametrize("verified", [1, 0, "true", None])
+def test_verified_is_a_boolean_when_built_directly(verified: Any) -> None:
+    with pytest.raises(ValueError):
+        an_assumption(verified=verified)
+
+
+@pytest.mark.parametrize(
+    "note",
+    ["short", "TBD: ask the vendor", "no source yet, guess", "placeholder value"],
+)
+def test_a_verified_assumption_must_name_a_source_when_built_directly(
+    note: str,
+) -> None:
+    with pytest.raises(ValueError, match="source"):
+        an_assumption(source_note=note, verified=True)
+    assert an_assumption(source_note=note, verified=False).verified is False
+
+
+def test_replace_cannot_smuggle_a_bad_value_past_the_checks() -> None:
+    good = an_assumption()
+    with pytest.raises(ValueError):
+        replace(good, source_note="")
+    with pytest.raises(ValueError):
+        replace(good, source_note="TBD")
+    with pytest.raises(ValueError):
+        replace(good, unit="m 2")
+    with pytest.raises(ValueError):
+        replace(good, distribution="triangular")
+
+
+@pytest.mark.parametrize("name", ["", "X", "1x", "bad\x00", "a b", "x\n", "café", 5])
+def test_assumption_names_follow_the_contract_when_built_directly(name: Any) -> None:
+    with pytest.raises(ValueError):
+        an_assumption(name=name)
+    with pytest.raises(ValueError):
+        AssumptionSet("v1", None, "note", {name: an_assumption()})
+
+
+def test_a_set_key_is_the_name_of_its_assumption() -> None:
+    with pytest.raises(ValueError, match="name"):
+        AssumptionSet("v1", None, "note", {"other_name": an_assumption()})
+    with pytest.raises(ValueError):
+        AssumptionSet("v1", None, "note", {"x_cost": {"unit": "EGP"}})
+
+
+def test_the_assumption_name_pattern_is_the_contracts() -> None:
+    schema = json.loads((ROOT / "contracts/v1/assumption-set.schema.json").read_text())
+    assert (
+        grammar.ASSUMPTION_NAME_PATTERN
+        == schema["properties"]["assumptions"]["propertyNames"]["pattern"]
+    )
+
+
+def test_an_evidence_id_fits_the_identifier_grammar_for_any_valid_set() -> None:
+    short = load_assumptions(ROOT / "assumptions" / "v1.yaml")
+    assert short.evidence_id("inspection_cost") == f"as_inspection_cost@{short.set_id}"
+    longest = replace(short, set_id="v" * 128)
+    ids = {name: longest.evidence_id(name) for name in longest.assumptions}
+    assert len(set(ids.values())) == len(ids)
+    for name, evidence_id in ids.items():
+        assert grammar.is_identifier(evidence_id), evidence_id
+        assert evidence_id == longest.evidence_id(name)  # deterministic
+        assert Evidenced(1.0, L.ASSUMPTION, evidence_id, unit="EGP").evidence_id == (
+            evidence_id
+        )
+
+
+def test_a_shortened_evidence_id_ends_with_a_digest_of_the_whole() -> None:
+    longest = replace(
+        load_assumptions(ROOT / "assumptions" / "v1.yaml"), set_id="v" * 128
+    )
+    for name in longest.assumptions:
+        natural = f"as_{name}@{longest.set_id}"
+        evidence_id = longest.evidence_id(name)
+        assert len(evidence_id) == 128
+        assert evidence_id.startswith(f"as_{name}@vvvv")
+        assert evidence_id.endswith("-" + sha256_hex(natural)[:20])
+
+
+def test_two_long_sets_that_differ_late_get_different_evidence_ids() -> None:
+    base = load_assumptions(ROOT / "assumptions" / "v1.yaml")
+    one = replace(base, set_id="v" * 127 + "1")
+    two = replace(base, set_id="v" * 127 + "2")
+    assert one.evidence_id("inspection_cost") != two.evidence_id("inspection_cost")
 
 
 def test_the_shipped_assumptions_still_load() -> None:
