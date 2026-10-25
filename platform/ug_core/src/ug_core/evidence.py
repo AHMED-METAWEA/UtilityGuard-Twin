@@ -98,13 +98,25 @@ class Evidenced(Generic[T]):
                 f"a currency unit is written EGP or EGP/<m3|kWh|MWh|kW|h|day|month|year>, "
                 f"got {unit!r}"
             )
+        if self.label.value in grammar.MONEY_FORBIDDEN_LABELS:
+            # Fail closed: what a simulator, a model, a sensor or a geometry reports is physical.
+            # A unit that is not built from known physical units may be a currency in a spelling
+            # nobody listed, so it is refused (a new physical unit is added to the vocabulary).
+            if grammar.is_money_unit(unit):
+                raise ValueError(
+                    f"money ({unit}) is never {self.label}: it is CALCULATED from labelled "
+                    "inputs, an ASSUMPTION, OBSERVED or BENCHMARK"
+                )
+            if not grammar.is_physical_unit(unit):
+                raise ValueError(
+                    f"a {self.label} value carries a physical unit, and {unit!r} is not one the "
+                    "code knows. Money is written EGP and is never simulator, model, sensor or "
+                    "geometry output; a new physical unit is added to "
+                    "ug_core.grammar.PHYSICAL_UNIT_ATOMS in a reviewed change"
+                )
+            return
         if not grammar.is_money_unit(unit):
             return
-        if self.label.value in grammar.MONEY_FORBIDDEN_LABELS:
-            raise ValueError(
-                f"money ({unit}) is never {self.label}: it is CALCULATED from labelled inputs, "
-                "an ASSUMPTION, OBSERVED or BENCHMARK"
-            )
         if self.value is not None and (
             isinstance(self.value, bool) or not isinstance(self.value, int | float)
         ):

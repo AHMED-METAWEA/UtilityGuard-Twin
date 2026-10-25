@@ -125,7 +125,8 @@ def test_units_are_one_ascii_token(bad: Any) -> None:
     "good", [None, "m", "m3", "L/s", "kWh", "cm2", "m3/h", "%", "1", "x" * 24]
 )
 def test_ordinary_units_and_no_unit_pass(good: str | None) -> None:
-    assert evidenced(unit=good).unit == good
+    # An assumption may carry any unit token; the simulator labels need a physical unit (below).
+    assert evidenced(unit=good, label=L.ASSUMPTION).unit == good
 
 
 @pytest.mark.parametrize("bad", ["", "  ", 17, ["a"]])
@@ -241,9 +242,83 @@ ORDINARY_UNITS = [
 
 
 @pytest.mark.parametrize("unit", ORDINARY_UNITS)
-def test_ordinary_physical_units_are_not_mistaken_for_currencies(unit: str) -> None:
+def test_ordinary_units_are_not_mistaken_for_currencies(unit: str) -> None:
     assert not grammar.looks_like_money(unit), unit
-    assert evidenced(unit=unit, label=L.SIMULATION, value=2.0).unit == unit
+    assert evidenced(unit=unit, label=L.ASSUMPTION, value=2.0).unit == unit
+
+
+# A simulator, a model, a sensor or a geometry reports physical quantities. For these four labels
+# (the ones money can never carry) the unit must be built from units the code knows, so no
+# currency can be spelled past the check (round 2 of the review of T-A1-002c: CAD.m^-3).
+PHYSICAL_UNITS = [
+    "m", "m2", "m3", "cm2", "m3/s", "m3/h", "m3/day", "L/s", "L/min", "l/h", "bar", "mbar", "kPa",
+    "MPa", "hPa", "Pa", "psi", "mmHg", "mg/L", "ug/L", "g/L", "NTU", "pH", "degC", "K", "%",
+    "pct", "ppm", "ppb", "W", "kW", "MW", "kWh", "MWh", "kWh/m3", "kVA", "kvar", "MVA", "kV",
+    "V", "A", "mA", "Hz", "uS/cm", "mS/cm", "h", "min", "s", "day", "month", "year", "kg", "g",
+    "t", "tonne", "km", "mm", "ha", "m/s", "kg/m3", "W/m2", "1/s", "m3/h/m", "kg/ha/day", "m^3",
+    "m-1", "m^-3", "N.m", "kg.m2", "rpm", "kcal", "J", "kJ/kg", "count", "%/h", "mm/h", "ha.m",
+]  # fmt: skip
+
+
+@pytest.mark.parametrize("unit", PHYSICAL_UNITS)
+@pytest.mark.parametrize(
+    "label", [L.SIMULATION, L.MODEL, L.SENSOR_SIM, L.PUBLIC_GEOMETRY]
+)
+def test_physical_units_pass_under_the_simulator_labels(unit: str, label: L) -> None:
+    assert grammar.is_physical_unit(unit), unit
+    assert not grammar.looks_like_money(unit), unit
+    assert evidenced(unit=unit, label=label, value=2.0).unit == unit
+
+
+# Dot products, inverse powers and letter-by-letter spellings of currencies, and units nobody
+# listed: none of them can be simulator output.
+NOT_PHYSICAL = [
+    "CAD.m^-3", "AUD.kWh^-1", "C.A.D.m^-3", "E.G.P.m-3", "kgCAD", "xCAD", "CADm3", "quatloo",
+    "xyz/m3", "furlong", "EGP", "EGP/m3", "USD", "E-G-P/m3", "kLE/m3", "gallons", "m3/CAD",
+    "m3.CAD^-1", "/s", "m//s", "m/", "-", "^", "1.5", "unitless", "sensors",
+    "m%", "m^", "m-", "%%", "1m", "2/s", "m3^",
+]  # fmt: skip
+
+
+@pytest.mark.parametrize("unit", NOT_PHYSICAL)
+@pytest.mark.parametrize(
+    "label", [L.SIMULATION, L.MODEL, L.SENSOR_SIM, L.PUBLIC_GEOMETRY]
+)
+def test_only_physical_units_pass_under_the_simulator_labels(
+    unit: str, label: L
+) -> None:
+    assert not grammar.is_physical_unit(unit), unit
+    with pytest.raises(ValueError, match="EGP"):
+        evidenced(unit=unit, label=label, value=8.0)
+
+
+def test_no_currency_code_or_word_is_a_physical_unit() -> None:
+    for code in grammar.CURRENCY_CODES:
+        for spelled in (code, code.lower(), code.capitalize()):
+            assert not grammar.is_physical_unit(spelled), spelled
+            assert not grammar.is_physical_unit(f"{spelled}/m3"), spelled
+            assert not grammar.is_physical_unit(f"{spelled}.m^-3"), spelled
+    for word in grammar.CURRENCY_WORDS:
+        assert not grammar.is_physical_unit(word), word
+
+
+def test_a_physical_unit_is_still_a_unit_token() -> None:
+    too_long = "kg/m3/kg/m3/kg/m3/kg/m3/kg"
+    assert len(too_long) > 24
+    assert not grammar.is_physical_unit(too_long)
+    assert not grammar.is_physical_unit("m/s\n")
+    assert not grammar.is_physical_unit(17)
+
+
+def test_a_value_without_a_unit_needs_no_physical_unit() -> None:
+    assert evidenced(unit=None, label=L.SIMULATION, value=2.0).unit is None
+
+
+@pytest.mark.parametrize("unit", ["CAD.m^-3", "AUD.kWh^-1", "USD.h-1", "EGP.h^-1"])
+def test_a_dot_product_price_is_recognised_as_money(unit: str) -> None:
+    assert grammar.looks_like_money(unit), unit
+    with pytest.raises(ValueError, match="EGP"):
+        evidenced(unit=unit, label=L.ASSUMPTION, value=8.0)
 
 
 def test_a_declined_money_value_is_still_representable() -> None:
@@ -480,16 +555,49 @@ def test_an_evidence_id_fits_the_identifier_grammar_for_any_valid_set() -> None:
         )
 
 
-def test_a_shortened_evidence_id_ends_with_a_digest_of_the_whole() -> None:
+def test_a_shortened_evidence_id_is_in_its_own_namespace() -> None:
     longest = replace(
         load_assumptions(ROOT / "assumptions" / "v1.yaml"), set_id="v" * 128
     )
     for name in longest.assumptions:
         natural = f"as_{name}@{longest.set_id}"
         evidence_id = longest.evidence_id(name)
-        assert len(evidence_id) == 128
-        assert evidence_id.startswith(f"as_{name}@vvvv")
-        assert evidence_id.endswith("-" + sha256_hex(natural)[:20])
+        assert len(evidence_id) <= 128
+        assert evidence_id.startswith("asd_")  # a natural id starts with "as_"
+        assert evidence_id.endswith("-" + sha256_hex(natural)[:32])
+        assert name[:40] in evidence_id
+
+
+def test_a_shortened_id_can_never_equal_a_natural_one() -> None:
+    """Round 2 of the review: a set whose id is the tail of a shortened id got the same id."""
+    base = load_assumptions(ROOT / "assumptions" / "v1.yaml")
+    longest = replace(base, set_id="v" * 128)
+    short = longest.evidence_id("inspection_cost")
+    for set_id in (
+        short,
+        short.split("-")[-1],
+        short.split("_", 1)[1],
+        "asd_" + "v" * 20,
+    ):
+        other = replace(base, set_id=set_id)
+        for name in other.assumptions:
+            assert other.evidence_id(name) != short, (set_id, name)
+    ids = {f"as_{name}@{base.set_id}" for name in base.assumptions}
+    assert short not in ids
+
+
+def test_a_long_assumption_name_also_gives_a_valid_evidence_id() -> None:
+    """The contract bounds the set id but not the assumption names."""
+    base = load_assumptions(ROOT / "assumptions" / "v1.yaml")
+    template = next(iter(base.assumptions.values()))
+    names = ["a" * 200, "a" * 199 + "b"]
+    entries = {n: replace(template, name=n) for n in names}
+    long_names = AssumptionSet("v1", None, "note", entries)
+    ids = [long_names.evidence_id(n) for n in names]
+    assert len(set(ids)) == 2
+    for evidence_id in ids:
+        assert len(evidence_id) <= 128 and grammar.is_identifier(evidence_id)
+        Evidenced(1.0, L.ASSUMPTION, evidence_id, unit="EGP")
 
 
 def test_two_long_sets_that_differ_late_get_different_evidence_ids() -> None:

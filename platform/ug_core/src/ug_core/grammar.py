@@ -8,6 +8,12 @@ the schema's, character for character, so the two cannot drift apart.
 
 Matching uses `fullmatch`: Python's `$` also matches before a trailing newline, which a JSON
 Schema validator on another platform would refuse.
+
+Money (pitfall P-14) is guarded twice. A unit that looks like a currency must be written `EGP`
+or `EGP/<m3|kWh|MWh|kW|h|day|month|year>` (`looks_like_money`: a best-effort reading of
+spellings, which a new spelling can always dodge). And a value labelled SIMULATION, MODEL,
+SENSOR_SIM or PUBLIC_GEOMETRY must carry a unit built from known physical units
+(`is_physical_unit`), so it fails closed: whatever a currency is called, it cannot be one.
 """
 
 from __future__ import annotations
@@ -67,7 +73,7 @@ CURRENCY_CODES = (
     "ZWG", "ZWL",
 )  # fmt: skip
 # Currency words, matched anywhere in a unit once the letters are joined and lower-cased.
-_CURRENCY_WORDS_BROAD = (
+CURRENCY_WORDS = (
     "pound", "dollar", "euro", "riyal", "dirham", "dinar", "lira", "rupee", "rupiah", "yuan",
     "shilling", "peso", "franc", "naira", "ringgit", "forint", "zloty", "koruna", "hryvnia",
     "kwacha", "shekel", "baht", "krona", "krone", "rand", "cedi", "birr", "taka", "denar",
@@ -80,7 +86,35 @@ _CURRENCY_ATOM = re.compile(
     + "|".join([*(c.lower() for c in CURRENCY_CODES), "le"])
     + ")"
 )
+# The units a simulator, a model, a sensor or a geometry may report: the four labels that money
+# can never carry (pitfall P-14). Recognising a currency by its spelling can always be dodged by
+# a new spelling, so for these labels the check is the other way round: the unit must be built
+# only from the atoms below (optionally with a metric prefix and an exponent), or it is refused.
+# A new physical unit is added here in a reviewed change. No currency code or word is an atom
+# (a test checks every one, in three spellings).
+PHYSICAL_UNIT_ATOMS = frozenset({
+    # length, area, volume
+    "m", "ha", "L", "l",
+    # time
+    "s", "min", "h", "day", "week", "month", "year",
+    # mass
+    "g", "t", "tonne",
+    # pressure, force, energy, power
+    "Pa", "bar", "atm", "psi", "mmHg", "N", "J", "cal", "W", "Wh", "VA", "var",
+    # electrical and thermal
+    "V", "A", "Hz", "ohm", "S", "K", "degC", "degF",
+    # concentration, turbidity, ratios and counts
+    "ppm", "ppb", "NTU", "pH", "pct", "rpm", "count",
+})  # fmt: skip
+_PHYSICAL_PREFIXES = (
+    "da", "y", "z", "a", "f", "p", "n", "u", "m", "c", "d", "h", "k", "M", "G", "T", "P", "E",
+)  # fmt: skip
+# One factor of a unit: letters with an optional exponent (`m3`, `m^-3`, `m-1`), the number 1
+# (`1/s`) or a percent sign.
+_UNIT_FACTOR = re.compile(r"(?P<body>[A-Za-z]+)(?:\^?-?[0-9]+)?|%|1")
+_PRODUCT_OPERATORS = re.compile(r"[/*.]")
 _NOT_A_LETTER = re.compile(r"[^A-Za-z]")
+_LETTER_RUNS = re.compile(r"[A-Za-z]+")
 _UNIT_OPERATORS = re.compile(r"[/*]")
 
 # Money is never simulator, model, sensor or geometry output (pitfall P-14). Label names, not
@@ -131,18 +165,47 @@ def looks_like_money(unit: str) -> bool:
     if _MONEY_LOOKING.search(unit) is not None:
         return True
     for part in _UNIT_OPERATORS.split(unit):
-        letters = _NOT_A_LETTER.sub("", part).casefold()
-        if not letters:
-            continue
-        if _CURRENCY_ATOM.fullmatch(letters) is not None:
-            return True
-        if any(word in letters for word in _CURRENCY_WORDS_BROAD):
-            return True
+        # The letters of the whole part joined (`E-G-P`, `EG2P`), and each piece of a product or
+        # inverse power on its own (`CAD.m^-3` has the pieces `CAD` and `m`).
+        for letters in (
+            _NOT_A_LETTER.sub("", part),
+            *_LETTER_RUNS.findall(part),
+        ):
+            letters = letters.casefold()
+            if not letters:
+                continue
+            if _CURRENCY_ATOM.fullmatch(letters) is not None:
+                return True
+            if any(word in letters for word in CURRENCY_WORDS):
+                return True
     return False
 
 
 def is_canonical_money_unit(unit: str) -> bool:
     return _CANONICAL_MONEY.fullmatch(unit) is not None
+
+
+def is_physical_unit(unit: object) -> bool:
+    """True if the unit is built only from `PHYSICAL_UNIT_ATOMS` (see there)."""
+    if not is_unit(unit):
+        return False
+    assert isinstance(unit, str)
+    for part in _PRODUCT_OPERATORS.split(unit):
+        factor = _UNIT_FACTOR.fullmatch(part)
+        if factor is None:
+            return False
+        body = factor.group("body")
+        if body is None:
+            continue
+        if body in PHYSICAL_UNIT_ATOMS:
+            continue
+        if any(
+            body.startswith(prefix) and body[len(prefix) :] in PHYSICAL_UNIT_ATOMS
+            for prefix in _PHYSICAL_PREFIXES
+        ):
+            continue
+        return False
+    return True
 
 
 def is_money_unit(unit: str) -> bool:

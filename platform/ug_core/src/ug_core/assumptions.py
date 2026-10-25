@@ -51,7 +51,8 @@ _NO_SOURCE_ANYWHERE = re.compile(
 )
 _MIN_SOURCE_NOTE = 10
 _MAX_EVIDENCE_ID = 128
-_DIGEST_CHARS = 20
+_DIGEST_CHARS = 32
+_NAME_CHARS = 40
 
 
 class AssumptionError(ValueError):
@@ -167,10 +168,12 @@ class AssumptionSet:
         natural = f"as_{name}@{self.set_id}"
         if len(natural) <= _MAX_EVIDENCE_ID:
             return natural
-        # A long set id or name would give an id the contract refuses (128 characters at most):
-        # keep the readable start and add a digest of the whole, so ids stay unique and stable.
+        # A long set id or name would give an id the contract refuses (128 characters at most).
+        # The short form starts with `asd_` (as, digest), which no natural id can: they start with
+        # `as_`. So a short id never equals the natural id of another set. It keeps the start of
+        # the name and ends with a digest of the whole natural id.
         digest = sha256_hex(natural)[:_DIGEST_CHARS]
-        return f"{natural[: _MAX_EVIDENCE_ID - _DIGEST_CHARS - 1]}-{digest}"
+        return f"asd_{name[:_NAME_CHARS]}-{digest}"
 
     def unverified(self) -> tuple[str, ...]:
         """Names of the assumptions that are not verified, sorted. The UI warns about these."""
