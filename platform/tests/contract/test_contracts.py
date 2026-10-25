@@ -144,7 +144,7 @@ def test_label_lists_equal_the_honesty_rules() -> None:
     spec = (ROOT / "docs" / "UtilityGuard_Master_Spec.md").read_text(encoding="utf-8")
     table = spec.split("## 2. Honesty rules", 1)[1].split("## 3.", 1)[0]
     in_spec = set(re.findall(r"^\| `([A-Z_]+)` \|", table, flags=re.MULTILINE))
-    assert in_spec and in_spec <= labels
+    assert in_spec == labels  # the Spec table lists all nine since PR #6
     assert set(SCHEMAS["common"]["$defs"]["telemetry_label"]["enum"]) <= labels
     assert SCHEMAS["common"]["$defs"]["stream_source"]["enum"] == [
         "REPLAY",
