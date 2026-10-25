@@ -21,3 +21,60 @@
 - Honesty checklist: documentation observations and source assessments are explicitly labelled; no field-validation, full milestone-completion or offline-runtime claims. Appendix E checklist itself was not assessed/ticked; that is left to the lead's PR/review within this task's read/write restrictions.
 - Risks the reviewer should focus on: Different allowed dependency versions resolve across Python interpreters; rerun counts in the lead environment. Confirm partial milestone assessments and distinguish mirrored frontend build evidence from in-place workflow validation. npm vulnerability notices and Starlette/httpx deprecation remain unchanged and need later scoped follow-up.
 - Next step for the other agent: Review INVENTORY, independently rerun backend tests, record cross-review in the authorized review workflow, and reconcile results. Do not treat this author-run verification as independent review.
+
+## Handoff: T-A1-006
+- Done:
+  - Added `.github/workflows/ci.yml` with the amended triggers, read-only permissions, concurrency cancellation, Python 3.11, GitHub-owned v7 actions, package installation and `make ci`.
+  - Added `mk/ci.mk` with install-dev, lint, typecheck, test-unit and the additive, recipe-expanded CI_TARGETS registry. Added root tool configurations excluding freebuff and exact pins for the six approved dev tools.
+  - Added three smoke tests covering package version strings, the standard-library platform module and the absence of platform/__init__.py. Root Makefile and all application sources are unchanged; no reference code was reused.
+- Verified by (OBSERVED, author-run on Python 3.11.7/macOS; not independent review):
+  - `python3.11 -m pip index versions <package>` completed for each approved package. PyPI JSON release metadata was then checked for stable, non-yanked releases at least 14 days old, using cutoff 2026-10-11 08:28:27 UTC. The selected releases and licences are listed below.
+  - `make install install-dev`: PASS, exit 0 in this worktree. `make ci`: PASS, exit 0; lint clean, mypy checked five source files, three smoke tests passed.
+  - `git clone /Users/ahmedmetawea/Desktop/UG-wt/codex-a1-ci /tmp/ug-a1-ci-y0q0pasm/clone` then `git checkout codex/a1-ci`: PASS. In that untouched clone, `make install install-dev && make ci`: FAIL, exit 2, no rule for install-dev. The sandbox blocked committing the implementation, so this clone contains the original branch only.
+  - After copying only the seven new allowed implementation files into that temporary clone, `make install install-dev && make ci`: PASS, exit 0; three tests passed. This is an overlay verification, not a passing committed-branch fresh-clone acceptance.
+  - `.venv/bin/python -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"`: PASS, exit 0, in this worktree and the clone overlay. Uncommitted validation script: PASS; all uses values start with actions/ and end with @v7.
+  - Four separate temporary copies of the clone overlay excluded freebuff, Git metadata and environments; they shared the clone's installed environment via a VENV override. Each mutation check passed by observing the expected nonzero exit:
+    - `make lint VENV=/tmp/ug-a1-ci-y0q0pasm/clone/.venv`: exit 2 with F401 after an unused import os was added to a copied ug_core source file.
+    - `make typecheck VENV=/tmp/ug-a1-ci-y0q0pasm/clone/.venv`: exit 2 with incompatible assignment types after adding an int variable assigned a string in a copied source file.
+    - `make test-unit VENV=/tmp/ug-a1-ci-y0q0pasm/clone/.venv`: exit 2 after adding a failing assertion in the copied smoke test.
+    - `make ci VENV=/tmp/ug-a1-ci-y0q0pasm/clone/.venv`: exit 2, no rule for does-not-exist, after mk/zz_mutation.mk registered CI_TARGETS += does-not-exist. The ordinary checks passed first, proving later includes reach the recipe.
+  - The first mutation harness expected an apostrophe where GNU Make prints a backtick; its assertion was corrected and all four checks reran successfully. No implementation change was needed.
+  - Ruff --show-files discovery: PASS, no freebuff paths. `git diff --check` and an allowlist assertion over `git status --short --untracked-files=all`: PASS, only the eight allowed deliverables changed.
+- Not done / known limits:
+  - COMMIT BLOCKED: git add and git commit could not create /Users/ahmedmetawea/Desktop/UtilityGuard-Twin/.git/worktrees/codex-a1-ci/index.lock (Operation not permitted). This Git metadata path is outside the sandbox's writable roots. No commit was created; intended message: ci: add shared make checks and pinned dev tools, with Agent: codex trailer. No push, branch switch, PR, merge or Git configuration change was attempted.
+  - NOT_RUN: hosted GitHub Actions/Ubuntu execution and first PR run, because pushing and PR creation are forbidden for this task. NOT_RUN: independent tester/cross-review; leave these to the lead's review workflow. Exact fresh-clone acceptance must be repeated after the files can be committed.
+  - Ruff 0.17 also formats Markdown code blocks. Initial format check found scripts/check_layout.py and docs/UtilityGuard_Master_Spec.md would change. Both are outside the allowed edits, so ruff.toml documents exact, format-only exclusions. Python lint rules remain enabled for scripts/check_layout.py; no other lint relaxation was needed.
+  - Only the six approved top-level dependencies are pinned, as requested; transitive/build dependencies are resolved during installation. Future cards must register their checks with CI_TARGETS += in their own mk files.
+- Contracts touched: no.
+- Honesty checklist (Appendix E, scoped to this CI-only change):
+  - [x] Truth/telemetry separation: not applicable; no runtime data paths changed.
+  - [x] Evidence labels: verification and package metadata observations here are OBSERVED; no product numbers changed.
+  - [x] Real-world probability/assumptions: not applicable; none introduced.
+  - [x] Money calculations: not applicable; none introduced.
+  - [x] Manifest determinism: not applicable; simulation code unchanged; no new determinism claim.
+  - [x] LLM calculations: none introduced.
+  - [x] Banner/Fidelity/source indicator: not applicable; UI unchanged.
+  - [x] External APIs: installed tool commands exercised; PyPI metadata verified directly; hosted action execution remains NOT_RUN.
+  - [x] Contract versioning/types/drift: not applicable; contracts unchanged.
+  - [x] Synthetic faults: no field-validation claim made.
+- Risks the reviewer should focus on: review the two narrow formatting exceptions, confirm late registry additions survive include ordering, and rerun on Ubuntu after a permitted commit/push. Hosted action availability was not independently executed.
+- Next step for the other agent: arrange a writable Git metadata context so the allowed files can be committed on codex/a1-ci with Agent: codex, rerun the untouched fresh-clone acceptance, independently test/review, and record cross-review through the lead-owned path. This work is not marked reviewed.
+
+### OBSERVED: approved dev-tool release metadata
+
+Release dates are UTC dates of the latest artifact upload for each selected version, from the linked PyPI release JSON. Each selected release is the newest stable, non-yanked candidate older than the cutoff above.
+
+| Package | Exact pin | Release date (UTC) | Licence | Source |
+| --- | --- | --- | --- | --- |
+| pytest | 9.1.1 | 2026-06-19 | MIT | [PyPI](https://pypi.org/pypi/pytest/9.1.1/json) |
+| hypothesis | 6.169.0 | 2026-10-11 | MPL-2.0 | [PyPI](https://pypi.org/pypi/hypothesis/6.169.0/json) |
+| ruff | 0.17.0 | 2026-10-09 | MIT | [PyPI](https://pypi.org/pypi/ruff/0.17.0/json) |
+| mypy | 2.4.0 | 2026-10-01 | MIT | [PyPI](https://pypi.org/pypi/mypy/2.4.0/json) |
+| jsonschema | 4.26.0 | 2026-01-07 | MIT | [PyPI](https://pypi.org/pypi/jsonschema/4.26.0/json) |
+| pyyaml | 6.0.3 | 2025-09-29 | MIT | [PyPI](https://pypi.org/pypi/pyyaml/6.0.3/json) |
+
+### Lead review note on T-A1-006 (2026-10-25, Claude Code)
+- Reviewed by the lead (not by Codex, so this is cross-review of Codex's work, not self-review). Findings and decisions:
+  - F1 (accepted, fixed by the lead): the two per-file format exclusions hid real work. `scripts/check_layout.py` is the lead's own file, so the lead formatted it; the Spec exclusion became a general `exclude = ["*.md"]` for `ruff format`, so a documentation code sample can never fail CI. The first exception no longer exists.
+  - F2 (process, accepted): a Codex run in a worktree cannot commit, because the worktree's git directory lives in the main clone's `.git`, outside the writable roots. The lead commits Codex's work after review, attributed with the `Agent: codex` trailer, rather than giving Codex write access to the main `.git`.
+  - The fresh-clone acceptance, which Codex could only run as an overlay, was re-run by the lead on the committed branch: see the PR description.
