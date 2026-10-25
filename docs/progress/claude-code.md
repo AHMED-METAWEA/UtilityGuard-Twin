@@ -61,5 +61,17 @@ This log was first named `docs/progress/claude.md`. On macOS (case-insensitive) 
 - Two mistakes of mine, fixed: a scratch file written to a mistyped path (moved, stray folders removed, other sessions' folders untouched); an early draft of the plan claimed the lead had added the Codex trust entry (it had not; corrected before commit).
 - Tooling facts learned: `codex exec -C <dir>` and the plugin `task --cwd <dir>` add the directory to Codex's trusted list; `codex exec` always shows `approval: never` (non-interactive); the Claude Code auto-mode safeguard blocks editing agent config files and merging without review, and I did not work around either.
 
+### Owner review of PR #2 and follow-ups (2026-10-25)
+- Owner decisions: F1 = real public layout (Spec change in PR #3, `DECISIONS.md` D-005); A1 dependency list approved, type generator pinned to `json-schema-to-typescript@16.0.0` after a read-only registry check (D-007); English-only naming, Arabic is a later UI translation (D-006); the owner merges all PRs, sets branch protection and pushes tags, agents never merge (D-008).
+- Found while editing the Spec: Spec section 2 has eight evidence labels, `AGENTS.md` nine. Not changed (it is the Honesty Rules); raised as a one-line question in PR #3.
+- A prototype (single HTML file, Arabic UI) was skimmed for ideas only; nothing from it was copied or committed, and the plan was not changed because of it.
+
+### Phase A1, Wave 0 (2026-10-25)
+- The owner merged PR #2 (A0 gate); the lead created the local tag `phase-A0` on the merge commit and did not push it (D-008). The owner said go for A1.
+- T-A1-001 (repository skeleton) built on `claude/a1-skeleton` from `origin/dev`, independent of the still-open PRs #3 and #4. Verified: `make install` from a fresh clone, imports, `platform` not shadowing the standard library (checked that an `__init__.py` really would), layout checker exits 0 and fails on five mutations. Codex read-only review: no actionable defects; it could not exercise installation in its sandbox, so the lead did.
+- One package outside the approved list, flagged in PR #4: the build backend `setuptools>=68`. The owner merged PR #4 with it flagged, so it is recorded as accepted (D-007); swapping it means editing one `[build-system]` table per project.
+- The owner merged PRs #2, #3 and #4 within a minute of each other (08:15 UTC). My earlier reading of #3 and #4 as open was a few minutes stale; I re-fetched before acting on it.
+- Tooling note: `codex-companion.mjs review --base origin/dev --cwd <worktree> --wait` runs a read-only review of a branch and works from the lead's shell; output is plain text and short.
+
 ### Next
 See `docs/PROGRESS.md`.

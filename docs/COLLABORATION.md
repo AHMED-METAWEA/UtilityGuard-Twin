@@ -189,7 +189,7 @@ Responsibilities:
 - Owns anything where correctness needs scientific or architectural judgment: the hydraulic solver integration and fault models, the expectation model and diagnosis rules, localization, the cost model formulas, the decision engine, the evidence kernel, the evaluation methodology and split design.
 - Owns multi-file refactors and any change to the repository structure, where parallel edits would conflict.
 - Writes the UI design plan (tokens, type roles, wireframes) and the map-engine architecture, and reviews visual results.
-- Merges pull requests into `dev`, runs phase exit gates, updates `docs/PROGRESS.md`, and decides tie-breaks (Section 9).
+- Prepares and verifies pull requests into `dev` (the owner merges them; agents never merge), runs phase exit gates, updates `docs/PROGRESS.md`, and decides tie-breaks (Section 9).
 - Runs the integration checks and the cross-review of Codex's work.
 
 ### 5.2 Codex: implementer, test author, independent reviewer
@@ -202,7 +202,7 @@ Responsibilities:
 
 ### 5.3 Human owner
 
-Approves: plan and gates, honesty-rule changes, contract changes, deletions, new dependencies with cost or license implications, merges to `main`, and anything that spends money. Resolves disagreements the agents cannot settle with evidence.
+Approves: plan and gates, honesty-rule changes, contract changes, deletions, new dependencies with cost or license implications, and anything that spends money. Reviews and merges every pull request (into `dev` and `main`), pushes phase tags, and sets branch protection. Resolves disagreements the agents cannot settle with evidence.
 
 ### 5.4 What an agent must not do
 
@@ -224,7 +224,7 @@ Approves: plan and gates, honesty-rule changes, contract changes, deletions, new
 4. HANDOFF   Owner writes a handoff note (Appendix D) in the PR description and in docs/progress/<agent>.md.
 5. REVIEW    The OTHER agent reviews (Section 8). Findings go into docs/reviews/<task-id>.md or the PR.
 6. FIX       Owner addresses findings (max two review rounds; then escalate, Section 9).
-7. INTEGRATE Claude Code merges (squash) into dev after: CI green, review logged, Honesty checklist ticked.
+7. INTEGRATE Claude Code reports the PR as ready (CI green, review logged, Honesty checklist ticked) and stops; the owner merges (squash for agent branches).
 8. RECORD    Lead updates docs/PROGRESS.md, task card status, and any ADR/DECISIONS entries.
 ```
 

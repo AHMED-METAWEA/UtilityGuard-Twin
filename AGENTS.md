@@ -35,6 +35,11 @@ There is NO ACUD data. The layout comes from public sources, pipes are inferred,
 - Offline-first: no CDN assets or external APIs at runtime.
 - Verify every external API (WNTR and others) by introspecting the installed version or reading its documentation. Never guess signatures.
 
+## Language
+- English for all code, identifiers, scenario and fault names, data schemas, contracts, tests, documentation and the default UI.
+- Arabic is a UI translation (i18n with full RTL) added later, as Master Spec section 13 describes. It is never used in identifiers, schemas, data keys or scenario names.
+- When taking an idea from a non-English source (for example an Arabic prototype), translate it into English naming first.
+
 ## Reference-baseline rules (build to the spec, reuse selectively)
 - `freebuff/` (git tag `baseline-freebuf`) is a **reference**, not the foundation. Do not edit, move or delete anything in it; do not import from it. The new structure (`platform/`, `domains/water/`, `contracts/`, `assumptions/`, ...) is built fresh at the repo root following the Master Spec (section 14).
 - Reuse a piece of `freebuff/` only if it passes review (Adoption Plan section 6 checklist) and is better than writing it new. Verdicts are REUSE, ADAPT, REFERENCE, AVOID (Adoption Plan section 4). Record every REUSE or ADAPT (source file, what was reused, why) in `docs/audit/DECISIONS.md` in the same PR that brings it in.
@@ -48,6 +53,7 @@ There is NO ACUD data. The layout comes from public sources, pipes are inferred,
 ## Working agreement
 - Work only on your assigned task card. Stay inside its "allowed files". Do not edit paths owned by the other agent (ownership map in `docs/COLLABORATION.md` section 7).
 - Use your own git worktree and branch (`claude/<phase>-<topic>` or `codex/<phase>-<topic>`) created from `dev`. Worktrees live outside the repo under `~/Desktop/UG-wt/<agent>-<topic>`. Never commit directly to `main` or `dev`; open a pull request into `dev`.
+- **Agents never merge pull requests.** The human owner reviews and merges (owner rule, 2026-10-25, until the owner says otherwise). After opening a PR, report its link and stop; do not push tags or change branch protection either.
 - Conventional commits (`feat`, `fix`, `test`, `refactor`, `docs`, `chore`), one logical change each, tests green at each commit. Add the trailer `Agent: codex` (or `Agent: claude-code`); keep any attribution line your own tooling adds.
 - Author, tester and reviewer are different agents. Never mark your own work as reviewed.
 - Write a handoff note in the PR description and in `docs/progress/<agent>.md`, where `<agent>` is `claude-code` or `codex` (template in `docs/COLLABORATION.md` Appendix D). If it is not in the repo, the other agent has not seen it. Never name any file `CLAUDE.md` or `AGENTS.md` in any letter case outside the repo root: on macOS they are auto-loaded as instructions.
