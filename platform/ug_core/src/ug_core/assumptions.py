@@ -27,12 +27,12 @@ from typing import Any
 
 import yaml  # type: ignore[import-untyped]
 
+from ug_core import grammar
 from ug_core.canonical import canonical_json, freeze, sha256_hex
 from ug_core.evidence import EvidenceLabel
 from ug_core.numeric import NonFiniteError, finite
 
 _NAME = re.compile(r"^[a-z][a-z0-9_]*$")
-_SET_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _TOP_KEYS = frozenset({"set_id", "parent", "note", "assumptions"})
 _ENTRY_KEYS = frozenset({"unit", "distribution", "source_note", "verified"})
 _DISTRIBUTION_KEYS = frozenset({"type", "min", "mode", "max"})
@@ -89,6 +89,12 @@ class Assumption:
 
     label = EvidenceLabel.ASSUMPTION
 
+    def __post_init__(self) -> None:
+        try:
+            grammar.require_unit(self.unit, f"assumption {self.name!r}: unit")
+        except (TypeError, ValueError) as exc:
+            raise AssumptionError(str(exc)) from exc
+
     def to_dict(self) -> dict[str, Any]:
         return {
             "unit": self.unit,
@@ -106,6 +112,17 @@ class AssumptionSet:
     assumptions: Mapping[str, Assumption]
 
     def __post_init__(self) -> None:
+        for what, value in (("set_id", self.set_id), ("parent", self.parent)):
+            if value is None and what == "parent":
+                continue
+            if not grammar.is_identifier(value):
+                raise AssumptionError(
+                    f"{what} must be an identifier token, got {value!r}"
+                )
+        if not isinstance(self.note, str) or not self.note.strip():
+            raise AssumptionError("note must be a non-empty string")
+        if not self.assumptions:
+            raise AssumptionError("an assumption set needs at least one assumption")
         # A read-only copy: validated money inputs must not change after a hash was taken.
         object.__setattr__(self, "assumptions", freeze(dict(self.assumptions)))
 
@@ -189,6 +206,10 @@ def _parse_entry(name: str, raw: Any) -> Assumption:
         raise AssumptionError(f"{where}: names are lower-case letters, digits and '_'")
     entry = _mapping(raw, where, _ENTRY_KEYS)
     unit = _text(entry["unit"], f"{where}: unit")
+    if not grammar.is_unit(unit):
+        raise AssumptionError(
+            f"{where}: unit must be one ASCII token of 1 to 24 characters, got {unit!r}"
+        )
     source_note = _text(entry["source_note"], f"{where}: source_note")
     verified = entry["verified"]
     if not isinstance(verified, bool):
@@ -216,15 +237,11 @@ def parse_assumptions(data: Any) -> AssumptionSet:
     """Validate parsed YAML or JSON and build the set."""
     top = _mapping(data, "assumption file", _TOP_KEYS)
     set_id = _text(top["set_id"], "set_id")
-    if not _SET_ID.match(set_id):
-        raise AssumptionError(
-            f"set_id {set_id!r} has characters outside letters, digits, . _ -"
-        )
+    if not grammar.is_identifier(set_id):
+        raise AssumptionError(f"set_id must be an identifier token, got {set_id!r}")
     parent = top["parent"]
-    if parent is not None and (
-        not isinstance(parent, str) or not _SET_ID.match(parent)
-    ):
-        raise AssumptionError("parent must be null or a set id")
+    if parent is not None and not grammar.is_identifier(parent):
+        raise AssumptionError("parent must be null or a set id (an identifier token)")
     note = _text(top["note"], "note")
     table = top["assumptions"]
     if not isinstance(table, Mapping) or not table:

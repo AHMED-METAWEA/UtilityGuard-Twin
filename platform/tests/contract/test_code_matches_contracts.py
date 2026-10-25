@@ -349,7 +349,7 @@ def test_evidence_rules_agree_between_code_and_contract(
 # - A listed signature that no generated input produces any more fails too: close the gap in the
 #   code, then delete the entry.
 # - What the object stores must equal what it was given (nothing repaired on the way in).
-# The list is the work of the follow-up card T-A1-002c, which tightens the code.
+# Card T-A1-002c closed every gap but one: Manifest.config is generic by design.
 
 SAMPLES = 1200
 Signature = tuple[str, str, str]
@@ -400,11 +400,18 @@ EVIDENCE_DOMAINS: dict[str, list[Any]] = {
 }  # fmt: skip
 
 
+EVIDENCE_BASE: dict[str, Any] = {
+    "value": 1.5,
+    "label": "SIMULATION",
+    "evidence_id": "ev_1",
+    "unit": "m",
+    "formula": None,
+    "inputs": (),
+}
+
+
 def evidence_samples() -> list[dict[str, Any]]:
-    rng = random.Random(20261025)
-    return [
-        {k: pick(rng, v) for k, v in EVIDENCE_DOMAINS.items()} for _ in range(SAMPLES)
-    ]
+    return sample_inputs(20261025, EVIDENCE_DOMAINS, EVIDENCE_BASE)
 
 
 def evidence_outcome(sample: dict[str, Any]) -> set[Signature] | None:
@@ -575,12 +582,15 @@ def assumption_outcome(sample: dict[str, Any]) -> set[Signature] | None:
 
 
 def direct_assumption_set_outcome() -> set[Signature]:
-    """Built without the loader (the loader refuses an empty table, the dataclass does not)."""
+    """Built without the loader. An empty or malformed set is refused by the dataclass now; if a
+    future change lets it through, its payload is judged by the schema like any other."""
     from ug_core.assumptions import AssumptionSet
 
-    return signatures(
-        "assumption-set", AssumptionSet("v1", None, "note", {}).to_payload()
-    )
+    try:
+        payload = AssumptionSet("v1", None, "note", {}).to_payload()
+    except ValueError:
+        return set()
+    return signatures("assumption-set", payload)
 
 
 # --- the gaps (signature -> why the code is looser, or why it is by design)
@@ -589,30 +599,9 @@ BY_DESIGN = (
     "by design: Manifest.config is generic; the contract narrows it to a scenario"
 )
 GAPS: dict[Signature, str] = {
-    ("evidence-record", "label", "enum"): "money units (EGP...) may carry any label in the code (P-14)",
-    ("evidence-record", "unit", "pattern"): "other currencies and non-canonical spellings are accepted",
-    ("evidence-record", "value", "type"): "a money value may be text in the code",
-    ("evidence-record", "unit", "anyOf"): "units are not checked against the one-ASCII-token grammar",
-    ("evidence-record", "evidence_id", "pattern"): "evidence ids are not checked against the identifier grammar",
-    ("evidence-record", "formula", "minLength"): "an empty formula is accepted for non-CALCULATED labels",
-    ("evidence-record", "formula", "type"): "a non-text formula is accepted for non-CALCULATED labels",
-    ("evidence-record", "inputs", "pattern"): "input ids are not checked against the identifier grammar",
     ("run-manifest", "config", "required"): BY_DESIGN,
     ("run-manifest", "config", "additionalProperties"): BY_DESIGN,
-    ("run-manifest", "git_commit", "oneOf"): "git_commit format (6 to 40 lower-case hex) is not checked",
-    ("run-manifest", "versions", "pattern"): "version keys are not checked against the identifier grammar",
-    ("run-manifest", "libraries", "pattern"): "library names are not checked against the identifier grammar",
-    ("run-manifest", "output_hashes", "pattern"): "output hash names and values are not checked",
-    ("run-manifest", "unordered", "uniqueItems"): "a repeated name in `unordered` is accepted",
-    ("run-manifest", "unordered", "minLength"): "an empty name in `unordered` is accepted",
-    ("run-manifest", "schema_version", "const"): "schema_version other than 1 is accepted",
-    ("telemetry-reading", "sensor_id", "pattern"): "sensor ids are not checked against the identifier grammar",
-    ("telemetry-reading", "sensor_id", "type"): "a non-text sensor id is accepted",
-    ("assumption-set", "assumptions", "pattern"): "assumption units are not checked against the unit grammar (and names against theirs)",
-    ("assumption-set", "assumptions", "minProperties"): "a directly built AssumptionSet may be empty",
-    ("assumption-set", "set_id", "pattern"): "set ids are not checked against the identifier grammar",
-    ("assumption-set", "parent", "oneOf"): "a parent id is not checked against the identifier grammar",
-}  # fmt: skip
+}
 
 OUTCOMES = {
     "Evidenced": (evidence_samples, evidence_outcome, "evidence-record"),

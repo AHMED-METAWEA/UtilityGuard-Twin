@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Generic, TypeVar
 
+from ug_core import grammar
 from ug_core.numeric import normalize_scalar
 
 
@@ -56,12 +57,17 @@ class Evidenced(Generic[T]):
             except ValueError:
                 raise ValueError(f"unknown evidence label: {self.label!r}") from None
             object.__setattr__(self, "label", label)
-        if not isinstance(self.evidence_id, str) or not self.evidence_id.strip():
-            raise ValueError("evidence_id must be a non-empty string")
+        grammar.require_identifier(self.evidence_id, "evidence_id")
         inputs = tuple(self.inputs)
-        if not all(isinstance(item, str) and item.strip() for item in inputs):
-            raise ValueError("inputs must be non-empty evidence id strings")
+        for item in inputs:
+            grammar.require_identifier(item, "an input evidence id")
         object.__setattr__(self, "inputs", inputs)
+        if self.unit is not None:
+            grammar.require_unit(self.unit)
+        if self.formula is not None and (
+            not isinstance(self.formula, str) or not self.formula.strip()
+        ):
+            raise ValueError("formula must be a non-blank text or None")
         object.__setattr__(self, "value", normalize_scalar(self.value))
 
         if self.label is EvidenceLabel.INSUFFICIENT_EVIDENCE:
@@ -80,3 +86,26 @@ class Evidenced(Generic[T]):
                 raise ValueError(
                     "a CALCULATED value needs at least one input evidence id"
                 )
+        self._check_money()
+
+    def _check_money(self) -> None:
+        """Money (a unit that looks like a currency) follows the contract's rules (P-14)."""
+        unit = self.unit
+        if unit is None:
+            return
+        if grammar.looks_like_money(unit) and not grammar.is_canonical_money_unit(unit):
+            raise ValueError(
+                f"a currency unit is written EGP or EGP/<m3|kWh|MWh|kW|h|day|month|year>, "
+                f"got {unit!r}"
+            )
+        if not grammar.is_money_unit(unit):
+            return
+        if self.label.value in grammar.MONEY_FORBIDDEN_LABELS:
+            raise ValueError(
+                f"money ({unit}) is never {self.label}: it is CALCULATED from labelled inputs, "
+                "an ASSUMPTION, OBSERVED or BENCHMARK"
+            )
+        if self.value is not None and (
+            isinstance(self.value, bool) or not isinstance(self.value, int | float)
+        ):
+            raise ValueError(f"a money value ({unit}) is a number, got {self.value!r}")
