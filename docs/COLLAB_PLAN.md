@@ -77,7 +77,7 @@ Status: **done 2026-10-25** (PR #4 merged; verified from a fresh clone; Codex re
 **Budget:** 1 session. **Escalate if:** the package layout needs a decision that Spec section 14 does not cover (record an ADR).
 
 ### T-A1-002: Contracts v1 (JSON Schema)
-Status: **PR #12 open, approved by the owner with conditions** (Spec 12.2 update: PR #14; the `to_dict()` conformance test: card T-A1-002b, first Wave 2 task); two Codex adversarial rounds done, all findings fixed, 680 tests, 62 schema mutations caught   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-contracts`   Spec refs: sections 11, 12, 2
+Status: **merged (PR #12)**, approved by the owner with three conditions, all met: Spec 12.2 updated (PR #14, merged), the conformance test (T-A1-002b, PR #17), the four main decisions explained   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-contracts`   Spec refs: sections 11, 12, 2
 **Goal:** Versioned, schema-validated contracts for scenario config, run manifest, telemetry reading, stream envelope, evidence record, assumption and incident.
 **Allowed:** `contracts/**`, `contracts/examples/**` (valid), `contracts/invalid/**` (one file per rejection reason), `platform/tests/contract/**`. **Forbidden:** anything else.
 **Rules baked into the schemas:** every schema requires `schema_version`; `additionalProperties: false`; the telemetry and stream schemas have **no** truth or fault-tag fields (P-01, P-02); the stream envelope requires `stream_source` in `REPLAY|SIMULATED|LIVE` (P-04); every displayable number carries `label` from the nine evidence labels; cost objects require `label: CALCULATED` (P-14); unknown fault types are rejected (P-18).
@@ -85,14 +85,21 @@ Status: **PR #12 open, approved by the owner with conditions** (Spec 12.2 update
 **Budget:** 2 sessions. **Escalate if:** a Spec section 12 payload cannot be expressed without deviating (human decides).
 
 ### T-A1-002b: The code's outputs validate against the contracts
-Status: ready after #8, #11 and #12 are merged; **first Wave 2 task** (condition set by the owner when approving #12)   Owner: claude   Reviewer: codex   Tier: T1   Branch: `claude/a1-contract-conformance`   Spec refs: 12, 10.4
+Status: **PR #17 open** (two Codex adversarial rounds; 180 tests; 23 gaps between code and contract are listed by signature; closing them is T-A1-002c)   Owner: claude   Reviewer: codex   Tier: T1   Branch: `claude/a1-contract-conformance`   Spec refs: 12, 10.4
 **Goal:** The schemas of `contracts/v1/` and the code that produces their payloads cannot drift apart. `ug_core.Manifest.to_dict()` validates against `run-manifest`; `AssumptionSet.to_dict()` (with `schema_version`) against `assumption-set`; `Evidenced` against `evidence-record` where a mapping exists; `TelemetrySeries` rows against `telemetry-reading`; `Timebase.to_dict()` and the label enums against `common`.
 **Allowed:** `platform/tests/contract/test_code_matches_contracts.py` and, only if a payload cannot be produced yet, a small `to_payload()` helper in `platform/ug_core/**`. **Forbidden:** changing a schema (contract change, ask the owner).
 **Acceptance:** `make test-contracts` passes with the new tests; a deliberate mutation (a renamed key in `Manifest.to_dict()`, an extra field, a label added to `EvidenceLabel`) makes a test fail. Anything the code cannot produce yet is listed in the PR as a gap, not hidden.
 **Budget:** 1 session.
 
+### T-A1-002c: Close the gaps between the code and the contracts
+Status: ready after #17 is merged (Wave 2 follow-up; proposed by the lead, needs the owner's OK to start)   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-contract-gaps`   Spec refs: 10.1, 11, 12
+**Goal:** `Evidenced`, `Manifest`, `TelemetrySeries` and `AssumptionSet` refuse what the contracts reject, so the API can never build an invalid payload: the money label rule for `Evidenced` (an amount or a price is never SIMULATION, MODEL, SENSOR_SIM or PUBLIC_GEOMETRY, a money value is a number, currencies are written `EGP`), the identifier and unit grammars, git commit format, `schema_version`, output hash format, repeated names, empty formula strings, and empty directly built assumption sets.
+**Allowed:** `platform/ug_core/**`, the tests of those types, and `GAPS` in `platform/tests/contract/test_code_matches_contracts.py` (entries are removed, never added). **Forbidden:** changing a schema.
+**Acceptance:** `GAPS` contains only the one by-design entry (`Manifest.config` is generic); `test_no_listed_gap_is_stale` and `test_no_unlisted_gap_between_the_code_and_the_contract` pass; `make ci` passes; the honesty suite and its mutation runner still pass.
+**Budget:** 1 session.
+
 ### T-A1-003: Core types: truth and telemetry separate, evidence labels, manifest
-Status: **merged (PR #8)** (two Codex adversarial rounds, 8 defects found and fixed, 59 tests)   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-core-types`   Spec refs: 4.1 P1 and P2, 2, 10, 11
+Status: **merged (PR #8)**; core label test tightened to equality (PR #15, merged)   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-core-types`   Spec refs: 4.1 P1 and P2, 2, 10, 11
 **Goal:** `ug_core` provides the types the rest of the system is built on, so the Honesty Rules are enforced by structure.
 **Contents:** `EvidenceLabel` (exactly the nine labels); `Evidenced[T]` (value plus label plus evidence id; cannot be built without a label); `TruthSeries` and `TelemetrySeries` as unrelated types (no shared base; telemetry is created only through a measurement port); `Timebase` (ticks, timestep, time axis: what quality and detectors receive instead of truth, P-03); `Manifest` with a canonical order-independent hash (fault lists in canonical order, P-06) and a documented rounding policy; `finite()` that raises on NaN or infinity instead of returning zero (P-17); `SeedStreams`: named independent random streams derived from the manifest seed, so adding a fault or sensor never changes another stream's noise (P-12).
 **Allowed:** `platform/ug_core/**`, `platform/tests/unit/**`. **Forbidden:** `freebuff/**`, contracts (T-A1-002).
@@ -100,7 +107,7 @@ Status: **merged (PR #8)** (two Codex adversarial rounds, 8 defects found and fi
 **Budget:** 2 sessions.
 
 ### T-A1-004: Honesty tests (written before the code they guard)
-Status: ready after 002 and 003   Owner: codex (author, non-owner of the guarded modules)   Reviewer: claude   Tier: T2   Branch: `codex/a1-honesty-tests`   Pilot: **P2**   Spec refs: 2, 4.1, 16
+Status: **PR #18 open** (written by Codex; two review rounds by the lead with 25 and 3 mutations; 202 tests; mutation runner with 11 mutations is part of `make ci`)   Owner: codex (author, non-owner of the guarded modules)   Reviewer: claude   Tier: T2   Branch: `codex/a1-honesty-tests`   Pilot: **P2**   Spec refs: 2, 4.1, 16
 **Goal:** A test suite that fails if any pitfall in `PITFALLS.md` is reintroduced in the structure.
 **Allowed:** `platform/tests/honesty/**`, `scripts/mutation_check.sh`, `Makefile` target `test-honesty`. **Forbidden:** the modules under test.
 **Tests (each names its pitfall ID in the docstring):** truth-leak structural (P-01, P-03): an AST import-graph test shows nothing under `platform/ug_intel/**` or the stream and operator parts of `platform/ug_api/**` imports `TruthSeries`, and their entry points are annotated with `Timebase` and `TelemetrySeries`; payload walker (P-01, P-02): no schema reachable from telemetry, stream or operator contracts has a property named like a `TruthSeries` field or a fault tag (the denylist is derived by introspection so it cannot drift); determinism (P-06): same manifest in two subprocesses gives the same hash, and permuted fault lists give the same canonical hash; label coverage and money labels (P-14): every displayable number in the contracts carries one of the nine labels and cost objects are `CALCULATED`; finite guard (P-17): no `ug_core` path turns NaN or infinity into zero; unknown ids and fault types rejected (P-18).
@@ -108,7 +115,7 @@ Status: ready after 002 and 003   Owner: codex (author, non-owner of the guarded
 **Budget:** 2 sessions.
 
 ### T-A1-005: DomainAdapter, registry, conformance skeleton, import lint
-Status: **PR #10 open**, rebased onto `dev` after #9 merged (two Codex adversarial rounds, 7 defects found and fixed)   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-adapter`   Spec refs: 4.6, 14
+Status: **merged (PR #10)**   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-adapter`   Spec refs: 4.6, 14
 **Goal:** Domains plug in through one interface, and `platform/` can never import `domains/`.
 **Allowed:** `platform/ug_core/adapter/**`, `platform/ug_core/registry.py` (both under the `src/ug_core/` layout of ADR-011), `platform/tests/conformance/**`, `domains/water/**` (adapter stub, its entry point and `ug-core` dependency only), `scripts/check_imports.py`, `mk/adapter.mk`, unit tests for the interface, registry and lint. **Forbidden:** other domains' logic.
 **Acceptance:**
@@ -125,7 +132,7 @@ Status: **merged (PR #7)** (hosted CI passed; the lead added one fix commit, see
 **Budget:** 1 session.
 
 ### T-A1-007: TypeScript type generation and contract-drift check
-Status: ready after 002   Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/a1-ts-types`   Spec refs: 12, 16
+Status: **PR #16 open** (written by Codex; reviewed by the lead; the generator is installed in `scripts/types/`, not in `frontend/package.json`)   Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/a1-ts-types`   Spec refs: 12, 16
 **Allowed:** `frontend/src/generated/**`, `scripts/gen_types.*`, `scripts/check_contract_drift.sh`, `Makefile` (`gen-types`), `frontend/package.json` (one dev dependency, pinned exactly).
 **Dependency (approved, `DECISIONS.md` D-007):** `json-schema-to-typescript@16.0.0` (MIT, published 2026-08-28, not deprecated, Node >=16, 8 runtime dependencies). Registry integrity `sha512-Ah6kK4q6SjlMzWBH1eNOQkdRh5Qhr5T/RCFwfjQqWZA7UDW+N47A8wfyoiN0L884s4L4bAEI54IjIuN3/u0B/A==`; the executor verifies that the lockfile entry matches before committing and runs `npm audit` on the result, reporting findings in the handoff. A different package or version needs the owner's approval.
 **Acceptance:** `make gen-types && git diff --exit-code frontend/src/generated` exits 0 on a clean tree; editing one schema without regenerating makes `scripts/check_contract_drift.sh` exit non-zero (mutation shown in the handoff).
@@ -146,21 +153,21 @@ Status: ready after 001 and 008   Owner: codex   Reviewer: claude   Tier: T1   B
 **Budget:** 1 session.
 
 ### T-A1-010: Shell skeleton: honesty banner, Fidelity badge, stream-source indicator
-Status: ready after 001 and 002 (wording per the owner's F1 ruling, D-005; Spec updated in PR #3, merged)   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-shell`   Spec refs: 1.4, 2 (rules 1 and 2), 13   Pitfalls: P-04, P-17
+Status: **PR #19 open** (two Codex adversarial rounds; 269 frontend tests; about 75 mutations caught)   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-shell`   Spec refs: 1.4, 2 (rules 1 and 2), 13   Pitfalls: P-04, P-17
 **Allowed:** `frontend/src/app/**`, `frontend/src/ui/**` (minimal tokens only), `frontend/index.html`, `frontend/package.json`, test config. Packages named in Spec section 4.7 only (React, TypeScript, Vite, Vitest, Testing Library). **Forbidden:** the full design system and map engine (B2).
 **Behaviour:** permanent banner and Fidelity badge. The badge shows the level of the network actually loaded (Master Spec 1.4): `No network loaded` in A1, `Fidelity F0: Generic synthetic` for the procedural fallback, and `Fidelity F1: Public capital layout, inferred pipes, synthetic hydraulics` only for a network whose geometry carries `PUBLIC_GEOMETRY` provenance. The stream-source indicator reads `REPLAY|SIMULATED|LIVE` from the stream envelope type and defaults to `REPLAY`; loading and error states render the same banner. All UI strings are English and live in one module (no literals scattered through components), so the Arabic translation can be added later (`AGENTS.md` Language).
 **Acceptance:** `make test-frontend` passes: a component test renders the shell at every route, in the loading state and in the error state, and asserts banner, badge text (`No network loaded` with no network; the F1 text only when the network declares F1 provenance) and indicator are present each time; `LIVE` is never shown unless the envelope says so; `grep -RIn "https\?://" frontend/index.html frontend/dist | grep -viE "localhost|127.0.0.1|w3.org"` prints nothing (offline-first).
 **Budget:** 1 to 2 sessions.
 
 ### T-A1-011: Deploy: API skeleton, Docker Compose, `make up`
-Status: ready after 010   Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/a1-deploy`   Spec refs: 4.4, 17, M0
+Status: ready after 010 (merge #19 first); acceptance text corrected by the lead on 2026-10-25, see D-015   Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/a1-deploy`   Spec refs: 4.4, 17, M0
 **Goal:** `make up` serves the built shell offline with a minimal API (`/api/health` returning version and the honesty disclaimer).
-**Allowed:** `deploy/**`, root `Makefile`, `platform/ug_api/**` (skeleton only). **Forbidden:** domain logic.
-**Acceptance:** `docker compose -f deploy/docker-compose.yml config` exits 0; `make up` builds and serves the shell; `curl -s localhost:<documented port>/ | grep -q "Fidelity F1"` exits 0; `curl -s localhost:<port>/api/health` returns JSON with `schema_version`; `make down` stops it; the built image makes no external request at runtime (no external URL in the served files).
+**Allowed:** `deploy/**`, `mk/deploy.mk` (the root Makefile is not edited; targets register through `mk/*.mk`), `platform/ug_api/**` (skeleton only; it never imports a domain). **Forbidden:** domain logic, `frontend/**` (owned by the shell card).
+**Acceptance:** `docker compose -f deploy/docker-compose.yml config` exits 0; `make up` builds and serves the shell; `curl -s localhost:<documented port>/` returns the page whose `<title>` is `UtilityGuard Twin` and whose `Content-Security-Policy` meta tag is present, and the served bundle contains the strings `No network loaded` and the honesty statement (the shell is rendered by JavaScript, so the page text is not in the HTML); `curl -s localhost:<port>/api/health` returns JSON with `schema_version`, the version and the honesty disclaimer; `make down` stops it; the built image makes no external request at runtime (`frontend/scripts/check-offline.mjs` passes on the served files, and the page must keep working under its CSP, which allows only same-origin requests, so the API is served from the same origin).
 **Budget:** 1 to 2 sessions.
 
 ### T-A1-012: ADR stubs and the `assumptions/` format
-Status: **PR #11 open**, rebased onto `dev` (two Codex adversarial rounds, 5 defects found and fixed)   Owner: claude   Reviewer: codex   Tier: T1   Branch: `claude/a1-adr-assumptions`   Spec refs: Appendix A and D
+Status: **merged (PR #11)**   Owner: claude   Reviewer: codex   Tier: T1   Branch: `claude/a1-adr-assumptions`   Spec refs: Appendix A and D
 **Allowed:** `docs/adr/**`, `assumptions/v1.yaml`, `platform/ug_core/assumptions.py` (under `src/ug_core/`), `platform/tests/unit/test_assumptions.py`, `platform/tests/unit/test_adr_stubs.py`, the `pyyaml` dependency of `ug_core`.
 **Acceptance:** ten files `docs/adr/ADR-001-*.md` to `ADR-010-*.md` exist with the titles from Spec Appendix D; `pytest platform/tests/unit/test_assumptions.py -q` passes: `assumptions/v1.yaml` loads; every entry has unit, distribution, `verified` and `source_note`; a missing `verified`, `min > mode`, or an unknown key is rejected; all shipped values are `verified: false` placeholders.
 **Budget:** 1 session.
