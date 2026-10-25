@@ -189,3 +189,57 @@ def test_yaml_nan_literal_is_rejected(tmp_path: Path) -> None:
     file.write_text(text, encoding="utf-8")
     with pytest.raises(AssumptionError):
         load_assumptions(file)
+
+
+def test_a_loaded_set_cannot_be_changed() -> None:
+    assumption_set = load_assumptions(SHIPPED)
+    before = assumption_set.content_hash()
+    other = assumption_set.assumptions["crew_response_hours"]
+    with pytest.raises(TypeError):
+        assumption_set.assumptions["inspection_cost"] = other  # type: ignore[index]
+    with pytest.raises(TypeError):
+        del assumption_set.assumptions["inspection_cost"]  # type: ignore[attr-defined]
+    with pytest.raises(AttributeError):
+        assumption_set.assumptions.clear()  # type: ignore[attr-defined]
+    assert assumption_set.content_hash() == before
+    assert len(assumption_set.unverified()) == 13
+
+
+def test_a_directly_built_set_is_frozen_too() -> None:
+    from ug_core.assumptions import AssumptionSet
+
+    source = dict(load_assumptions(SHIPPED).assumptions)
+    built = AssumptionSet("v1", None, "note", source)
+    source.clear()
+    assert len(built.assumptions) == 13
+
+
+def test_integers_that_do_not_survive_a_float_are_rejected() -> None:
+    low = 2**53
+    for value in (low + 1, -(low + 1)):
+        data = damaged(lambda d, v=value: distribution(d).update(min=v, mode=v, max=v))
+        with pytest.raises(AssumptionError, match="exactly"):
+            parse_assumptions(data)
+    exact = damaged(lambda d: distribution(d).update(min=low, mode=low, max=low))
+    assert parse_assumptions(exact).assumptions[ENTRY].distribution.mode == low
+
+
+@pytest.mark.parametrize(
+    "note",
+    [
+        "Unverified placeholder; no source exists",
+        "TBD",
+        "to do: find the source",
+        "figure from a chat, unsourced",
+        "قيمة افتراضية",
+        "غير موثق",
+        "short",
+        "   ",
+    ],
+)
+def test_verified_true_needs_a_note_that_names_a_source(note: str) -> None:
+    data = damaged(
+        lambda d: d["assumptions"][ENTRY].update(verified=True, source_note=note)
+    )
+    with pytest.raises(AssumptionError):
+        parse_assumptions(data)

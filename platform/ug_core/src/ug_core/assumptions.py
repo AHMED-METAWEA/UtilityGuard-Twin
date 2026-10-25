@@ -3,7 +3,9 @@
 Format: Master Spec Appendix A. A file holds one set (`set_id`, `parent`, `note`) and a table of
 named assumptions. Each one has a unit, a triangular distribution (`min <= mode <= max`), a
 `source_note` and a `verified` flag. `verified: true` is allowed only when the source note names a
-real source; a value that is a placeholder stays `verified: false`, and the UI shows it as such.
+source; a value that is a placeholder stays `verified: false`, and the UI shows it as such. The
+loader checks the note for hygiene only (long enough, and no "placeholder", "TBD", "unsourced" and
+the like). It cannot judge whether a source is real, so a human reviews every verified entry.
 
 The loader is strict on purpose: an unknown key, a missing field, a repeated key, a non-finite
 number or a distribution out of order is an error, never a silent default. Wrong money inputs
@@ -23,7 +25,7 @@ from typing import Any
 
 import yaml  # type: ignore[import-untyped]
 
-from ug_core.canonical import canonical_json, sha256_hex
+from ug_core.canonical import canonical_json, freeze, sha256_hex
 from ug_core.evidence import EvidenceLabel
 from ug_core.numeric import NonFiniteError, finite
 
@@ -32,7 +34,15 @@ _SET_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]*$")
 _TOP_KEYS = frozenset({"set_id", "parent", "note", "assumptions"})
 _ENTRY_KEYS = frozenset({"unit", "distribution", "source_note", "verified"})
 _DISTRIBUTION_KEYS = frozenset({"type", "min", "mode", "max"})
-_PLACEHOLDER = re.compile(r"^\s*placeholder", re.IGNORECASE)
+_MAX_EXACT_INT = 2**53
+# Phrases that say "there is no source", anywhere in the note and in either language. Hygiene
+# only: a human decides whether a named source is real.
+_NO_SOURCE = re.compile(
+    r"placeholder|unverified|not verified|\btbd\b|\bto ?do\b|no source|unsourced"
+    r"|dummy|made up|\bn/a\b|افتراض|غير موثق|بدون مصدر",
+    re.IGNORECASE,
+)
+_MIN_SOURCE_NOTE = 10
 
 
 class AssumptionError(ValueError):
@@ -87,6 +97,10 @@ class AssumptionSet:
     note: str
     assumptions: Mapping[str, Assumption]
 
+    def __post_init__(self) -> None:
+        # A read-only copy: validated money inputs must not change after a hash was taken.
+        object.__setattr__(self, "assumptions", freeze(dict(self.assumptions)))
+
     def evidence_id(self, name: str) -> str:
         """Stable id of one assumption inside this set, for evidence records (`as_<name>@<set>`)."""
         if name not in self.assumptions:
@@ -140,6 +154,14 @@ def _mapping(value: Any, where: str, required: frozenset[str]) -> Mapping[str, A
 
 
 def _number(value: Any, where: str) -> float:
+    if (
+        isinstance(value, int)
+        and not isinstance(value, bool)
+        and abs(value) > _MAX_EXACT_INT
+    ):
+        raise AssumptionError(
+            f"{where} must be exactly representable (at most 2**53), got {value}"
+        )
     try:
         return finite(value, where)
     except (NonFiniteError, TypeError, ValueError) as exc:
@@ -162,9 +184,11 @@ def _parse_entry(name: str, raw: Any) -> Assumption:
     verified = entry["verified"]
     if not isinstance(verified, bool):
         raise AssumptionError(f"{where}: verified must be true or false")
-    if verified and _PLACEHOLDER.match(source_note):
+    if verified and (
+        len(source_note.strip()) < _MIN_SOURCE_NOTE or _NO_SOURCE.search(source_note)
+    ):
         raise AssumptionError(
-            f"{where}: verified is true but the source note says placeholder"
+            f"{where}: verified is true, but the source note does not name a source"
         )
     dist = _mapping(entry["distribution"], f"{where}: distribution", _DISTRIBUTION_KEYS)
     if dist["type"] != "triangular":
