@@ -175,3 +175,42 @@ Release dates are UTC dates of the latest artifact upload for each selected vers
 - COMMIT BLOCKED: `git commit --only <five allowed files> -m 'test(honesty): close review round one mutation gaps' -m 'Agent: codex'` exited 128: unable to create the main clone's `.git/worktrees/codex-a1-honesty-tests/index.lock` (Operation not permitted). Git metadata is outside the sandbox writable roots. All five deliverables remain uncommitted for the lead; no sandbox override was attempted.
 - Risks / uncertainties for the reviewer: no unresolved implementation uncertainty; the Spec parser deliberately requires section 2 rule 2 and three backtick-delimited names, so an editorial move requires updating the guard.
 - Next step for the lead: independently verify review round 1, log the cross-review, and prepare the PR through the authorized workflow. This author-run verification is not a review.
+
+## Handoff: T-A1-011 (2026-10-25)
+- Done:
+  - Added a side-effect-free FastAPI factory, reserved `/api` sub-application, exact health payload/disclaimer, no-store/nosniff API headers, RFC 7807 HTTP errors, explicit empty-body HEAD health response, and optional same-origin static hosting. Docs/OpenAPI routes are disabled.
+  - Added the environment-configured uvicorn entry point, strict port validation, direct ASGI tests without httpx, static traversal/symlink isolation tests, AST import checks, and a real subprocess test that skips only when the initial loopback bind raises PermissionError.
+  - Added a two-stage non-root image, restricted loopback Compose service, Docker-specific ignore file, deploy Make targets and additive CI registration, downloaded-file smoke checks using the unchanged frontend offline library, and deployment/lock-refresh documentation. Preserved the lead-prepared pyproject dependency declaration and lock bytes.
+- Verified by:
+  - `.venv/bin/python -m pytest platform/tests/unit/test_api_health.py platform/tests/unit/test_api_static.py -q`: 25 passed, 1 skipped. The sandbox denies `socket.bind(("127.0.0.1", 0))`; this is not a passing subprocess integration test.
+  - `make lint-imports lint typecheck test-unit deploy-config`: exit 0; import lint passes (40 platform / 4 domain files), Ruff check/format clean (47 Python files), mypy clean (26 source files), 199 unit tests passed and 1 listener test skipped. Docker is installed: deploy-config actually ran Compose config validation, not SKIPPED.
+  - `docker compose -f deploy/docker-compose.yml config`: exit 0; rendered loopback publishing, read-only filesystem, tmpfs, dropped capabilities, no-new-privileges, matching healthcheck and restart policy.
+  - `bash -n deploy/smoke.sh`: exit 0. Extracted inline module passed `node --input-type=module --check` (exit 0).
+  - `python3 /tmp/ug-deploy-smoke-fixtures.py`: temporary fixture harness exercised the actual smoke script with a fake curl on its subprocess PATH; all five checks passed (exit 0), then an external-URL bundle mutation failed the offline gate (exit 1). A source-HTML fixture lacking the build-injected CSP also failed as expected. These are script checks, not Docker or live HTTP smoke results; the temporary harness is not a repository deliverable.
+  - `.venv/bin/python -m ruff check .`: All checks passed. `.venv/bin/python -m ruff format --check .`: 47 files already formatted.
+  - `git diff --check`: exit 0. `git status --short`: only allowed task paths, including the two pre-existing lead-prepared dependency files.
+- Additional CI targets: `make test-conformance test-contracts check-contract-drift wntr-manifest test-water` exited 0: conformance 8 passed / 12 expected failures, contracts 860 passed, generated types match, WNTR 1.5.0 / 49 symbols verified, water 22 passed. WNTR emitted sandbox cache-directory warnings but completed successfully. The existing types-install prerequisite restored 15 locked tooling packages before the drift check; no tracked dependency files changed.
+- Decisions:
+  - Reserve `/api` with an isolated mounted FastAPI app before the static mount; normalize bare `/api` to a 404 problem without a slash redirect. Unknown paths cannot be answered by a static file with the same path.
+  - Support HEAD health with status 200, JSON media type and no body. Preserve Allow headers on 405 problem responses.
+  - Port values use ASCII decimal syntax and the range 1..65535; invalid or oversized input exits with a clear UG_API_PORT message before server startup.
+  - No dependency additions or lock edits; plain base-image tags await lead digest pinning. No outbound application requests are implemented; Compose is not an outbound firewall.
+- Not done / known limits:
+  - `docker build`, `make up`, `make smoke`, `make down`: NOT_RUN as instructed; container daemon/build/runtime validation belongs to the lead.
+  - `make ci`: NOT_RUN; expected-red-at-test-frontend per the owner-provided branch context (PR #21 is absent). Other registered targets are run individually; do not treat this as an observed full-CI result. Avoided the frontend target's npm install/build writes in its forbidden tree.
+  - Cross-review/mutation review pending with the lead; no claim of independent review, PR creation, push or merge.
+  - `git add platform/ug_api/src/ug_api/app.py platform/ug_api/src/ug_api/__main__.py platform/tests/unit/test_api_health.py platform/tests/unit/test_api_static.py platform/ug_api/pyproject.toml` and `git commit -m 'feat(api): add health endpoint and same-origin static hosting' -m 'Agent: codex'` both exited 128: sandbox cannot create `/Users/ahmedmetawea/Desktop/UtilityGuard-Twin/.git/worktrees/codex-a1-deploy/index.lock`. All work remains uncommitted; no workaround attempted. Lead should split API/tests and deploy/handoff into conventional commits with `Agent: codex` trailers.
+- Contracts touched: no.
+- Honesty checklist (Appendix E):
+  - [x] Truth/hidden faults: no truth or telemetry paths added; API provides service health only.
+  - [x] Displayed numbers/evidence: no simulation numbers or new UI added; shell preserved.
+  - [x] Probabilities/assumptions: none invented or changed.
+  - [x] Money: no financial calculations introduced.
+  - [x] Determinism: health is fixed metadata; no simulation path changed.
+  - [x] LLM calculations: none introduced.
+  - [x] Banner/Fidelity/source: existing shell hosted unchanged; smoke checks bundle honesty text and No network loaded. Browser/CSP behavior still needs lead runtime verification.
+  - [x] External APIs: introspected installed FastAPI, StaticFiles, JSONResponse and uvicorn.run signatures; exercised ASGI interfaces locally.
+  - [x] Contracts/types: no contracts changed; drift gate run separately.
+  - [x] Synthetic results: no field-validation claim.
+- Risks the reviewer should focus on: Docker build/install and non-root read-only execution; healthcheck readiness; production CSP and actual smoke; mutation of API routing, error headers and static boundaries; rerun the skipped real socket test outside this sandbox. No unresolved dependency or API-signature choice.
+- Next step for the other agent: independently run/review and mutate, run full CI in the corrected fresh clone, run Docker acceptance, record cross-review in the lead-owned review document, and commit the allowed deliverables. Owner reviews and merges; agents never merge.

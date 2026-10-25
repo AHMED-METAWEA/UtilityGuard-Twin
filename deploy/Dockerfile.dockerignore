@@ -1,0 +1,9 @@
+.git
+.venv
+**/node_modules
+**/dist
+freebuff
+docs
+**/__pycache__
+**/.pytest_cache
+.codex
