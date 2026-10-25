@@ -16,27 +16,17 @@ from __future__ import annotations
 
 import hashlib
 import json
-import numbers
 from collections.abc import Mapping
 from types import MappingProxyType
 from typing import Any
 
-from ug_core.numeric import finite
+from ug_core.numeric import normalize_scalar
 
 _MAX_EXACT_INT = 2**53
 
 
 def canonical(obj: Any) -> Any:
     """Return `obj` reduced to plain JSON types in canonical form."""
-    if obj is None or isinstance(obj, str | bool):
-        return obj
-    if isinstance(obj, numbers.Integral):
-        return int(obj)
-    if isinstance(obj, numbers.Real):
-        number = finite(obj)
-        if number.is_integer() and abs(number) < _MAX_EXACT_INT:
-            return int(number)
-        return number
     if isinstance(obj, Mapping):
         out: dict[str, Any] = {}
         for key, value in obj.items():
@@ -48,9 +38,16 @@ def canonical(obj: Any) -> Any:
         return out
     if isinstance(obj, list | tuple):
         return [canonical(item) for item in obj]
-    raise TypeError(
-        f"cannot canonicalize {type(obj).__name__}; convert it to JSON types first"
-    )
+    scalar = normalize_scalar(
+        obj, "canonical value"
+    )  # TypeError for lossy or unknown types
+    if (
+        isinstance(scalar, float)
+        and scalar.is_integer()
+        and abs(scalar) < _MAX_EXACT_INT
+    ):
+        return int(scalar)
+    return scalar
 
 
 def canonical_json(obj: Any) -> str:

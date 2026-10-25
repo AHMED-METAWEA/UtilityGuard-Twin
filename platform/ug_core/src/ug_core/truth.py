@@ -38,6 +38,14 @@ class TruthEvent:
     def __post_init__(self) -> None:
         if not self.kind or not self.target:
             raise ValueError("kind and target must be non-empty")
+        for name, tick in (
+            ("start_tick", self.start_tick),
+            ("end_tick", self.end_tick),
+        ):
+            if tick is None and name == "end_tick":
+                continue
+            if isinstance(tick, bool) or not isinstance(tick, int):
+                raise TypeError(f"{name} must be a plain integer, got {tick!r}")
         if self.start_tick < 0:
             raise ValueError("start_tick must be >= 0")
         if self.end_tick is not None and self.end_tick <= self.start_tick:

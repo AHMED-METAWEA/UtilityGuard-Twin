@@ -470,3 +470,93 @@ def test_seed_and_name_validation() -> None:
             SeedStreams(bad)  # type: ignore[arg-type]
     with pytest.raises(ValueError):
         SeedStreams(1).stream("")
+
+
+# ----------------------------------------------- regression tests from the adversarial review
+# Each of these failed before the fix (findings S1-1 .. S2-6 of the T-A1-003 review).
+
+
+def test_evidenced_rejects_non_finite_numpy_and_unsupported_numbers() -> None:
+    import numpy as np
+
+    for bad in (np.float32("nan"), np.float32("inf"), np.float64("-inf")):
+        with pytest.raises(NonFiniteError):
+            Evidenced(bad, EvidenceLabel.OBSERVED, "ev_np")
+    from decimal import Decimal
+    from fractions import Fraction
+
+    for unsupported in (Decimal("NaN"), Decimal("1.5"), Fraction(1, 3), 1 + 2j):
+        with pytest.raises(TypeError):
+            Evidenced(unsupported, EvidenceLabel.OBSERVED, "ev_unsupported")
+
+
+def test_evidenced_value_is_an_immutable_plain_scalar() -> None:
+    import numpy as np
+
+    with pytest.raises(TypeError):
+        Evidenced([1.0], EvidenceLabel.SIMULATION, "ev_list")
+    with pytest.raises(TypeError):
+        Evidenced({"a": 1.0}, EvidenceLabel.SIMULATION, "ev_dict")
+    stored = Evidenced(np.float32(1.5), EvidenceLabel.SIMULATION, "ev_f32").value
+    assert type(stored) is float and stored == 1.5
+    assert type(Evidenced(np.int64(7), EvidenceLabel.SIMULATION, "ev_i64").value) is int
+    assert Evidenced("text", EvidenceLabel.MODEL, "ev_str").value == "text"
+
+
+def test_timebase_rejects_sub_second_start_so_serialisation_is_exact() -> None:
+    with pytest.raises(ValueError):
+        Timebase(datetime(2026, 1, 1, 0, 0, 0, 500000, tzinfo=UTC), 1, 2)
+    one = Timebase(datetime(2026, 1, 1, 0, 0, 1, tzinfo=UTC), 1, 2)
+    assert one.to_dict() != tb(n=2, step=1).to_dict()
+
+
+def test_canonical_json_rejects_lossy_number_types() -> None:
+    from decimal import Decimal
+    from fractions import Fraction
+
+    import numpy as np
+
+    for lossy in (Fraction(2**54 + 1, 2**54), Decimal("1.1"), 1j):
+        with pytest.raises(TypeError):
+            canonical_json({"x": lossy})
+    assert canonical_json({"x": np.float64(0.5)}) == canonical_json({"x": 0.5})
+    assert canonical_json({"x": np.int64(3)}) == canonical_json({"x": 3})
+    assert canonical_json({"x": np.float32(2.0)}) == canonical_json({"x": 2})
+    assert canonical_json({"x": np.bool_(True)}) == canonical_json({"x": True})
+
+
+def test_manifest_stores_exactly_what_it_hashes_and_serialises() -> None:
+    import numpy as np
+
+    manifest = make_manifest(
+        config={"x": np.float64(0.25), "n": np.int64(4)}, unordered=()
+    )
+    assert type(manifest.config["x"]) is float and type(manifest.config["n"]) is int
+    assert json.loads(json.dumps(manifest.to_dict()))["config"] == {"x": 0.25, "n": 4}
+    from fractions import Fraction
+
+    with pytest.raises(TypeError):
+        make_manifest(config={"x": Fraction(2**54 + 1, 2**54)}, unordered=())
+
+
+def test_manifest_equality_agrees_with_its_hash() -> None:
+    boolean = make_manifest(config={"x": True}, unordered=())
+    integer = make_manifest(config={"x": 1}, unordered=())
+    assert boolean != integer
+    assert boolean.input_hash() != integer.input_hash()
+    big_int = make_manifest(config={"x": 2**53}, unordered=())
+    big_float = make_manifest(config={"x": float(2**53)}, unordered=())
+    assert big_int != big_float
+    same_one = make_manifest(config={"x": 1}, unordered=())
+    same_two = make_manifest(config={"x": 1.0}, unordered=())
+    assert same_one == same_two and hash(same_one) == hash(same_two)
+    assert same_two in {same_one}
+    assert make_manifest() != make_manifest().with_output_hashes({"truth": "a" * 64})
+
+
+@pytest.mark.parametrize("bad", [0.5, True, float("nan"), float("inf"), "3"])
+def test_truth_event_ticks_must_be_plain_integers(bad: object) -> None:
+    with pytest.raises((TypeError, ValueError)):
+        TruthEvent("leak", "p", bad, 4)  # type: ignore[arg-type]
+    with pytest.raises((TypeError, ValueError)):
+        TruthEvent("leak", "p", 0, bad)  # type: ignore[arg-type]

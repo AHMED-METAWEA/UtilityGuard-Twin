@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Generic, TypeVar
 
-from ug_core.numeric import finite
+from ug_core.numeric import normalize_scalar
 
 
 class EvidenceLabel(StrEnum):
@@ -62,6 +62,7 @@ class Evidenced(Generic[T]):
         if not all(isinstance(item, str) and item.strip() for item in inputs):
             raise ValueError("inputs must be non-empty evidence id strings")
         object.__setattr__(self, "inputs", inputs)
+        object.__setattr__(self, "value", normalize_scalar(self.value))
 
         if self.label is EvidenceLabel.INSUFFICIENT_EVIDENCE:
             if self.value is not None:
@@ -72,8 +73,6 @@ class Evidenced(Generic[T]):
             raise ValueError(
                 f"a {self.label} value cannot be None; use INSUFFICIENT_EVIDENCE"
             )
-        if isinstance(self.value, int | float) and not isinstance(self.value, bool):
-            finite(self.value, "value")
         if self.label is EvidenceLabel.CALCULATED:
             if not (isinstance(self.formula, str) and self.formula.strip()):
                 raise ValueError("a CALCULATED value needs a displayed formula")

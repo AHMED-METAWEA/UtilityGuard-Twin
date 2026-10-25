@@ -17,12 +17,12 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field, replace
 from typing import Any
 
-from ug_core.canonical import canonical_json, freeze, sha256_hex, thaw
+from ug_core.canonical import canonical, canonical_json, freeze, sha256_hex, thaw
 
 MANIFEST_SCHEMA_VERSION = "1"
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class Manifest:
     """Immutable run manifest.
 
@@ -58,7 +58,8 @@ class Manifest:
             ):
                 raise TypeError(f"{name} must map strings to strings")
         unordered = tuple(self.unordered)
-        config = thaw(self.config)
+        # Store exactly what is hashed and serialised: plain JSON types, no lossy numbers.
+        config = canonical(self.config)
         if not isinstance(config, dict):
             raise TypeError("config must be a mapping")
         for key in unordered:
@@ -104,5 +105,18 @@ class Manifest:
         payload["output_hashes"] = thaw(self.output_hashes)
         return payload
 
+    def _identity(self) -> tuple[str, str]:
+        return (self.input_hash(), canonical_json(thaw(self.output_hashes)))
+
+    def __eq__(self, other: object) -> bool:
+        """Equal iff the canonical identity is equal (the same thing that is hashed).
+
+        Python's own equality would call `True == 1` and `2**53 == float(2**53)` equal while
+        their canonical forms differ, which would break sets and dictionaries.
+        """
+        if not isinstance(other, Manifest):
+            return NotImplemented
+        return self._identity() == other._identity()
+
     def __hash__(self) -> int:
-        return hash((self.input_hash(), canonical_json(thaw(self.output_hashes))))
+        return hash(self._identity())

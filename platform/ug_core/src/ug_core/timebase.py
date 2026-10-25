@@ -25,6 +25,8 @@ class Timebase:
     def __post_init__(self) -> None:
         if not isinstance(self.start, datetime) or self.start.tzinfo is None:
             raise ValueError("start must be a timezone-aware datetime")
+        if self.start.microsecond != 0:
+            raise ValueError("start must be a whole number of seconds")
         object.__setattr__(self, "start", self.start.astimezone(UTC))
         if isinstance(self.step_seconds, bool) or not isinstance(
             self.step_seconds, int
