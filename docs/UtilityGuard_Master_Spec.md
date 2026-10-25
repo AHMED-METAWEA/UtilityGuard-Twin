@@ -78,6 +78,7 @@ Digital twins and utility monitoring already exist commercially. Our differentia
 |---|---|
 | `OBSERVED` | Measured by a real source (only after F3 or an imported real dataset) |
 | `BENCHMARK` | From a public benchmark dataset (for example BattLeDIM), which is itself model-generated, never described as field data |
+| `PUBLIC_GEOMETRY` | Layout (districts, roads, parks, land use) taken from public sources, with recorded provenance: source, licence, retrieval date and coverage report. Geometry only: inferred pipe routes, pipe sizes and demands are not public geometry, and none of it is ACUD data |
 | `SIMULATION` | Output of the physical solver (WNTR/EPANET or domain solver) |
 | `SENSOR_SIM` | Output of the measurement simulator (noise, drift, dropout) |
 | `MODEL` | Output of a detector, classifier, or statistical model, with version |
@@ -640,8 +641,8 @@ Incident report, generated as HTML, PDF and JSON: summary, timeline, detection e
 ```
 data/runs/{run_id}/
   manifest.json
-  truth.parquet          # tick, element_id, quantity, value        (SIMULATION)
-  telemetry.parquet      # tick, sensor_id, value, unit, delivered_at, fault_tag_hidden
+  truth.parquet          # tick, element_id, quantity, value, fault_tag_hidden   (SIMULATION)
+  telemetry.parquet      # tick, sensor_id, value, unit, delivered_at
   expectation.parquet    # tick, sensor_id, expected_value, sigma  (MODEL)
   quality.parquet        # tick, sensor_id, status, score, flags
   detector_{id}.parquet  # tick, state, residuals, support
