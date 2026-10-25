@@ -6,6 +6,7 @@ Exit code 0 when the layout is complete, 1 otherwise (with the problems listed).
 
 Usage: python scripts/check_layout.py [--root PATH]
 """
+
 from __future__ import annotations
 
 import argparse
@@ -62,13 +63,17 @@ def check(root: Path) -> list[str]:
             problems.append(f"missing {folder}/src/{pkg}/__init__.py")
     # platform/ must stay a plain folder: a package named `platform` shadows the standard library.
     if (root / "platform" / "__init__.py").exists():
-        problems.append("platform/__init__.py exists: it would shadow the standard-library module `platform`")
+        problems.append(
+            "platform/__init__.py exists: it would shadow the standard-library module `platform`"
+        )
     return problems
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parent.parent)
+    parser.add_argument(
+        "--root", type=Path, default=Path(__file__).resolve().parent.parent
+    )
     args = parser.parse_args()
     problems = check(args.root)
     if problems:

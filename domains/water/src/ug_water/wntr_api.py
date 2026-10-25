@@ -253,6 +253,10 @@ def manifest_problems(manifest: object) -> list[str]:
             )
             continue
         recorded = [tuple(e[k] for k in keys) for e in entries]
+        for item in sorted({r for r in recorded if recorded.count(r) > 1}):
+            problems.append(
+                f"{section[:-1]} {'.'.join(item)}: listed twice in the manifest"
+            )
         for item in sorted(set(recorded) - set(declared)):
             problems.append(
                 f"{section[:-1]} {'.'.join(item)}: in the manifest but not declared in wntr_api.py"

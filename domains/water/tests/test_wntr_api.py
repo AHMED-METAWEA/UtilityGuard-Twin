@@ -216,3 +216,18 @@ def test_verify_fails_when_an_installed_callable_is_unusable(
     monkeypatch.setattr(wntr.network.WaterNetworkModel, "add_valve", None)
     problems = wntr_api.verify(manifest)
     assert any("add_valve" in problem for problem in problems)
+
+
+@pytest.mark.parametrize("section", ["members", "result_keys"])
+def test_duplicate_entries_are_rejected_everywhere(
+    manifest: dict, section: str, tmp_path: Path
+) -> None:
+    broken = copy.deepcopy(manifest)
+    broken[section].append(dict(broken[section][0]))
+    assert any("listed twice" in p for p in wntr_api.manifest_problems(broken))
+    assert any("listed twice" in p for p in wntr_api.verify(broken))
+    copy_path = tmp_path / "manifest.json"
+    copy_path.write_text(json.dumps(broken), encoding="utf-8")
+    result = run_script("--check", "--manifest", str(copy_path))
+    assert result.returncode == 1
+    assert "listed twice" in result.stderr
