@@ -7,7 +7,7 @@ name = "ug-api"
 version = "0.0.0"
 description = "UtilityGuard Twin API: REST, WebSocket hub, jobs, reports."
 requires-python = ">=3.11"
-dependencies = []
+dependencies = ["fastapi>=0.143,<0.144", "uvicorn>=0.54,<0.55"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
