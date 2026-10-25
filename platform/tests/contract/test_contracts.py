@@ -327,6 +327,53 @@ EXPECTED: dict[str, Expect] = {
     "telemetry-reading/missing_schema_version": ({"required"}, "", "schema_version"),
     "telemetry-reading/missing_value_field": ({"required"}, "", "value"),
     "telemetry-reading/truth_field_in_telemetry": (ADDITIONAL, "", "truth_value"),
+    "stream-envelope/truth_key_in_residuals": (
+        {"not"},
+        "payload/detectors/d2/residuals",
+        "truth_value",
+    ),
+    "stream-envelope/probability_key_in_residuals": (
+        {"not"},
+        "payload/detectors/d2/residuals",
+        "probability",
+    ),
+    "stream-envelope/truth_key_as_detector_name": (
+        {"not"},
+        "payload/detectors",
+        "fault_tag_hidden",
+    ),
+    "stream-envelope/network_confidence_without_formula_ref": (
+        {"required"},
+        "payload/network_confidence",
+        "formula_ref",
+    ),
+    "stream-envelope/detector_without_version": (
+        {"required"},
+        "payload/detectors/d2",
+        "version",
+    ),
+    "stream-envelope/quality_without_label": (
+        {"required"},
+        "payload/readings/0/quality",
+        "label",
+    ),
+    "telemetry-reading/quality_without_label": ({"required"}, "quality", "label"),
+    "telemetry-reading/quality_without_formula_ref": (
+        {"required"},
+        "quality",
+        "formula_ref",
+    ),
+    "evidence-record/money_unit_wrong_spelling": ({"pattern"}, "unit", "egp"),
+    "evidence-record/annual_amount_labelled_simulation": (
+        {"enum"},
+        "label",
+        "SIMULATION",
+    ),
+    "evidence-record/input_labelled_insufficient_evidence": (
+        {"enum"},
+        "inputs/0/label",
+        "INSUFFICIENT_EVIDENCE",
+    ),
     "telemetry-reading/unknown_label": ({"enum"}, "label", "VERIFIED"),
 }
 
@@ -548,13 +595,23 @@ def test_spec_tick_example_needs_labels_on_the_confidence_and_detector_numbers()
         "payload": payload,
     }
     errors = list(validator_for("stream-envelope").iter_errors(envelope))
-    assert errors and all(
-        e.validator == "required" and "'label'" in e.message for e in errors
-    )
+    missing = {e.message for e in errors}
+    assert errors and all(e.validator == "required" for e in errors)
+    assert {
+        "'label' is a required property",
+        "'version' is a required property",
+    } <= missing
+    assert "'formula_ref' is a required property" in missing
     labelled = copy.deepcopy(envelope)
-    labelled["payload"]["network_confidence"]["label"] = "CALCULATED"
+    labelled["payload"]["network_confidence"].update(
+        label="CALCULATED", formula_ref="quality.network_confidence.v1"
+    )
     for detector in labelled["payload"]["detectors"].values():
-        detector["label"] = "MODEL"
+        detector.update(label="MODEL", version="d2_v1")
+    for reading in labelled["payload"]["readings"]:
+        reading["quality"].update(
+            label="CALCULATED", formula_ref="quality.reading_score.v1"
+        )
     assert valid("stream-envelope", labelled)
 
 

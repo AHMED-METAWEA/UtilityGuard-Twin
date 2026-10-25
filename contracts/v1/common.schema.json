@@ -81,14 +81,54 @@
             "pattern": "^Q[0-9]{2}$"
           },
           "uniqueItems": true
+        },
+        "label": {
+          "const": "CALCULATED"
+        },
+        "formula_ref": {
+          "$ref": "#/$defs/template_id"
         }
       },
       "required": [
         "status",
         "score",
-        "flags"
+        "flags",
+        "label",
+        "formula_ref"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "description": "Data-quality score of one reading (Master Spec 6.2). The score is computed by a fixed, versioned formula, so it is CALCULATED and names that formula."
+    },
+    "template_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)*\\.v[0-9]+$",
+      "description": "Id of a fixed, reviewed, versioned formula or explanation template (Master Spec 10.3)."
+    },
+    "operator_visible_key": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/identifier"
+        },
+        {
+          "not": {
+            "pattern": "[Tt][Rr][Uu][Tt][Hh]|[Ff][Aa][Uu][Ll][Tt]_?[Tt][Aa][Gg]|[Hh][Ii][Dd][Dd][Ee][Nn]|[Pp][Rr][Oo][Bb][Aa][Bb]|[Cc][Oo][Nn][Ff][Ii][Dd][Ee][Nn][Cc][Ee]|[Pp][Ee][Rr][Cc][Ee][Nn][Tt]|[Gg][Rr][Oo][Uu][Nn][Dd]|[Ii][Nn][Jj][Ee][Cc][Tt]"
+          }
+        }
+      ],
+      "description": "A key in a map the operator and the detectors see. It may not name truth, hidden state, injected faults, probabilities or percent confidence, so those cannot ride in as data."
+    },
+    "evidence_label_with_value": {
+      "enum": [
+        "OBSERVED",
+        "BENCHMARK",
+        "PUBLIC_GEOMETRY",
+        "SIMULATION",
+        "SENSOR_SIM",
+        "MODEL",
+        "ASSUMPTION",
+        "CALCULATED"
+      ],
+      "description": "Labels of a value that exists. An input that is INSUFFICIENT_EVIDENCE makes the result INSUFFICIENT_EVIDENCE too, so it is not an input."
     }
   }
 }

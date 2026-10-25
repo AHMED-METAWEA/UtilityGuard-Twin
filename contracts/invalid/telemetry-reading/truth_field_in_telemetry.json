@@ -11,7 +11,9 @@
     "score": 0.62,
     "flags": [
       "Q07"
-    ]
+    ],
+    "label": "CALCULATED",
+    "formula_ref": "quality.reading_score.v1"
   },
   "truth_value": 30.9
 }

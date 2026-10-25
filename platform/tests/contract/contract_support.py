@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from functools import cache
 from pathlib import Path
 from typing import Any
 
@@ -48,6 +49,7 @@ def schema_names() -> list[str]:
     )
 
 
+@cache
 def load_schemas() -> dict[str, Any]:
     return {
         p.name.removesuffix(SUFFIX): load_json(p)
@@ -55,6 +57,7 @@ def load_schemas() -> dict[str, Any]:
     }
 
 
+@cache
 def build_registry() -> Registry:  # type: ignore[type-arg]
     registry: Registry = Registry()  # type: ignore[type-arg]
     for schema in load_schemas().values():
@@ -70,3 +73,7 @@ def validator_for(name: str) -> Draft202012Validator:
 def files(kind: str) -> list[Path]:
     """Every JSON file under contracts/examples or contracts/invalid, in a stable order."""
     return sorted((CONTRACTS / kind).rglob("*.json"))
+
+
+def is_valid(name: str, instance: Any) -> bool:
+    return not list(validator_for(name).iter_errors(instance))
