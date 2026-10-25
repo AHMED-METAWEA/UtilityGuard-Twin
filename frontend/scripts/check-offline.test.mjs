@@ -1,7 +1,9 @@
 // The offline check must catch the ways found in review of the first version (and more).
 import { describe, expect, it } from "vitest";
 
-import { cssReferences, htmlReferences, jsReferences, leavesTheApplication } from "./offline-lib.mjs";
+import { readFileSync } from "node:fs";
+
+import { cssReferences, htmlReferences, isScannedSource, jsReferences, leavesTheApplication } from "./offline-lib.mjs";
 
 describe("leavesTheApplication", () => {
   it.each([
@@ -58,5 +60,17 @@ describe("javascript", () => {
     expect(jsReferences(message, { bundle: true })).toEqual([]);
     expect(jsReferences(message, { bundle: false }).length).toBeGreaterThan(0);
     expect(jsReferences('var u="https://reactjs.org/other"', { bundle: true }).length).toBeGreaterThan(0);
+  });
+});
+
+describe("which source files are scanned", () => {
+  it.each(["src/main.tsx", "src/app/App.tsx", "src/app/stream.ts", "src/ui/tokens.css", "src/generated/index.ts", "src/x.svg", "src/x.html"])(
+    "scans %s", (path) => expect(isScannedSource(path)).toBe(true));
+  it.each(["src/generated/stream-envelope.d.ts", "src/vite-env.d.ts", "src/app/App.test.tsx", "src/app/x.test.ts", "src/data.json", "src/readme.md"])(
+    "does not scan %s", (path) => expect(isScannedSource(path)).toBe(false));
+  it("the generated declarations do mention network words in schema descriptions, which is why they are skipped", () => {
+    const text = readFileSync("src/generated/stream-envelope.d.ts", "utf8");
+    expect(jsReferences(text).length).toBeGreaterThan(0);
+    expect(isScannedSource("src/generated/stream-envelope.d.ts")).toBe(false);
   });
 });

@@ -178,3 +178,13 @@ export function requiredCsp(html) {
   only("form-action", ["'self'"]);
   return problems;
 }
+
+/**
+ * Which files under src/ are scanned. Type declarations (`*.d.ts`, such as the types generated
+ * from the contracts) hold no executable code, and they quote schema descriptions that mention
+ * words like "WebSocket"; test files are not shipped. Everything else is scanned.
+ */
+export function isScannedSource(path) {
+  if (/\.d\.ts$/.test(path) || /\.test\.tsx?$/.test(path)) return false;
+  return /\.(tsx?|css|html|svg)$/.test(path);
+}
