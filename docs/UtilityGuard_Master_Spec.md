@@ -683,7 +683,7 @@ Errors follow RFC 7807 problem details. Long jobs return `202` with a `job_id` a
 {"schema_version": "1", "type": "tick", "run_id": "run_0042", "seq": 8123, "payload": {}}
 ```
 
-`type` is one of: `tick`, `incident.updated`, `analysis.progress`, `analysis.done`, `run.control`, `notification`. Ticks are batched when the client is slow, with `seq` gaps detectable.
+`type` is one of: `tick`, `incident.updated`, `analysis.progress`, `analysis.done`, `run.control`, `notification`. Ticks are batched when the client is slow, with `seq` gaps detectable. Contracts v1 specify the `tick` frame only; each other frame type is added to the contract when its payload is specified, and until then a frame of that type is rejected.
 
 Tick payload:
 
@@ -692,14 +692,19 @@ Tick payload:
   "tick": 144, "sim_time": "2026-01-01T12:00:00Z", "stream_source": "REPLAY", "speed": 60,
   "readings": [{
     "sensor_id": "P05", "value": 31.2, "unit": "m", "label": "SENSOR_SIM",
-    "quality": {"status": "suspect", "score": 0.62, "flags": ["Q07"]}
+    "quality": {"status": "suspect", "score": 0.62, "flags": ["Q07"],
+                "label": "CALCULATED", "formula_ref": "quality.reading_score.v1"}
   }],
-  "network_confidence": {"value": 0.91, "basis": "observability-weighted sensor quality"},
-  "detectors": {"d2": {"state": "watch", "residuals": {"P05": -8.1}}},
+  "network_confidence": {"value": 0.91, "basis": "observability-weighted sensor quality",
+                         "label": "CALCULATED", "formula_ref": "quality.network_confidence.v1"},
+  "detectors": {"d2": {"state": "watch", "residuals": {"P05": -8.1},
+                       "label": "MODEL", "version": "d2_v1"}},
   "incidents_changed": ["inc_003"]
 }
 ```
 The tick never contains truth values or hidden fault tags. The "twin truth" overlay uses a separate, explicitly authorized endpoint.
+
+Every number in a tick carries its evidence label (section 2). A reading is `SENSOR_SIM`, `OBSERVED` or `BENCHMARK` (never `SIMULATION`: that is truth). The quality score and the network confidence index are `CALCULATED` and name the fixed, reviewed formula they come from (`formula_ref`, section 10.3); a detector output is `MODEL` and carries the detector `version`. `stream_source` is required on every tick. Names used as keys in the tick (detector ids, residual names) are plain tokens: a residual name is an upper-case sensor token such as `P05`, a detector id is lower-case such as `d2`, and neither may name truth, hidden state, injected faults, probabilities or percent confidence. The contract is `contracts/v1/stream-envelope.schema.json`; the tick example above validates against it unchanged.
 
 ### 12.3 Scenario configuration (contract)
 
