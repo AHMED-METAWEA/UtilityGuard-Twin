@@ -121,6 +121,12 @@ def imported_modules(tree: ast.AST) -> list[tuple[int, str]]:
             found.extend((node.lineno, alias.name) for alias in node.names)
         elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
             found.append((node.lineno, node.module))
+            # `from pkg import child` may import the submodule `pkg.child`.
+            found.extend(
+                (node.lineno, f"{node.module}.{alias.name}")
+                for alias in node.names
+                if alias.name != "*"
+            )
         elif isinstance(node, ast.Call) and _is_import_function(
             node.func, modules, functions
         ):
@@ -155,6 +161,7 @@ def scan(root: Path) -> tuple[list[str], int, int]:
                     f"{relative}: cannot be parsed, so it cannot be checked ({exc})"
                 )
                 continue
+            reported: set[tuple[int, frozenset[str]]] = set()
             for line, module in imported_modules(tree):
                 if module.split(".")[0] == "domains" and owner is None:
                     violations.append(
@@ -162,8 +169,9 @@ def scan(root: Path) -> tuple[list[str], int, int]:
                     )
                     continue
                 foreign = foreign_owners(module, owner, owners, domains_dir)
-                if not foreign:
-                    continue
+                if not foreign or (line, frozenset(foreign)) in reported:
+                    continue  # one report per line and offending domain
+                reported.add((line, frozenset(foreign)))
                 names = ", ".join(sorted(foreign))
                 if owner is None:
                     violations.append(

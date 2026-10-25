@@ -183,3 +183,29 @@ def test_domains_sharing_a_namespace_keep_their_own_ownership(tmp_path: Path) ->
         "import ug_domains.water\n"
     )
     assert lint(root).returncode == 1
+
+
+def test_from_imports_of_a_shared_namespace_resolve_the_imported_child(
+    tmp_path: Path,
+) -> None:
+    root = tmp_path
+    for domain in ("water", "power"):
+        package = root / "domains" / domain / "src" / "ug_domains" / domain
+        package.mkdir(parents=True)
+        (package / "__init__.py").write_text("")
+    (root / "platform/ug_core/src/ug_core").mkdir(parents=True)
+    (root / "platform/ug_core/src/ug_core/__init__.py").write_text("")
+    water = root / "domains/water/src/ug_domains/water"
+    for own in ("from ug_domains import water", "from ug_domains.water import x"):
+        (water / "own.py").write_text(own + "\n")
+        result = lint(root)
+        assert result.returncode == 0, (own, result.stderr)
+    for foreign in (
+        "from ug_domains import power",
+        "from ug_domains.power import grid",
+    ):
+        (water / "bad.py").write_text(foreign + "\n")
+        result = lint(root)
+        assert result.returncode == 1, foreign
+        assert "from domain power" in result.stderr
+        assert result.stderr.count("bad.py:1") == 1  # one report per offending line

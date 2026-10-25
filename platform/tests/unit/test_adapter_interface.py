@@ -186,3 +186,59 @@ def test_a_not_implemented_error_raised_while_checking_the_result_is_a_failure()
 
     with pytest.raises(ConformanceError, match="while the result was being checked"):
         check_method(Adapter(), "detectors")
+
+
+def test_a_decorated_component_is_judged_by_the_callable_the_platform_invokes() -> None:
+    import functools
+
+    def real(self: Any, state: Any, scenario: Any, horizon: Any) -> None:
+        return None
+
+    def real_measure(self: Any, truth: Any, seeds: Any) -> None:
+        return None
+
+    class DecoratedSolver:
+        @functools.wraps(real)
+        def run(self) -> None:  # takes no arguments, yet claims real's signature
+            return None
+
+    class DecoratedMeasurement:
+        @functools.wraps(real_measure)
+        def measure(self) -> None:
+            return None
+
+    def adapter_returning(method: str, component: Any) -> AdapterBase:
+        namespace: dict[str, Any] = {
+            "domain_id": "wrapped",
+            method: lambda self: component,
+        }
+        return type("Wrapped", (AdapterBase,), namespace)()
+
+    with pytest.raises(ConformanceError):
+        check_method(adapter_returning("solver", DecoratedSolver()), "solver")
+    with pytest.raises(ConformanceError):
+        check_method(
+            adapter_returning("measurement_model", DecoratedMeasurement()),
+            "measurement_model",
+        )
+
+
+def test_describing_a_failed_check_never_runs_code_of_the_result() -> None:
+    class Hostile(Exception):
+        def __str__(self) -> str:
+            raise NotImplementedError("raised while formatting the error")
+
+    class Evil(list):  # type: ignore[type-arg]
+        def __iter__(self) -> Any:
+            raise Hostile()
+
+    class Adapter(AdapterBase):
+        domain_id = "hostile"
+
+        def detectors(self) -> list[Any]:
+            return Evil([1])
+
+    with pytest.raises(ConformanceError) as caught:
+        check_method(Adapter(), "detectors")
+    assert not isinstance(caught.value, NotImplementedError)
+    assert isinstance(caught.value.__cause__, Hostile)

@@ -129,3 +129,21 @@ def test_an_instance_level_override_returning_placeholder_data_fails(
     assert result.returncode == 1, result.stdout
     assert "11 xfailed" in result.stdout
     assert "1 failed" in result.stdout
+
+
+def test_an_exception_that_raises_while_being_described_cannot_hide_a_failure(
+    tmp_path: Path,
+) -> None:
+    body = """
+    def __init__(self):
+        class Hostile(Exception):
+            def __str__(self):
+                raise NotImplementedError("raised while formatting")
+        class Evil(list):
+            def __iter__(self):
+                raise Hostile()
+        self.detectors = lambda: Evil([1])
+    """
+    result = run_case(tmp_path, "Hostile", body)
+    assert result.returncode == 1, result.stdout
+    assert "1 failed" in result.stdout

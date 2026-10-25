@@ -127,7 +127,9 @@ def _check_calls(label: str, result: object, expected: type) -> None:
         if not callable(attribute):
             raise ConformanceError(f"{label}: {member} must be callable")
         try:
-            inspect.signature(attribute).bind(*([None] * argument_count))
+            inspect.signature(attribute, follow_wrapped=False).bind(
+                *([None] * argument_count)
+            )
         except TypeError:
             raise ConformanceError(
                 f"{label}: {member}() must accept {argument_count} positional arguments"
@@ -179,12 +181,15 @@ def check_method(adapter: object, name: str) -> None:
     if name not in ADAPTER_METHODS:
         raise ConformanceError(f"{name!r} is not a DomainAdapter method")
     result = getattr(adapter, name)(*_ARGUMENTS.get(name, ()))
-    label = f"{getattr(adapter, 'domain_id', '?')}.{name}()"
+    domain = getattr(adapter, "domain_id", None)
+    label = f"{domain if isinstance(domain, str) else '?'}.{name}()"
     try:
         _validate(label, name, result)
     except ConformanceError:
         raise
     except Exception as exc:
+        # Only the exception's class name is used: describing it with str() could run code of
+        # the object being checked. The original exception stays attached as the cause.
         raise ConformanceError(
-            f"{label} raised {type(exc).__name__} while the result was being checked: {exc}"
+            f"{label} raised {type(exc).__name__} while the result was being checked"
         ) from exc
