@@ -117,3 +117,44 @@ Release dates are UTC dates of the latest artifact upload for each selected vers
 - Risks the reviewer should focus on: prefixed export names and first-occurrence precedence; generator limitations for JSON Schema conditionals; missing/extra-file detection; Linux execution after the full environment exists. No unresolved API guess or dependency choice.
 - Next step for the other agent: independently test/review, supply the missing Python environment, rerun full CI/Ruff, then stage all allowed deliverables including the two unchanged scripts/types package files (never node_modules) and commit with `feat(types): generate TypeScript types from contracts v1` and `Agent: codex`. Owner handles merge; no remote action was authorized here.
 - Commit attempt result: `git commit -m 'feat(types): generate TypeScript types from contracts v1' -m 'Agent: codex'` also exited 128 with the same external index.lock restriction. Everything remains uncommitted for the lead; no workaround attempted.
+
+## Handoff: T-A1-009
+- Done:
+  - Implemented `ug --version`, argparse errors, five milestone-specific stubs, and `ug doctor [--json] [--root PATH]` in `platform/ug_cli/src/ug_cli/main.py` and `doctor.py`; added `__main__.py` for module execution.
+  - Added `mk/cli.mk` with `doctor` and additive `CI_TARGETS += doctor`. Domain access is exclusively through `ug_core.registry.discover()` and the optional `HasHealthChecks` protocol.
+  - Added 43 CLI tests in `platform/tests/unit/test_cli.py`, including real-script/module execution, edited-manifest failure, strict contract parsing, reference resolution, version boundaries, warning-only tools, and discovery/health failures.
+- Decisions:
+  - Human output has one line per check plus counts; JSON is one object with schema version `1`, fixed field/check ordering, no timestamps, and `allow_nan=False`. Multi-line check details are flattened. Contract check names use `Path.stem` (for example `contracts.common.schema`). A summary follows the per-file results; an empty schema directory fails.
+  - Contracts are parsed strictly, checked with `Draft202012Validator.check_schema`, and loaded into an offline `referencing.Registry` keyed by `$id` (file URI fallback for a schema without an ID). Duplicate top-level IDs fail. Walk `Resource.subresources()` with `Resolver.in_subresource()` so nested IDs and anchors work and literal instance data is not mistaken for schemas. Resolve `$ref` and `$dynamicRef` without following edges recursively, allowing reference cycles. Sort subresources by canonical key order to stabilize the first reported failure; the installed library internally iterates keyword sets. The default registry has no network retriever.
+  - Compare Node numeric `(major, minor, patch)` tuples against `(22, 13, 0)`; malformed, older, missing, failed or timed-out executables warn. Docker runs only `--version`; neither check contacts a daemon. Subprocess timeout is ten seconds.
+  - Used a narrow `import-untyped` suppression for installed jsonschema's missing type stubs, following the existing YAML import pattern; no dependency or packaging changes. `referencing.typing.Resolver` is imported only under `TYPE_CHECKING` because it is not a runtime export. Installed referencing methods were introspected before use.
+- Verified by (OBSERVED, author-run; not independent review):
+  - `.venv/bin/ug doctor`: PASS, exit 0, `Summary: 15 ok, 0 warn, 0 fail`; includes `water.wntr_version` and `water.wntr_api_manifest`.
+  - Temporary manifest mutation, executed with `.venv/bin/ug doctor` and `UG_WNTR_MANIFEST` pointing to the temporary JSON: PASS, exit 1, `Summary: 14 ok, 0 warn, 1 fail`. The failed manifest result names `wntr.network.WaterNetworkModel.add_curve_cli_missing_symbol`. Only the temporary copy was edited.
+  - `.venv/bin/ug doctor --json | .venv/bin/python -m json.tool`: PASS, parsed the one-object report with `ok: true`. Two in-process JSON runs were byte-identical in the acceptance test.
+  - `make lint-imports test-conformance lint typecheck test-unit test-contracts wntr-manifest test-water doctor`: PASS, exit 0. Import lint: no forbidden imports; conformance: 8 passed, 12 expected xfails; Ruff check clean and 48 files formatted; mypy: 27 source files clean; unit: 213 passed (before the final four additional CLI exit-code tests); contracts: 860 passed; WNTR manifest: 49 symbols verified; water: 35 passed; `make doctor`: 15 ok, 0 warn, 0 fail.
+  - `.venv/bin/python -m pytest platform/tests/unit/test_cli.py -q`: PASS after the four extra CLI exit-code cases, 43 passed.
+  - `npm_config_offline=true make ci`: EXPECTED_RED, exit 2 at `test-frontend`, matching the supplied branch limitation. Frontend: 269 tests passed and production build succeeded; offline checker flags `src/generated/stream-envelope.d.ts: js network api WebSocket`. Log: `/tmp/ug-cli-ci.log`. No frontend fixes attempted.
+  - `git diff --check`: PASS. `git status --short`: all changes authored here are in allowed paths. The lead's pre-existing `M platform/ug_cli/pyproject.toml` was present before implementation and remains untouched; thus the literal whole-tree “only allowed files” condition cannot hold in this supplied worktree.
+- Not done / known limits:
+  - Standalone WNTR imports can emit Matplotlib/fontconfig cache warnings to stderr under this sandbox because the normal cache paths are not writable. JSON stdout remains parseable. Tests of script stderr pass because the parent WNTR import provides its temporary cache environment to subprocesses. CLI code does not configure or write caches; upstream health checks may initialize third-party caches and temporary simulation files. No forbidden domain edits or environment configuration changes were made to hide this behavior.
+  - Independent tester/reviewer, hosted CI, and Tier-1 cross-review log: NOT_RUN / pending lead. No self-review claim. Review log is outside this card's allowed edits.
+  - No push, PR, merge, tag, branch switch, other-worktree operation, deletion, freebuff reuse, network installation, contract change, or packaging edit.
+- Contracts touched: no; contract failures were introduced only in temporary copies.
+- Honesty checklist (Appendix E, scoped to CLI tooling):
+  - [x] Truth/telemetry separation: no runtime data paths changed.
+  - [x] Evidence: verification results above are OBSERVED environment diagnostics, not utility measurements.
+  - [x] Probabilities/assumptions: none introduced.
+  - [x] Money: no calculations changed.
+  - [x] Determinism: stable ordering and identical JSON tests; no simulation semantics changed.
+  - [x] LLM calculation paths: none introduced.
+  - [x] Banner/Fidelity/source: no operator UI changed; not relevant to CLI environment checks.
+  - [x] External APIs: installed APIs introspected/exercised offline; WNTR accessed through the adapter hook.
+  - [x] Contracts/types: no changes; contract validation passes.
+  - [x] Synthetic-fault results: no field-validation claims.
+- Risks the reviewer should focus on: schema-resource scoping/anchors and keyword traversal, deterministic failures across process hash seeds, warning-only tool failures, and health-hook exception isolation. The only environment uncertainty is upstream cache diagnostics on stderr in a fresh sandbox; no other unresolved API assumption or dependency choice.
+- Next step for the other agent: independently run and mutate the CLI, record review in `docs/reviews/T-A1-009.md`, then commit the allowed deliverables with `Agent: codex` if sandbox staging is blocked. Carry the lead-owned packaging change separately as appropriate. Owner handles remote actions and merges.
+- Final verification additions (OBSERVED):
+  - `make lint test-unit`: PASS on the final test suite; Ruff check clean, 48 files already formatted, 217 unit tests passed. Log: `/tmp/ug-cli-final-checks.log`.
+  - Two separate real-script `.venv/bin/ug doctor --json` subprocess runs: both exited 0 and stdout was byte-identical (asserted by the subprocess driver).
+  - Staging the six allowed deliverables with `git add` failed, exit 128: cannot create `/Users/ahmedmetawea/Desktop/UtilityGuard-Twin/.git/worktrees/codex-a1-ug-cli/index.lock`, Operation not permitted. `git commit -m 'feat(cli): add ug commands and offline doctor' -m 'Agent: codex'` failed with the same restriction. Everything remains uncommitted; no workaround or permission/config change attempted.

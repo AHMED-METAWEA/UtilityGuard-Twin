@@ -7,10 +7,13 @@ name = "ug-cli"
 version = "0.0.0"
 description = "UtilityGuard Twin command line (ug): doctor, run, reproduce, eval, import, export."
 requires-python = ">=3.11"
-dependencies = []
+dependencies = ["ug-core", "jsonschema>=4.26,<5"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
 ug_cli = ["py.typed"]
+
+[project.scripts]
+ug = "ug_cli.main:main"
