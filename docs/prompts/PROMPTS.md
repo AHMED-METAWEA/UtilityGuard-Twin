@@ -3,6 +3,8 @@
 **Place at:** `docs/prompts/PROMPTS.md`
 Copy one prompt at a time into Claude Code, started in the repository root. Run them in order. Use a fresh session per prompt.
 
+> **Superseded in part (2026-10-25, `docs/audit/DECISIONS.md` D-001).** `freebuff/` is now a reference baseline, not code to adopt, audit in depth, fix in place or restructure. **Prompts 1, 2, 3 and 4 below describe the old plan and must not be used.** Phase A0 is done; Phase A1 is run from the task cards in `docs/COLLAB_PLAN.md` section 4 (one card per session), and later phases from `docs/ADOPTION_PLAN.md` section 9 with Prompt 5. Prompts 0, 5, 6 and 7 still apply, with "existing code" read as "the reference in `freebuff/`". The text of Prompts 1 to 4 is kept unchanged for history.
+
 ---
 
 ## Prompt 0: Connect and verify the repository (run once, 2 minutes)

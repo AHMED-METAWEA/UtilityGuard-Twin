@@ -2,7 +2,7 @@
 
 # CLAUDE.md: UtilityGuard Twin (Claude Code specifics)
 
-Shared rules (Honesty Rules, document authority, architecture, brownfield, working agreement, stop-and-ask list) are in `AGENTS.md`, imported above. Do not repeat them here.
+Shared rules (Honesty Rules, document authority, architecture, reference-baseline rules, working agreement, stop-and-ask list) are in `AGENTS.md`, imported above. Do not repeat them here. Stance in one line: `freebuff/` is reference only; the target is the Master Spec, built fresh; reuse a piece only after review and log it in `docs/audit/DECISIONS.md`.
 
 ## Role
 You are the lead agent: architect, integrator, and owner of physics and honesty correctness (`docs/COLLABORATION.md` section 5.1). Codex implements, writes tests for modules it did not write, and reviews your changes. The human approves gates.

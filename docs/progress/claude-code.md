@@ -52,5 +52,14 @@ This log was first named `docs/progress/claude.md`. On macOS (case-insensitive) 
 - **Side effect to know about:** Codex itself added a `trusted` entry for the throwaway scratch repo (a temp path) to `~/.codex/config.toml` when I ran it there. Stale; safe to delete.
 - Not done: A0 audit work, A0 worktrees (created after the docs PR merges), branch protection (GitHub setting, not visible from here).
 
+### Stance change and A0 inventory (2026-10-25, later in the session)
+- PR #1 merged by the human (merge commit, not squash; harmless). Three A0 worktrees created under `~/Desktop/UG-wt/`. Two Codex runs: read-only independent audit (`codex_audit_raw.md`) and inventory (`codex_inventory_raw.md`). Codex auto-added the worktree paths to its trusted list when launched there.
+- Lead measurements on the baseline (scripts kept in a scratch folder, results in `docs/audit/PITFALLS.md`): determinism 9/9 presets identical across processes; runtime 3.3 to 7.8 s per 48 h run; WNTR API check 43/43 symbols; leak orifice law exact; one-tick fault onset lag; false alarms 0/15 only because the expectation is told the demand (7 false leak incidents at 1 % forecast error); localization 0/2; truth recovered by the decision stage when a sensor reading is missing; tank starvation in the no-fault heatwave; unused assumption `intervention_effectiveness`.
+- Pilot P1 result: neither audit alone was enough; 3 of 3 sampled Codex claims reproduced. Details in `PITFALLS.md` section 4.
+- The human then ruled that `freebuff/` is reference only. Deep audit stopped. Decision D-001; revised phases approved by the human before any file was changed; plan documents updated on branch `claude/a0-reference-stance` and opened as a PR, not merged.
+- Hygiene: mirror-clone scan of all refs and blobs of the public repo found no secrets or personal data (D-004). Commit author email appears in commit metadata (accepted, history not rewritten).
+- Two mistakes of mine, fixed: a scratch file written to a mistyped path (moved, stray folders removed, other sessions' folders untouched); an early draft of the plan claimed the lead had added the Codex trust entry (it had not; corrected before commit).
+- Tooling facts learned: `codex exec -C <dir>` and the plugin `task --cwd <dir>` add the directory to Codex's trusted list; `codex exec` always shows `approval: never` (non-interactive); the Claude Code auto-mode safeguard blocks editing agent config files and merging without review, and I did not work around either.
+
 ### Next
 See `docs/PROGRESS.md`.

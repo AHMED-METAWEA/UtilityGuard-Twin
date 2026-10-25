@@ -5,7 +5,7 @@ Read by Codex directly. Claude Code imports it from `CLAUDE.md` (`@AGENTS.md`). 
 ## Project
 Simulation-driven virtual utility twin of a capital-scale city (client context: ACUD, New Administrative Capital of Egypt). Water first; electricity and district cooling later as plugins.
 - Target system: `docs/UtilityGuard_Master_Spec.md`
-- Plan from existing code to target: `docs/ADOPTION_PLAN.md`
+- Phases and the reference-baseline stance (`freebuff/` is reference only; build to the spec): `docs/ADOPTION_PLAN.md`
 - Two-agent protocol (roles, branches, reviews): `docs/COLLABORATION.md`; concrete task cards: `docs/COLLAB_PLAN.md`
 - Current state: `docs/PROGRESS.md`; your assignment: the task card in `docs/tasks/`
 
@@ -15,7 +15,7 @@ There is NO ACUD data. The layout comes from public sources, pipes are inferred,
 1. Honesty Rules (below)
 2. Master Spec
 3. Adoption Plan and the assigned task card
-4. Existing code: evidence of intent only, no authority (it was generated earlier by a different AI agent, freebuf, and is unverified until audited)
+4. Existing code in `freebuff/`: reference only, no authority. It was generated earlier by a different AI agent (freebuf). Take ideas from it; never depend on it or shape the architecture around it.
 
 ## Honesty Rules (never weaken; ask the human before changing)
 - Every displayed number carries an evidence label: OBSERVED, BENCHMARK, PUBLIC_GEOMETRY, SIMULATION, SENSOR_SIM, MODEL, ASSUMPTION, CALCULATED, INSUFFICIENT_EVIDENCE.
@@ -35,12 +35,15 @@ There is NO ACUD data. The layout comes from public sources, pipes are inferred,
 - Offline-first: no CDN assets or external APIs at runtime.
 - Verify every external API (WNTR and others) by introspecting the installed version or reading its documentation. Never guess signatures.
 
-## Brownfield rules (we adopt existing code, we do not rebuild)
-- The baseline lives in `freebuff/` (git tag `baseline-freebuf`) until Phase A2 restructures it. Until then, paths in the Adoption Plan such as `backend/app/...` are `freebuff/backend/app/...`. Do not move files outside an A2 task card.
-- Do not rewrite wholesale. Verdicts are KEEP, REFACTOR, FIX, REWRITE, DROP (Adoption Plan section 4). REWRITE needs a reason recorded in `docs/audit/DECISIONS.md`.
-- Pin current behavior with golden tests before refactoring a module, unless the behavior is itself a defect.
+## Reference-baseline rules (build to the spec, reuse selectively)
+- `freebuff/` (git tag `baseline-freebuf`) is a **reference**, not the foundation. Do not edit, move or delete anything in it; do not import from it. The new structure (`platform/`, `domains/water/`, `contracts/`, `assumptions/`, ...) is built fresh at the repo root following the Master Spec (section 14).
+- Reuse a piece of `freebuff/` only if it passes review (Adoption Plan section 6 checklist) and is better than writing it new. Verdicts are REUSE, ADAPT, REFERENCE, AVOID (Adoption Plan section 4). Record every REUSE or ADAPT (source file, what was reused, why) in `docs/audit/DECISIONS.md` in the same PR that brings it in.
+- Known pitfalls of the reference are listed in `docs/audit/PITFALLS.md`. New code must not repeat them, and each has a test in Phase A1.
+- Golden (characterization) tests only for pieces we reuse (Adoption Plan Appendix A). Do not pin behavior that `PITFALLS.md` marks as a defect.
+- Do not audit `freebuff/` line by line. Read it only to take a reuse decision.
 - Small reversible steps; commit after each green step; never rewrite published history.
 - List files in `docs/audit/DECISIONS.md` before any deletion, and get approval.
+- `platform/` is a plain folder, not a Python package (a package named `platform` would shadow the standard library). Install `ug_core`, `ug_intel`, `ug_api`, `ug_cli` individually.
 
 ## Working agreement
 - Work only on your assigned task card. Stay inside its "allowed files". Do not edit paths owned by the other agent (ownership map in `docs/COLLABORATION.md` section 7).
@@ -53,7 +56,7 @@ There is NO ACUD data. The layout comes from public sources, pipes are inferred,
 - Never commit secrets, credentials, `.venv`, `node_modules`, databases or large data files.
 
 ## Stop and ask the human before
-Changing Honesty Rules or contracts; deleting or rewriting a module; adding heavy, paid or license-sensitive dependencies; anything that costs money; destructive git commands (`reset --hard`, `clean -fd`, force push); pushing to the remote or merging to `main`; a library that cannot do what the spec assumes; usage limits close to exhausted; an audit result showing the baseline is largely unusable.
+Changing Honesty Rules or contracts; deleting or rewriting a module; adding heavy, paid or license-sensitive dependencies; anything that costs money; destructive git commands (`reset --hard`, `clean -fd`, force push); pushing to the remote or merging to `main`; a library that cannot do what the spec assumes; usage limits close to exhausted; any edit or deletion inside `freebuff/`; a reuse candidate that touches truth, evidence labels or cost logic when you are unsure it is safe.
 
 ## Definition of done (every task)
 - Acceptance tests in the task card pass; CI is green once CI exists.
@@ -62,10 +65,13 @@ Changing Honesty Rules or contracts; deleting or rewriting a module; adding heav
 - `docs/PROGRESS.md` is updated by the lead after merge.
 
 ## Commands (keep up to date as they come into existence)
-- Backend tests: `make test-backend` (target to be added by T-A1-002). Today: `cd freebuff/backend && ../.venv/bin/python -m pytest -q` (the baseline Makefile target is `make -C freebuff test`)
-- Frontend checks: `make test-frontend` (to be added by T-A1-002)
-- Run locally: `make dev`    Run with Docker: `make up` (baseline targets exist in `freebuff/Makefile`)
-- Environment check: `ug doctor` (once it exists)
+- The new structure has no commands yet. They are added in Phase A1 (task cards T-A1-001, T-A1-006, T-A1-009, T-A1-011 in `docs/COLLAB_PLAN.md`):
+  - Backend tests: `make test-backend`
+  - Frontend checks: `make test-frontend`
+  - Run locally: `make dev`    Run with Docker: `make up`
+  - Same checks as CI: `make ci`
+  - Environment check: `ug doctor`
+- `freebuff/` commands (for reference reading only, never part of the build): `cd freebuff/backend && ../.venv/bin/python -m pytest -q`
 
 ## Notes for Codex specifically
 - Reviews and audits are read-only: report findings with severity (S0 to S3), evidence (`file:line`) and a suggested fix; do not edit files. Scripted audit form: `codex exec -s read-only -C <worktree> -o <output.md> "<prompt>"`.
