@@ -41,12 +41,16 @@ def canonical(obj: Any) -> Any:
         out: dict[str, Any] = {}
         for key, value in obj.items():
             if not isinstance(key, str):
-                raise TypeError(f"mapping keys must be strings, got {type(key).__name__}")
+                raise TypeError(
+                    f"mapping keys must be strings, got {type(key).__name__}"
+                )
             out[key] = canonical(value)
         return out
     if isinstance(obj, list | tuple):
         return [canonical(item) for item in obj]
-    raise TypeError(f"cannot canonicalize {type(obj).__name__}; convert it to JSON types first")
+    raise TypeError(
+        f"cannot canonicalize {type(obj).__name__}; convert it to JSON types first"
+    )
 
 
 def canonical_json(obj: Any) -> str:

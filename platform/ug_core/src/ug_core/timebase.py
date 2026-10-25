@@ -26,7 +26,9 @@ class Timebase:
         if not isinstance(self.start, datetime) or self.start.tzinfo is None:
             raise ValueError("start must be a timezone-aware datetime")
         object.__setattr__(self, "start", self.start.astimezone(UTC))
-        if isinstance(self.step_seconds, bool) or not isinstance(self.step_seconds, int):
+        if isinstance(self.step_seconds, bool) or not isinstance(
+            self.step_seconds, int
+        ):
             raise TypeError("step_seconds must be an int")
         if isinstance(self.n_ticks, bool) or not isinstance(self.n_ticks, int):
             raise TypeError("n_ticks must be an int")
@@ -57,7 +59,9 @@ class Timebase:
     def tick_at_offset(self, seconds: float) -> int:
         """Tick for an offset in seconds from `start`. Must be a whole number of steps."""
         if isinstance(seconds, bool) or not math.isfinite(seconds):
-            raise ValueError(f"offset must be a finite number of seconds, got {seconds!r}")
+            raise ValueError(
+                f"offset must be a finite number of seconds, got {seconds!r}"
+            )
         steps, remainder = divmod(seconds, self.step_seconds)
         if remainder != 0:
             raise ValueError(

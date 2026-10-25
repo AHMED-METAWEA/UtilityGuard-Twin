@@ -19,13 +19,17 @@ class EvidenceLabel(StrEnum):
 
     OBSERVED = "OBSERVED"  # measured by a real source
     BENCHMARK = "BENCHMARK"  # from a public benchmark dataset (itself model-generated)
-    PUBLIC_GEOMETRY = "PUBLIC_GEOMETRY"  # layout taken from public sources, with provenance
+    PUBLIC_GEOMETRY = (
+        "PUBLIC_GEOMETRY"  # layout taken from public sources, with provenance
+    )
     SIMULATION = "SIMULATION"  # output of the physical solver
     SENSOR_SIM = "SENSOR_SIM"  # output of the measurement simulator
     MODEL = "MODEL"  # output of a detector or statistical model, with version
     ASSUMPTION = "ASSUMPTION"  # a user-editable, versioned input
     CALCULATED = "CALCULATED"  # derived from the above by a displayed formula
-    INSUFFICIENT_EVIDENCE = "INSUFFICIENT_EVIDENCE"  # the system declines to produce a number
+    INSUFFICIENT_EVIDENCE = (
+        "INSUFFICIENT_EVIDENCE"  # the system declines to produce a number
+    )
 
 
 T = TypeVar("T")
@@ -65,13 +69,19 @@ class Evidenced(Generic[T]):
 
         if self.label is EvidenceLabel.INSUFFICIENT_EVIDENCE:
             if self.value is not None:
-                raise ValueError("INSUFFICIENT_EVIDENCE must carry no value (value=None)")
+                raise ValueError(
+                    "INSUFFICIENT_EVIDENCE must carry no value (value=None)"
+                )
         elif self.value is None:
-            raise ValueError(f"a {self.label} value cannot be None; use INSUFFICIENT_EVIDENCE")
+            raise ValueError(
+                f"a {self.label} value cannot be None; use INSUFFICIENT_EVIDENCE"
+            )
         if isinstance(self.value, int | float) and not isinstance(self.value, bool):
             finite(self.value, "value")
         if self.label is EvidenceLabel.CALCULATED:
             if not (isinstance(self.formula, str) and self.formula.strip()):
                 raise ValueError("a CALCULATED value needs a displayed formula")
             if not inputs:
-                raise ValueError("a CALCULATED value needs at least one input evidence id")
+                raise ValueError(
+                    "a CALCULATED value needs at least one input evidence id"
+                )

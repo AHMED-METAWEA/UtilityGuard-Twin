@@ -42,14 +42,20 @@ class Manifest:
     schema_version: str = MANIFEST_SCHEMA_VERSION
 
     def __post_init__(self) -> None:
-        if isinstance(self.seed, bool) or not isinstance(self.seed, int) or self.seed < 0:
+        if (
+            isinstance(self.seed, bool)
+            or not isinstance(self.seed, int)
+            or self.seed < 0
+        ):
             raise ValueError("seed must be a non-negative int")
         for name, mapping in (
             ("versions", self.versions),
             ("libraries", self.libraries),
             ("output_hashes", self.output_hashes),
         ):
-            if not all(isinstance(k, str) and isinstance(v, str) for k, v in mapping.items()):
+            if not all(
+                isinstance(k, str) and isinstance(v, str) for k, v in mapping.items()
+            ):
                 raise TypeError(f"{name} must map strings to strings")
         unordered = tuple(self.unordered)
         config = thaw(self.config)
@@ -59,7 +65,9 @@ class Manifest:
             if key in config:
                 items = config[key]
                 if not isinstance(items, list | tuple):
-                    raise TypeError(f"config[{key!r}] must be a list to be treated as unordered")
+                    raise TypeError(
+                        f"config[{key!r}] must be a list to be treated as unordered"
+                    )
                 config[key] = sorted(items, key=canonical_json)
         object.__setattr__(self, "unordered", unordered)
         object.__setattr__(self, "config", freeze(config))
@@ -80,7 +88,9 @@ class Manifest:
         }
 
     def config_hash(self) -> str:
-        return sha256_hex(canonical_json({"config": thaw(self.config), "seed": self.seed}))
+        return sha256_hex(
+            canonical_json({"config": thaw(self.config), "seed": self.seed})
+        )
 
     def input_hash(self) -> str:
         return sha256_hex(canonical_json(self._input_payload()))

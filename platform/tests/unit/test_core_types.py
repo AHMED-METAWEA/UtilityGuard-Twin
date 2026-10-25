@@ -43,7 +43,11 @@ def run_python(code: str, hash_seed: str = "0") -> str:
     """Run `code` in a fresh interpreter and return its stdout."""
     env = {**os.environ, "PYTHONHASHSEED": hash_seed}
     result = subprocess.run(
-        [sys.executable, "-c", code], capture_output=True, text=True, check=True, env=env
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+        check=True,
+        env=env,
     )
     return result.stdout.strip()
 
@@ -65,7 +69,9 @@ def test_master_spec_labels_are_a_subset_of_the_code_labels() -> None:
 
     This guards against drift in one direction only: a label the Spec names must exist in code.
     """
-    spec = (REPO_ROOT / "docs" / "UtilityGuard_Master_Spec.md").read_text(encoding="utf-8")
+    spec = (REPO_ROOT / "docs" / "UtilityGuard_Master_Spec.md").read_text(
+        encoding="utf-8"
+    )
     table = spec.split("## 2. Honesty rules", 1)[1].split("## 3.", 1)[0]
     in_spec = set(re.findall(r"^\| `([A-Z_]+)` \|", table, flags=re.MULTILINE))
     assert in_spec, "no labels found in the Spec table"
@@ -96,7 +102,9 @@ def test_evidenced_accepts_a_known_label_given_as_text() -> None:
 
 
 def test_insufficient_evidence_if_and_only_if_no_value() -> None:
-    declined: Evidenced[float] = Evidenced(None, EvidenceLabel.INSUFFICIENT_EVIDENCE, "ev_none")
+    declined: Evidenced[float] = Evidenced(
+        None, EvidenceLabel.INSUFFICIENT_EVIDENCE, "ev_none"
+    )
     assert declined.value is None
     with pytest.raises(ValueError):
         Evidenced(3.0, EvidenceLabel.INSUFFICIENT_EVIDENCE, "ev_x")
@@ -137,7 +145,9 @@ def test_evidenced_is_frozen() -> None:
 
 def test_timebase_basics_and_utc_normalisation() -> None:
     cairo = timezone(timedelta(hours=2))
-    base = Timebase(start=datetime(2026, 1, 1, 2, 0, tzinfo=cairo), step_seconds=300, n_ticks=12)
+    base = Timebase(
+        start=datetime(2026, 1, 1, 2, 0, tzinfo=cairo), step_seconds=300, n_ticks=12
+    )
     assert base.start == START
     assert len(base) == 12
     assert base.iso_at(3) == "2026-01-01T00:15:00Z"
@@ -148,7 +158,9 @@ def test_timebase_conversion_is_exact_never_rounded() -> None:
     base = tb(n=200)
     assert base.tick_at_offset(43200) == 144  # hour 12 at 5 min steps
     with pytest.raises(ValueError):
-        base.tick_at_offset(43201)  # one second off a tick: error, not silently tick 144
+        base.tick_at_offset(
+            43201
+        )  # one second off a tick: error, not silently tick 144
     with pytest.raises(ValueError):
         base.tick_at_offset(float("nan"))
     with pytest.raises(ValueError):
@@ -159,7 +171,9 @@ def test_timebase_conversion_is_exact_never_rounded() -> None:
 
 def test_timebase_rejects_bad_input() -> None:
     with pytest.raises(ValueError):
-        Timebase(start=datetime(2026, 1, 1), step_seconds=300, n_ticks=4)  # naive datetime
+        Timebase(
+            start=datetime(2026, 1, 1), step_seconds=300, n_ticks=4
+        )  # naive datetime
     with pytest.raises(ValueError):
         Timebase(start=START, step_seconds=0, n_ticks=4)
     with pytest.raises(ValueError):
@@ -235,7 +249,11 @@ def test_telemetry_missing_is_none_and_non_finite_is_rejected() -> None:
 
 def test_telemetry_label_must_be_a_telemetry_label() -> None:
     base = tb(n=2)
-    for label in (EvidenceLabel.OBSERVED, EvidenceLabel.BENCHMARK, EvidenceLabel.SENSOR_SIM):
+    for label in (
+        EvidenceLabel.OBSERVED,
+        EvidenceLabel.BENCHMARK,
+        EvidenceLabel.SENSOR_SIM,
+    ):
         assert TelemetrySeries(base, {"P01": [1.0, 2.0]}, label=label).label is label
     with pytest.raises(ValueError):
         TelemetrySeries(base, {"P01": [1.0, 2.0]}, label=EvidenceLabel.SIMULATION)
@@ -319,11 +337,17 @@ def test_manifest_hash_changes_when_anything_that_matters_changes() -> None:
     reference = make_manifest().input_hash()
     changed = {
         "seed": make_manifest(seed=43),
-        "version": make_manifest(versions={"network_version": "f1_demo2", "contract_version": "1"}),
+        "version": make_manifest(
+            versions={"network_version": "f1_demo2", "contract_version": "1"}
+        ),
         "library": make_manifest(libraries={"numpy": "2.4.7"}),
         "git": make_manifest(git_commit="abc123"),
-        "fault value": make_manifest(faults=[{**FAULTS[0], "area_cm2": 6.5}, *FAULTS[1:]]),
-        "extra fault": make_manifest(faults=[*FAULTS, {"type": "leak", "target": "PIPE_30"}]),
+        "fault value": make_manifest(
+            faults=[{**FAULTS[0], "area_cm2": 6.5}, *FAULTS[1:]]
+        ),
+        "extra fault": make_manifest(
+            faults=[*FAULTS, {"type": "leak", "target": "PIPE_30"}]
+        ),
         "duplicate fault": make_manifest(faults=[*FAULTS, FAULTS[0]]),
     }
     for name, manifest in changed.items():

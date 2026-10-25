@@ -43,7 +43,9 @@ class TruthEvent:
         if self.end_tick is not None and self.end_tick <= self.start_tick:
             raise ValueError("end_tick must be greater than start_tick")
         object.__setattr__(self, "parameters", freeze(self.parameters))
-        canonical_json(thaw(self.parameters))  # fail early on non-finite or non-JSON content
+        canonical_json(
+            thaw(self.parameters)
+        )  # fail early on non-finite or non-JSON content
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -75,8 +77,13 @@ class TruthSeries:
             frozen[name] = series
         object.__setattr__(self, "channels", MappingProxyType(frozen))
         for event in self.events:
-            last = event.end_tick if event.end_tick is not None else self.timebase.n_ticks
-            if event.start_tick >= self.timebase.n_ticks or last > self.timebase.n_ticks:
+            last = (
+                event.end_tick if event.end_tick is not None else self.timebase.n_ticks
+            )
+            if (
+                event.start_tick >= self.timebase.n_ticks
+                or last > self.timebase.n_ticks
+            ):
                 raise ValueError(f"event outside the time axis: {event.to_dict()}")
         ordered = sorted(self.events, key=lambda e: canonical_json(e.to_dict()))
         object.__setattr__(self, "events", tuple(ordered))
@@ -85,7 +92,9 @@ class TruthSeries:
         """SHA-256 of the content, with values rounded to the hash precision."""
         payload = {
             "timebase": self.timebase.to_dict(),
-            "channels": {n: [round_for_hash(v) for v in vs] for n, vs in self.channels.items()},
+            "channels": {
+                n: [round_for_hash(v) for v in vs] for n, vs in self.channels.items()
+            },
             "events": [e.to_dict() for e in self.events],
         }
         return sha256_hex(canonical_json(payload))

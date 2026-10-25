@@ -38,7 +38,9 @@ class StreamSource(StrEnum):
 @dataclass(frozen=True)
 class TelemetrySeries:
     timebase: Timebase
-    readings: Mapping[str, Sequence[float | None]]  # stored as a read-only mapping of tuples
+    readings: Mapping[
+        str, Sequence[float | None]
+    ]  # stored as a read-only mapping of tuples
     label: EvidenceLabel = EvidenceLabel.SENSOR_SIM
 
     def __post_init__(self) -> None:
@@ -46,11 +48,14 @@ class TelemetrySeries:
             object.__setattr__(self, "label", EvidenceLabel(self.label))
         if self.label not in TELEMETRY_LABELS:
             allowed = sorted(label.value for label in TELEMETRY_LABELS)
-            raise ValueError(f"telemetry label must be one of {allowed}, got {self.label}")
+            raise ValueError(
+                f"telemetry label must be one of {allowed}, got {self.label}"
+            )
         frozen: dict[str, tuple[float | None, ...]] = {}
         for sensor_id, values in self.readings.items():
             series = tuple(
-                None if v is None else finite(v, f"reading {sensor_id!r}") for v in values
+                None if v is None else finite(v, f"reading {sensor_id!r}")
+                for v in values
             )
             if len(series) != self.timebase.n_ticks:
                 raise ValueError(
