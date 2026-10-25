@@ -4,8 +4,9 @@ Format: Master Spec Appendix A. A file holds one set (`set_id`, `parent`, `note`
 named assumptions. Each one has a unit, a triangular distribution (`min <= mode <= max`), a
 `source_note` and a `verified` flag. `verified: true` is allowed only when the source note names a
 source; a value that is a placeholder stays `verified: false`, and the UI shows it as such. The
-loader checks the note for hygiene only (long enough, and no "placeholder", "TBD", "unsourced" and
-the like). It cannot judge whether a source is real, so a human reviews every verified entry.
+loader checks the note for hygiene only (long enough, and not beginning with "placeholder", "TBD"
+and the like, nor saying "no source"). It cannot judge whether a source is real, so a human
+reviews every verified entry.
 
 The loader is strict on purpose: an unknown key, a missing field, a repeated key, a non-finite
 number or a distribution out of order is an error, never a silent default. Wrong money inputs
@@ -17,6 +18,7 @@ assumption editor.
 
 from __future__ import annotations
 
+import numbers
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -35,12 +37,16 @@ _TOP_KEYS = frozenset({"set_id", "parent", "note", "assumptions"})
 _ENTRY_KEYS = frozenset({"unit", "distribution", "source_note", "verified"})
 _DISTRIBUTION_KEYS = frozenset({"type", "min", "mode", "max"})
 _MAX_EXACT_INT = 2**53
-# Phrases that say "there is no source", anywhere in the note and in either language. Hygiene
-# only: a human decides whether a named source is real.
-_NO_SOURCE = re.compile(
-    r"placeholder|unverified|not verified|\btbd\b|\bto ?do\b|no source|unsourced"
-    r"|dummy|made up|\bn/a\b|افتراض|غير موثق|بدون مصدر",
+# A note that BEGINS with one of these, or says outright that there is no source, is not a source.
+# Hygiene only: the words are not searched anywhere else, because real citations mention them
+# ("replaces the placeholder in v1"), and a human decides whether a named source is real.
+_NO_SOURCE_START = re.compile(
+    r"^[\W_]*(placeholder|unverified|not verified|tbd|to ?do|n/a|dummy|made up|no source"
+    r"|unsourced|قيمة افتراضية|غير موثق|بدون مصدر)",
     re.IGNORECASE,
+)
+_NO_SOURCE_ANYWHERE = re.compile(
+    r"\bno source\b|\bunsourced\b|بدون مصدر", re.IGNORECASE
 )
 _MIN_SOURCE_NOTE = 10
 
@@ -154,14 +160,11 @@ def _mapping(value: Any, where: str, required: frozenset[str]) -> Mapping[str, A
 
 
 def _number(value: Any, where: str) -> float:
-    if (
-        isinstance(value, int)
-        and not isinstance(value, bool)
-        and abs(value) > _MAX_EXACT_INT
-    ):
-        raise AssumptionError(
-            f"{where} must be exactly representable (at most 2**53), got {value}"
-        )
+    if isinstance(value, numbers.Integral) and not isinstance(value, bool):
+        if abs(int(value)) > _MAX_EXACT_INT:  # NumPy integers count too
+            raise AssumptionError(
+                f"{where} must be exactly representable (at most 2**53), got {int(value)}"
+            )
     try:
         return finite(value, where)
     except (NonFiniteError, TypeError, ValueError) as exc:
@@ -185,7 +188,9 @@ def _parse_entry(name: str, raw: Any) -> Assumption:
     if not isinstance(verified, bool):
         raise AssumptionError(f"{where}: verified must be true or false")
     if verified and (
-        len(source_note.strip()) < _MIN_SOURCE_NOTE or _NO_SOURCE.search(source_note)
+        len(source_note.strip()) < _MIN_SOURCE_NOTE
+        or _NO_SOURCE_START.match(source_note)
+        or _NO_SOURCE_ANYWHERE.search(source_note)
     ):
         raise AssumptionError(
             f"{where}: verified is true, but the source note does not name a source"

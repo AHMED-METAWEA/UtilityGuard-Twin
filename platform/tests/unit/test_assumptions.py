@@ -243,3 +243,39 @@ def test_verified_true_needs_a_note_that_names_a_source(note: str) -> None:
     )
     with pytest.raises(AssumptionError):
         parse_assumptions(data)
+
+
+def test_numpy_integers_cannot_slip_past_the_exactness_guard() -> None:
+    import numpy as np
+
+    low = 2**53
+    big = damaged(
+        lambda d: distribution(d).update(
+            min=np.int64(low + 1), mode=np.int64(low + 1), max=np.int64(low + 1)
+        )
+    )
+    with pytest.raises(AssumptionError, match="exactly"):
+        parse_assumptions(big)
+    ok = damaged(
+        lambda d: distribution(d).update(
+            min=np.int64(low), mode=np.int64(low), max=np.int64(low)
+        )
+    )
+    assert parse_assumptions(ok).assumptions[ENTRY].distribution.mode == low
+
+
+@pytest.mark.parametrize(
+    "note",
+    [
+        "ACUD tariff letter 2026-03; replaces placeholder in v1",
+        "وزارة الإسكان، تقرير الافتراضات الاقتصادية المعتمدة 2026، جدول 2",
+        "Signed contract annex 3 replaced the unverified draft values",
+    ],
+)
+def test_legitimate_citations_that_mention_the_marker_words_are_accepted(
+    note: str,
+) -> None:
+    data = damaged(
+        lambda d: d["assumptions"][ENTRY].update(verified=True, source_note=note)
+    )
+    assert ENTRY not in parse_assumptions(data).unverified()
