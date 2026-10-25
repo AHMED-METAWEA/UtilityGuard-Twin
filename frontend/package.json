@@ -1,0 +1,32 @@
+{
+  "name": "ug-frontend",
+  "private": true,
+  "version": "0.0.0",
+  "description": "UtilityGuard Twin web application (shell skeleton, phase A1).",
+  "type": "module",
+  "engines": {
+    "node": "^22.13.0"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "vite build",
+    "check-offline": "node scripts/check-offline.mjs",
+    "check": "npm run typecheck && npm test && npm run build && npm run check-offline",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "typescript": "6.0.3",
+    "vite": "8.3.4",
+    "vitest": "5.0.3",
+    "jsdom": "29.1.1",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/dom": "10.4.2",
+    "@types/react": "18.3.31",
+    "@types/react-dom": "18.3.7"
+  }
+}
