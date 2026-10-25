@@ -1,34 +1,28 @@
 # PROGRESS
-Current phase: A0 (setup and bootstrap done; A0 audit not started)
-Last session: 2026-10-25 (setup, planning, repository bootstrap; lead agent Claude Code)
+Current phase: A0 (inventory and reuse decisions written; awaiting human review of PR `claude/a0-reference-stance`)
+Last session: 2026-10-25 (lead agent Claude Code)
 
 Done:
-- Project documents placed: `CLAUDE.md`, `AGENTS.md`, `.codex/config.toml` at root; spec, adoption plan, collaboration protocol, collab plan in `docs/`; prompts in `docs/prompts/`; `docs/{progress,tasks,reviews,audit}` created.
-- **Repository bootstrapped and baseline published (T-A0-001 done).** `main` and `dev` at `debfd51`; tag `baseline-freebuf` -> `debfd51`; all pushed to `AHMED-METAWEA/UtilityGuard-Twin` (public). 79 files tracked under `freebuff/`. The remote's `.gitignore` template ignored `lib/`, which would have dropped `freebuff/frontend/src/lib/`; fixed before the commit and verified on the remote tree. Secret/PII scan of the baseline was clean.
-- Codex verified: codex-cli 0.164.0, plugin 1.0.6, ChatGPT login OK, review gate OFF. `/codex:rescue` writes the working tree and does not commit; without `--write` it is read-only. Config keys validated with `--strict-config`. Details: `docs/progress/claude-code.md`.
-- `AGENTS.md` (shared rules), `CLAUDE.md` (`@AGENTS.md` plus Claude specifics), `.codex/config.toml` finalized.
-- `docs/COLLAB_PLAN.md`: task cards T-A0-001..006 and T-A1-001..010, pilot P1 to P3, open questions with current status.
-- Agent log renamed `docs/progress/claude-code.md` (the name `claude.md` was auto-loaded as instructions on macOS).
-- Nothing inside `freebuff/` was changed. The setup files are on branch `claude/a0-docs-setup` for a pull request into `dev`.
+- Repository bootstrapped and baseline published (T-A0-001): `main` and `dev` at `debfd51`, tag `baseline-freebuf`, `freebuff/` imported unmodified (79 files). PR #1 (setup docs, two-agent protocol) merged into `dev`.
+- **Stance changed (D-001):** `freebuff/` is a reference only; the target is the Master Spec built fresh; reuse is selective and logged. Revised phases: A0 = short inventory and reuse decisions; A1 = foundation (Spec M0) built fresh; A2 retired; reused pieces ported inside B1. `platform/` is not a Python package (D-003).
+- A0 deliverables written: `docs/audit/INVENTORY.md` (short), `PITFALLS.md` (19 pitfalls, lead-reproduced or Codex-only, plus pilot P1 result), `DECISIONS.md` (D-001 to D-005, empty reuse log), Codex evidence (`codex_audit_raw.md`, `codex_inventory_raw.md`, `docs/progress/codex.md`).
+- Plan documents updated for the new stance: `docs/ADOPTION_PLAN.md` v2.0, `AGENTS.md`, `CLAUDE.md`, `docs/COLLABORATION.md` v1.1, `docs/COLLAB_PLAN.md` v2 (13 foundation cards T-A1-001..013), notice on superseded prompts in `docs/prompts/PROMPTS.md`.
+- Public repository hygiene scan over every ref and blob: clean (D-004).
+- Codex verified earlier (codex-cli 0.164.0, plugin 1.0.6, review gate off); `/codex:rescue` behavior recorded in `docs/progress/claude-code.md`.
 
 Next:
-1. Merge the docs-setup PR into `dev` (Codex review first, per COLLABORATION section 8).
-2. Create the A0 worktrees under `~/Desktop/UG-wt/` from `dev` (`claude-a0-audit`, `codex-a0-inventory`, `codex-a0-audit-p1`).
-3. Run T-A0-002 and T-A0-003 (Codex) in parallel with T-A0-004 and T-A0-005 (Claude), then T-A0-006. The A0 exit gate needs the human to review `docs/audit/*`.
-(Per CLAUDE.md, a plan is printed and approved before the A0 audit starts.)
+1. Human reviews and merges the PR (not merged by the lead).
+2. Merge `dev` to `main`, tag `phase-A0` (human approval).
+3. Phase A1: start with T-A1-001 (repository skeleton), then the cards in the order given in `docs/COLLAB_PLAN.md` section 4. Print a plan and wait for approval before A1 starts (CLAUDE.md).
 
 Blockers / human actions pending:
-- Add the Codex trust entry for this project to `~/.codex/config.toml` (two lines in `docs/COLLAB_PLAN.md` section 6, Q4). The lead did not edit user-level agent config; until it exists, Codex ignores `.codex/config.toml` and uses user settings (effort `high`).
-- Branch protection on `dev` and `main` (GitHub settings; PR required, no force push) if the plan allows. Not checked or set by the lead.
-- Optional: delete the stale `[projects."/private/tmp/.../rescue-test"]` trust entry that Codex added to `~/.codex/config.toml` for the throwaway scratch repo.
+- Review and merge the PR.
+- Rule on the F1 wording (D-005); it only blocks the final banner text in T-A1-010.
+- Approve the A1 dependency list (`docs/COLLAB_PLAN.md` section 6, Q3).
+- Optional: branch protection on `dev` and `main` (GitHub settings); GitHub "keep my email private" setting (Q4); delete the stale scratch-repo trust entry Codex added to `~/.codex/config.toml`.
 
-Decisions since last session:
-- `freebuff/` stays in place as the baseline until Phase A2 (approved).
-- Branch model `main`, `dev`, `claude/*`, `codex/*` and worktree folder `~/Desktop/UG-wt/` (approved).
-- Codex default reasoning effort `medium`; audits and T2 reviews raise it per run.
-- F1 fidelity wording conflict (Spec 1.4/5.1 vs CLAUDE.md/Adoption Plan G01) remains an open human ruling; until decided, the weaker Spec 1.4 wording applies to the banner (COLLABORATION section 9, stricter reading). Blocks T-A1-008 only.
-- Dev dependencies for A1 (Vitest, a JSON-Schema-to-TS generator) are asked per card.
+Decisions since last session: D-001 to D-005 in `docs/audit/DECISIONS.md`. Default Codex reasoning effort stays `medium`.
 
-Open questions for the human: see `docs/COLLAB_PLAN.md` section 6 (Q1 F1 wording, Q4 Codex trust, branch protection).
+Open questions for the human: see `docs/COLLAB_PLAN.md` section 6.
 
-Spend this phase: 1 Claude setup session plus execution of the approved bootstrap; 3 tiny Codex model calls (config key check, rescue write test, read-only control). Plugin setup and `codex doctor` make no model call.
+Spend so far: 1 long lead session (setup, bootstrap, measurements, stance change); Codex: 6 small runs (config key check, rescue write test, read-only control, project-config banner check, inventory run, independent audit run).

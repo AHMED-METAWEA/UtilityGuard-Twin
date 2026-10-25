@@ -3,7 +3,7 @@
 **Place at:** `docs/COLLABORATION.md`
 **Repository:** https://github.com/AHMED-METAWEA/UtilityGuard-Twin
 **Audience:** Claude Code first (you are the lead agent and must understand everything here), Codex second (it reads the short `AGENTS.md` derived from Appendix A), and the human owner (Ahmed) who approves gates.
-**Status:** v1.0. Companion documents: `CLAUDE.md`, `docs/UtilityGuard_Master_Spec.md` (target system), `docs/ADOPTION_PLAN.md` (phases A0 to B7), `docs/prompts/PROMPTS.md`.
+**Status:** v1.1 (2026-10-25: reference-baseline stance, phases A0 and A1 redefined, A2 retired; see `docs/audit/DECISIONS.md` D-001). Companion documents: `CLAUDE.md`, `docs/UtilityGuard_Master_Spec.md` (target system), `docs/ADOPTION_PLAN.md` (phases A0 to B7), `docs/prompts/PROMPTS.md`.
 
 ---
 
@@ -29,7 +29,7 @@ Do not start implementation work in this session. This session produces setup an
 - **What we are building:** UtilityGuard Twin, a simulation-driven virtual twin of a capital-scale city utility system. Water is the first domain. Electricity and district cooling are later plugins. It has a replayed telemetry stream, a data-quality layer, fault detection and diagnosis, consequence simulation (WNTR/EPANET), cost and decision analysis, a full evidence trail for every number, and a futuristic web app. Full detail is in the Master Spec.
 - **Client context:** ACUD (Administrative Capital for Urban Development, New Administrative Capital of Egypt). We have **zero access to ACUD data**. The twin uses the real public layout of the capital (districts, roads, parks from public sources) with inferred pipe routes and synthetic hydraulics. It must never be presented as a survey of the real network (fidelity F1).
 - **Team:** one human owner (Ahmed) plus a partner, and two AI agents (you and Codex). The human approves phase gates and anything that changes honesty rules, contracts, deletions, or cost.
-- **Existing code:** a first implementation was generated earlier by a different AI coding agent (freebuf) and imported as the baseline (tag `baseline-freebuf`, if present). It is **unverified and has no authority**. Phase A0 audits it. We adopt and evolve it; we do not rebuild from zero unless the audit proves it necessary.
+- **Existing code:** a first implementation was generated earlier by a different AI coding agent (freebuf) and imported under `freebuff/` (tag `baseline-freebuf`). It is a **reference only and has no authority**. We do not build on it. The target is the Master Spec, built fresh at the repo root. Phase A0 takes a short inventory (ideas, working pieces, pitfalls); a piece is reused only after review and is logged in `docs/audit/DECISIONS.md`. Everything else stays untouched in `freebuff/`.
 - **Constraints:** Claude Code runs on a Claude Pro subscription and Codex on the human's Codex subscription. Both have usage limits. Token and usage discipline is a requirement, not a nicety (Section 10).
 - **Honesty Rules are non-negotiable** and apply equally to both agents. They are in `CLAUDE.md` and Master Spec section 2. The ones agents break most often: truth leaking into telemetry, a number shown without an evidence label, invented probabilities, nondeterminism, LLM text in a calculation path.
 
@@ -81,7 +81,7 @@ Rules:
 - Never commit directly to `main` or `dev`. Open a pull request into `dev` from a `claude/...` or `codex/...` branch.
 - `dev` is merged into `main` only when a phase exit gate passes and the human approves. Tag it, for example `phase-A1`.
 - Never rewrite published history. No force push to `main` or `dev`. A force push to your own unpublished feature branch is allowed (use `--force-with-lease`).
-- The earlier suggestion of a branch named `adopt/a0-audit` is replaced by this model: Phase A0 work happens on `claude/a0-audit` branched from `dev`.
+- The earlier suggestion of a branch named `adopt/a0-audit` is replaced by this model: Phase A0 work happens on `claude/a0-<topic>` branches (for example `claude/a0-reference-stance`) branched from `dev`.
 
 Creating `dev` (human or Claude Code with approval):
 
@@ -99,12 +99,12 @@ GitHub settings the human should apply if the plan allows branch protection (pri
 Two agents must never edit the same working directory at the same time. Use one git worktree per agent task:
 
 ```bash
-# from the main clone; each command creates a new branch from dev in a sibling folder:
-git worktree add -b claude/a1-fix-truth-leak ../UG-claude-a1-leak dev
-git worktree add -b codex/a1-golden-tests   ../UG-codex-a1-tests dev
+# from the main clone; each command creates a new branch from dev in the shared worktree folder ~/Desktop/UG-wt:
+git worktree add -b claude/a1-core-types     ~/Desktop/UG-wt/claude-a1-core-types dev
+git worktree add -b codex/a1-honesty-tests   ~/Desktop/UG-wt/codex-a1-honesty-tests dev
 git worktree list
 # cleanup after merge:
-git worktree remove ../UG-codex-a1-tests && git branch -d codex/a1-golden-tests
+git worktree remove ~/Desktop/UG-wt/codex-a1-honesty-tests && git branch -d codex/a1-honesty-tests
 ```
 
 Each worktree needs its own virtual environment and `node_modules` (or a shared cache). Keep `data/` large files out of git (already ignored).
@@ -187,7 +187,7 @@ Also confirm with `codex --help` and `codex exec --help` the exact flags in your
 Responsibilities:
 - Owns the phase plan, task cards, contracts, architecture decisions (ADRs), and the Honesty Rules enforcement.
 - Owns anything where correctness needs scientific or architectural judgment: the hydraulic solver integration and fault models, the expectation model and diagnosis rules, localization, the cost model formulas, the decision engine, the evidence kernel, the evaluation methodology and split design.
-- Owns multi-file refactors and the restructure (Phase A2), where parallel edits would conflict.
+- Owns multi-file refactors and any change to the repository structure, where parallel edits would conflict.
 - Writes the UI design plan (tokens, type roles, wireframes) and the map-engine architecture, and reviews visual results.
 - Merges pull requests into `dev`, runs phase exit gates, updates `docs/PROGRESS.md`, and decides tie-breaks (Section 9).
 - Runs the integration checks and the cross-review of Codex's work.
@@ -197,7 +197,7 @@ Responsibilities:
 Responsibilities:
 - Implements well-specified tasks from task cards against runnable acceptance tests: backend endpoints from the contract, data pipelines, detectors and checks from written specifications, store and manifest plumbing, the `ug` CLI, CI workflows, Docker and Makefile, frontend components and screens from the design plan and generated types, i18n and accessibility tests.
 - Writes tests for modules it did not write (golden tests, property tests, contract tests, Playwright journeys).
-- Performs independent review of Claude Code's changes and an independent audit pass in Phase A0.
+- Performs independent review of Claude Code's changes, and (done once, in Phase A0) an independent read-only pass over the reference baseline.
 - Does performance profiling and optimization when given a benchmark and a target.
 
 ### 5.3 Human owner
@@ -236,7 +236,7 @@ Definition of done: Appendix B of `docs/ADOPTION_PLAN.md` plus an entry in the r
 
 ## 7. Ownership map (target layout from the Master Spec, section 14)
 
-Primary owner edits. The other agent may write tests for the path (in the tests folder) and review, but does not edit the implementation without a task card. Adjust to the real layout after Phase A2.
+Primary owner edits. The other agent may write tests for the path (in the tests folder) and review, but does not edit the implementation without a task card. The layout below is built fresh in Phase A1; adjust it to what is actually created.
 
 | Path | Primary owner | Notes |
 |---|---|---|
@@ -257,7 +257,7 @@ Primary owner edits. The other agent may write tests for the path (in the tests 
 | Tests that verify an owner's module | The non-owner | Principle 1 |
 | `docs/progress/claude-code.md`, `docs/progress/codex.md`, `docs/reviews/` | Each agent owns its own file | Avoids merge conflicts. Lead consolidates into `docs/PROGRESS.md` |
 
-During Phase A2 (restructure) the file moves are done by **one agent only (Claude Code)** with other work frozen, because moves conflict with every parallel edit.
+Creating the repository structure (Phase A1, card T-A1-001) and any later move of directories is done by **one agent only (Claude Code)** with other work frozen, because moves conflict with every parallel edit. Nothing inside `freebuff/` is moved, edited or deleted by either agent.
 
 ---
 
@@ -314,13 +314,13 @@ Risk tiers decide how much review a change gets. The lead assigns the tier on th
 
 ## 11. Pilot and metrics: prove the split before relying on it
 
-Run these three small tasks first (inside Phase A0 and the start of A1) and record results in `docs/COLLAB_PLAN.md`.
+Run these three small tasks first (P1 in Phase A0, P2 and P3 early in A1) and record results in `docs/COLLAB_PLAN.md`. P1 is done (results in `docs/audit/PITFALLS.md` section 4).
 
 | Pilot | Who | Purpose |
 |---|---|---|
-| P1: Independent audit | Claude Code audits the baseline (Prompt 1 in `docs/prompts/PROMPTS.md`). In parallel, Codex runs a **read-only** audit with the same checklist (`codex exec` in a read-only sandbox, output to a file such as `docs/audit/codex_audit_raw.md`; verify flags with `codex exec --help`) | Compare findings. Issues found by only one agent show each agent's blind spots. The union is the real audit |
-| P2: Bounded implementation | Codex builds the golden-test harness for one preset (Appendix A of the adoption plan) from a task card | Measures Codex's rework rate on a clearly specified task |
-| P3: Cross-review | Claude reviews P2's PR; Codex adversarially reviews Claude's first A1 fix | Measures reviewer usefulness |
+| P1: Independent look at the reference baseline (done) | Claude Code inspected and measured the baseline. In parallel, Codex ran a **read-only** audit with the same checklist (`codex exec -s read-only`, output `docs/audit/codex_audit_raw.md`) | Compare findings. Issues found by only one agent show each agent's blind spots. The union is the pitfalls list |
+| P2: Bounded implementation | Codex builds one clearly specified Phase A1 item from a task card (T-A1-004 honesty tests, or T-A1-007 type generation) | Measures Codex's rework rate on a clearly specified task |
+| P3: Cross-review | Claude reviews P2's PR; Codex adversarially reviews Claude's first A1 item (T-A1-003 core types) | Measures reviewer usefulness |
 
 Metrics to record per task: number of review findings by severity, number accepted versus rejected, rework rounds, tests added, CI first-pass result, rough usage cost. After P1 to P3, the lead proposes any changes to the ownership map in Section 7 and the human approves.
 
@@ -332,9 +332,9 @@ Phases and gates are defined in `docs/ADOPTION_PLAN.md` section 9. "Review" mean
 
 | Phase | Claude Code | Codex | Review focus |
 |---|---|---|---|
-| A0 Audit | Primary audit of physics, honesty, determinism, WNTR API correctness; writes `docs/audit/*` | Independent read-only audit (P1); inventory and test-run summary | Compare both audits; reconcile |
-| A1 Stabilize | Fix S0 items (truth leakage, labels, determinism, physics); extract contracts | Characterization (golden) tests; make/Docker/CI fixes; S1 non-physics fixes; generate TS types and contract-drift check | Adversarial review of every S0 fix |
-| A2 Restructure | All file moves, `DomainAdapter`, import-rule lint (single agent, others frozen) | `ug` CLI skeleton, GitHub Actions, conformance test skeleton in separate files | Verify golden tests unchanged |
+| A0 Reference inventory | Short inventory and measured pitfalls of `freebuff/`; stance and reuse decisions in `docs/audit/DECISIONS.md` | Independent read-only pass (P1); test-run and version summary | Compare both views; the union is `PITFALLS.md` |
+| A1 Foundation (Spec M0) | Repo structure (single agent), contracts, core types (truth and telemetry separate, evidence labels, manifest hash), `DomainAdapter` and import lint, WNTR API manifest, shell with banner and badge, ADR stubs, `assumptions/` format | Honesty tests, CI, TS type generation and drift check, `ug` CLI and `ug doctor`, Docker and Makefile, `make up` offline | Adversarial review of A1 (truth separation, labels, determinism); honesty tests catch each pitfall |
+| A2 (retired) | n/a: there is no baseline to restructure; reused pieces are ported inside B1 | n/a | n/a |
 | B1 Twin core | Geometry feasibility decision, `OsmCapitalProvider` design, hydraulics, fault models, scenario schema | `ug fetch-geometry` and coverage report, Parquet and DuckDB store, manifests and hashes, presets as data, tests | Physics review; determinism check |
 | B2 Telemetry, stream, map | UI design plan, tokens, shell, map-engine core | Stream envelope, WebSocket hub, replay player, frontend data layer, Scenario Lab UI | Truth never in stream; 60 fps check |
 | B3 Quality, detection | Expectation model, diagnosis rules, signature-matrix localization, incident logic, D2 | Q01 to Q12, D1 and D3, quality and alerts UI, tests | False alarms on normal, holiday, heatwave, Ramadan across 10 seeds |
@@ -436,7 +436,7 @@ Branch: <agent>/<phase>-<topic>          Phase: A1          Spec refs: Master Sp
 One sentence. What exists after this task that does not exist now.
 
 ## Context
-Why it matters; links to audit findings (AUDIT.md IDs) and contracts.
+Why it matters; links to pitfalls (PITFALLS.md IDs) and contracts.
 
 ## Allowed files / Forbidden files
 Allowed: <paths>
