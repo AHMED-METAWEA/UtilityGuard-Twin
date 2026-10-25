@@ -77,15 +77,22 @@ Status: **done 2026-10-25** (PR #4 merged; verified from a fresh clone; Codex re
 **Budget:** 1 session. **Escalate if:** the package layout needs a decision that Spec section 14 does not cover (record an ADR).
 
 ### T-A1-002: Contracts v1 (JSON Schema)
-Status: **PR #12 open, awaiting the owner's sign-off** (contracts); two Codex adversarial rounds done, all findings fixed, 680 tests, 62 schema mutations caught   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-contracts`   Spec refs: sections 11, 12, 2
+Status: **PR #12 open, approved by the owner with conditions** (Spec 12.2 update: PR #14; the `to_dict()` conformance test: card T-A1-002b, first Wave 2 task); two Codex adversarial rounds done, all findings fixed, 680 tests, 62 schema mutations caught   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-contracts`   Spec refs: sections 11, 12, 2
 **Goal:** Versioned, schema-validated contracts for scenario config, run manifest, telemetry reading, stream envelope, evidence record, assumption and incident.
 **Allowed:** `contracts/**`, `contracts/examples/**` (valid), `contracts/invalid/**` (one file per rejection reason), `platform/tests/contract/**`. **Forbidden:** anything else.
 **Rules baked into the schemas:** every schema requires `schema_version`; `additionalProperties: false`; the telemetry and stream schemas have **no** truth or fault-tag fields (P-01, P-02); the stream envelope requires `stream_source` in `REPLAY|SIMULATED|LIVE` (P-04); every displayable number carries `label` from the nine evidence labels; cost objects require `label: CALCULATED` (P-14); unknown fault types are rejected (P-18).
 **Acceptance:** `make test-contracts` passes: every file in `contracts/examples/` validates; every file in `contracts/invalid/` is rejected (names: `missing_schema_version`, `extra_field`, `truth_field_in_telemetry`, `unknown_label`, `unknown_fault_type`, `cost_labelled_simulation`, `missing_stream_source`).
 **Budget:** 2 sessions. **Escalate if:** a Spec section 12 payload cannot be expressed without deviating (human decides).
 
+### T-A1-002b: The code's outputs validate against the contracts
+Status: ready after #8, #11 and #12 are merged; **first Wave 2 task** (condition set by the owner when approving #12)   Owner: claude   Reviewer: codex   Tier: T1   Branch: `claude/a1-contract-conformance`   Spec refs: 12, 10.4
+**Goal:** The schemas of `contracts/v1/` and the code that produces their payloads cannot drift apart. `ug_core.Manifest.to_dict()` validates against `run-manifest`; `AssumptionSet.to_dict()` (with `schema_version`) against `assumption-set`; `Evidenced` against `evidence-record` where a mapping exists; `TelemetrySeries` rows against `telemetry-reading`; `Timebase.to_dict()` and the label enums against `common`.
+**Allowed:** `platform/tests/contract/test_code_matches_contracts.py` and, only if a payload cannot be produced yet, a small `to_payload()` helper in `platform/ug_core/**`. **Forbidden:** changing a schema (contract change, ask the owner).
+**Acceptance:** `make test-contracts` passes with the new tests; a deliberate mutation (a renamed key in `Manifest.to_dict()`, an extra field, a label added to `EvidenceLabel`) makes a test fail. Anything the code cannot produce yet is listed in the PR as a gap, not hidden.
+**Budget:** 1 session.
+
 ### T-A1-003: Core types: truth and telemetry separate, evidence labels, manifest
-Status: **PR #8 open** (two Codex adversarial rounds, 8 defects found and fixed, 59 tests)   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-core-types`   Spec refs: 4.1 P1 and P2, 2, 10, 11
+Status: **merged (PR #8)** (two Codex adversarial rounds, 8 defects found and fixed, 59 tests)   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-core-types`   Spec refs: 4.1 P1 and P2, 2, 10, 11
 **Goal:** `ug_core` provides the types the rest of the system is built on, so the Honesty Rules are enforced by structure.
 **Contents:** `EvidenceLabel` (exactly the nine labels); `Evidenced[T]` (value plus label plus evidence id; cannot be built without a label); `TruthSeries` and `TelemetrySeries` as unrelated types (no shared base; telemetry is created only through a measurement port); `Timebase` (ticks, timestep, time axis: what quality and detectors receive instead of truth, P-03); `Manifest` with a canonical order-independent hash (fault lists in canonical order, P-06) and a documented rounding policy; `finite()` that raises on NaN or infinity instead of returning zero (P-17); `SeedStreams`: named independent random streams derived from the manifest seed, so adding a fault or sensor never changes another stream's noise (P-12).
 **Allowed:** `platform/ug_core/**`, `platform/tests/unit/**`. **Forbidden:** `freebuff/**`, contracts (T-A1-002).
@@ -101,7 +108,7 @@ Status: ready after 002 and 003   Owner: codex (author, non-owner of the guarded
 **Budget:** 2 sessions.
 
 ### T-A1-005: DomainAdapter, registry, conformance skeleton, import lint
-Status: **PR #10 open**, stacked on #8 (two Codex adversarial rounds, 7 defects found and fixed)   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-adapter`   Spec refs: 4.6, 14
+Status: **PR #10 open**, rebased onto `dev` after #9 merged (two Codex adversarial rounds, 7 defects found and fixed)   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-adapter`   Spec refs: 4.6, 14
 **Goal:** Domains plug in through one interface, and `platform/` can never import `domains/`.
 **Allowed:** `platform/ug_core/adapter/**`, `platform/ug_core/registry.py` (both under the `src/ug_core/` layout of ADR-011), `platform/tests/conformance/**`, `domains/water/**` (adapter stub, its entry point and `ug-core` dependency only), `scripts/check_imports.py`, `mk/adapter.mk`, unit tests for the interface, registry and lint. **Forbidden:** other domains' logic.
 **Acceptance:**
@@ -111,7 +118,7 @@ Status: **PR #10 open**, stacked on #8 (two Codex adversarial rounds, 7 defects 
 **Budget:** 1 to 2 sessions.
 
 ### T-A1-006: CI workflow and `make ci`
-Status: **PR #7 open** (hosted CI passes; the lead added one fix commit, see D-013)   Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/a1-ci`   Spec refs: 16, 17
+Status: **merged (PR #7)** (hosted CI passed; the lead added one fix commit, see D-013)   Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/a1-ci`   Spec refs: 16, 17
 **Goal:** One command (`make ci`) runs exactly what GitHub Actions runs.
 **Allowed:** `.github/workflows/ci.yml`, `Makefile` (ci target), tool config in the package `pyproject.toml` files (ruff, mypy, pytest). **Forbidden:** source code of other cards.
 **Acceptance:** `make ci` runs lint, type check, unit, contract, honesty, conformance, import-lint and (once 007 lands) contract-drift, and exits 0 locally; `.venv/bin/python -c "import yaml; yaml.safe_load(open('.github/workflows/ci.yml'))"` exits 0; the first run on the PR is green (recorded in the handoff). Only GitHub-owned actions (checkout, setup-python, setup-node), pinned to a major version; no third-party actions.
@@ -125,7 +132,7 @@ Status: ready after 002   Owner: codex   Reviewer: claude   Tier: T1   Branch: `
 **Budget:** 1 session.
 
 ### T-A1-008: WNTR API manifest by introspection
-Status: **PR #9 open** (two Codex adversarial rounds, 3 defects found and fixed, 22 tests). Follow-up **T-A1-008b** after #9 and #10 merge: `WaterAdapter.health_checks()` calls `ug_water.wntr_api` so `ug doctor` can reach the check through the registry (lead, small)   Owner: claude   Reviewer: codex   Tier: T1   Branch: `claude/a1-wntr-manifest`   Spec refs: 4.7, M0 (`ug doctor`)
+Status: **merged (PR #9)** (two Codex adversarial rounds, 3 defects found and fixed, 22 tests). Follow-up **T-A1-008b** after #9 and #10 merge: `WaterAdapter.health_checks()` calls `ug_water.wntr_api` so `ug doctor` can reach the check through the registry (lead, small)   Owner: claude   Reviewer: codex   Tier: T1   Branch: `claude/a1-wntr-manifest`   Spec refs: 4.7, M0 (`ug doctor`)
 **Goal:** A generated list of every WNTR symbol the new code may use, each with its signature in the installed version, so wrong API usage fails a check instead of a run. The introspection method is the one used in the A0 inventory; the 43 symbols verified there are the starting set (logged as ADAPT in `DECISIONS.md`).
 **Allowed:** `domains/water/**/wntr_api_manifest.json`, `scripts/gen_wntr_manifest.py`, and (added during the work, D-010) `domains/water/src/ug_water/wntr_api.py` (the logic, so `ug doctor` reaches it through the adapter), `domains/water/tests/**`, `mk/wntr.mk`, the WNTR dependency in `domains/water/pyproject.toml`. **Forbidden:** solver code.
 **Acceptance:** `python scripts/gen_wntr_manifest.py --check` exits 0 on the installed WNTR; the manifest records `wntr.__version__` and at least 40 symbols; renaming one symbol in a temporary copy makes `--check` exit non-zero naming it.
@@ -153,7 +160,7 @@ Status: ready after 010   Owner: codex   Reviewer: claude   Tier: T1   Branch: `
 **Budget:** 1 to 2 sessions.
 
 ### T-A1-012: ADR stubs and the `assumptions/` format
-Status: **PR #11 open**, stacked on #8 (two Codex adversarial rounds, 5 defects found and fixed)   Owner: claude   Reviewer: codex   Tier: T1   Branch: `claude/a1-adr-assumptions`   Spec refs: Appendix A and D
+Status: **PR #11 open**, rebased onto `dev` (two Codex adversarial rounds, 5 defects found and fixed)   Owner: claude   Reviewer: codex   Tier: T1   Branch: `claude/a1-adr-assumptions`   Spec refs: Appendix A and D
 **Allowed:** `docs/adr/**`, `assumptions/v1.yaml`, `platform/ug_core/assumptions.py` (under `src/ug_core/`), `platform/tests/unit/test_assumptions.py`, `platform/tests/unit/test_adr_stubs.py`, the `pyyaml` dependency of `ug_core`.
 **Acceptance:** ten files `docs/adr/ADR-001-*.md` to `ADR-010-*.md` exist with the titles from Spec Appendix D; `pytest platform/tests/unit/test_assumptions.py -q` passes: `assumptions/v1.yaml` loads; every entry has unit, distribution, `verified` and `source_note`; a missing `verified`, `min > mode`, or an unknown key is rejected; all shipped values are `verified: false` placeholders.
 **Budget:** 1 session.
