@@ -594,11 +594,9 @@ def test_spec_evidence_example_validates_once_it_carries_the_contract_version() 
     assert valid("evidence-record", {"schema_version": "1", **record})
 
 
-def test_spec_tick_example_needs_labels_on_the_confidence_and_detector_numbers() -> (
-    None
-):
-    """A deliberate difference from Master Spec 12.2, to be confirmed by the owner: every
-    displayed number carries a label, so network_confidence and each detector state do too."""
+def test_spec_tick_example_validates_unchanged() -> None:
+    """Master Spec 12.2 was updated to the stricter tick payload (labels, formula references,
+    detector versions), so its example validates as written once wrapped in the envelope."""
     payload = spec_json_block("### 12.2 WebSocket", "Tick payload:")
     envelope = {
         "schema_version": "1",
@@ -607,25 +605,17 @@ def test_spec_tick_example_needs_labels_on_the_confidence_and_detector_numbers()
         "seq": 8123,
         "payload": payload,
     }
-    errors = list(validator_for("stream-envelope").iter_errors(envelope))
-    missing = {e.message for e in errors}
-    assert errors and all(e.validator == "required" for e in errors)
-    assert {
-        "'label' is a required property",
-        "'version' is a required property",
-    } <= missing
-    assert "'formula_ref' is a required property" in missing
-    labelled = copy.deepcopy(envelope)
-    labelled["payload"]["network_confidence"].update(
-        label="CALCULATED", formula_ref="quality.network_confidence.v1"
-    )
-    for detector in labelled["payload"]["detectors"].values():
-        detector.update(label="MODEL", version="d2_v1")
-    for reading in labelled["payload"]["readings"]:
-        reading["quality"].update(
-            label="CALCULATED", formula_ref="quality.reading_score.v1"
-        )
-    assert valid("stream-envelope", labelled)
+    assert valid("stream-envelope", envelope)
+    for field in (
+        "label",
+        "formula_ref",
+    ):  # the Spec text and the schema cannot drift apart
+        broken = copy.deepcopy(envelope)
+        broken["payload"]["network_confidence"].pop(field)
+        assert not valid("stream-envelope", broken), field
+    broken = copy.deepcopy(envelope)
+    broken["payload"]["detectors"]["d2"].pop("version")
+    assert not valid("stream-envelope", broken)
 
 
 def test_schema_files_are_listed_in_the_readme() -> None:
