@@ -46,8 +46,7 @@
           ]
         },
         "unit": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "common.schema.json#/$defs/unit"
         },
         "label": {
           "$ref": "common.schema.json#/$defs/telemetry_label"
@@ -118,7 +117,7 @@
         "detectors": {
           "type": "object",
           "propertyNames": {
-            "$ref": "common.schema.json#/$defs/operator_visible_key"
+            "$ref": "common.schema.json#/$defs/detector_key"
           },
           "additionalProperties": {
             "type": "object",
@@ -133,7 +132,7 @@
               "residuals": {
                 "type": "object",
                 "propertyNames": {
-                  "$ref": "common.schema.json#/$defs/operator_visible_key"
+                  "$ref": "common.schema.json#/$defs/sensor_key"
                 },
                 "additionalProperties": {
                   "type": "number"
@@ -143,7 +142,7 @@
                 "const": "MODEL"
               },
               "version": {
-                "$ref": "common.schema.json#/$defs/identifier"
+                "$ref": "common.schema.json#/$defs/model_version"
               }
             },
             "required": [

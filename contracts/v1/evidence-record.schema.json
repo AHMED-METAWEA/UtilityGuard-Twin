@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://utilityguard.invalid/contracts/v1/evidence-record.schema.json",
   "title": "Evidence record",
-  "description": "Master Spec 10.1. Every displayed number has one label from the nine. INSUFFICIENT_EVIDENCE if and only if there is no value, and then a reason is given; an input is never INSUFFICIENT_EVIDENCE. CALCULATED needs a formula and at least one input. Money: any unit that looks like a currency must be written exactly as 'EGP' or 'EGP/<m3|kWh|MWh|kW|h|day|month|year>'; an amount (EGP, EGP/year, EGP/month, EGP/day) can never be labelled as simulator, model, sensor or geometry output (pitfall P-14), and a cost (kind 'cost') is CALCULATED. A currency this pattern does not recognise is caught by the evidence kernel in code, the second line of defence.",
+  "description": "Master Spec 10.1. Every displayed number has one label from the nine. INSUFFICIENT_EVIDENCE if and only if there is no value, and then a reason is given; an input is never INSUFFICIENT_EVIDENCE. CALCULATED needs a formula and at least one input. Money (see common money_consistency, applied to the record and to each input): currencies are written EGP, an amount is never simulator, model, sensor or geometry output (pitfall P-14), a cost (kind 'cost') is an amount in EGP and CALCULATED, and money values are JSON numbers.",
   "type": "object",
   "properties": {
     "schema_version": {
@@ -27,11 +27,7 @@
       ]
     },
     "unit": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "minLength": 1
+      "$ref": "common.schema.json#/$defs/nullable_unit"
     },
     "label": {
       "$ref": "common.schema.json#/$defs/evidence_label"
@@ -70,7 +66,7 @@
           "$ref": "common.schema.json#/$defs/identifier"
         },
         "detector_version": {
-          "$ref": "common.schema.json#/$defs/identifier"
+          "$ref": "common.schema.json#/$defs/model_version"
         },
         "assumption_set": {
           "$ref": "common.schema.json#/$defs/identifier"
@@ -204,46 +200,30 @@
       }
     },
     {
-      "if": {
-        "properties": {
-          "unit": {
-            "pattern": "^EGP(/(year|month|day))?$"
-          }
-        },
-        "required": [
-          "unit"
-        ]
-      },
-      "then": {
-        "properties": {
-          "label": {
-            "enum": [
-              "CALCULATED",
-              "ASSUMPTION",
-              "OBSERVED",
-              "BENCHMARK",
-              "INSUFFICIENT_EVIDENCE"
-            ]
-          }
-        }
-      }
+      "$ref": "common.schema.json#/$defs/money_consistency"
     },
     {
       "if": {
         "properties": {
-          "unit": {
-            "type": "string",
-            "pattern": "[Ee][Gg][Pp]|(^|[^A-Za-z])[Ll]\\.?[Ee]\\.?([^A-Za-z]|$)|[Uu][Ss][Dd]|[Ee][Uu][Rr]|[Gg][Bb][Pp]|[Ss][Aa][Rr]|[Aa][Ee][Dd]|£|\\$|€|[Pp][Oo][Uu][Nn][Dd]"
+          "kind": {
+            "const": "cost"
           }
         },
         "required": [
-          "unit"
+          "kind"
         ]
       },
       "then": {
         "properties": {
+          "value": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
           "unit": {
-            "pattern": "^EGP(/(m3|kWh|MWh|kW|h|day|month|year))?$"
+            "type": "string",
+            "pattern": "^EGP(/(year|month|day))?$"
           }
         }
       }
@@ -260,10 +240,7 @@
           "$ref": "common.schema.json#/$defs/scalar"
         },
         "unit": {
-          "type": [
-            "string",
-            "null"
-          ]
+          "$ref": "common.schema.json#/$defs/nullable_unit"
         },
         "label": {
           "$ref": "common.schema.json#/$defs/evidence_label_with_value"
@@ -279,7 +256,12 @@
         "label",
         "ref"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "$ref": "common.schema.json#/$defs/money_consistency"
+        }
+      ]
     }
   }
 }

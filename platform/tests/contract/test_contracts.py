@@ -330,12 +330,12 @@ EXPECTED: dict[str, Expect] = {
     "stream-envelope/truth_key_in_residuals": (
         {"not"},
         "payload/detectors/d2/residuals",
-        "truth_value",
+        "TRUTH_VALUE",
     ),
     "stream-envelope/probability_key_in_residuals": (
         {"not"},
         "payload/detectors/d2/residuals",
-        "probability",
+        "PROBABILITY",
     ),
     "stream-envelope/truth_key_as_detector_name": (
         {"not"},
@@ -374,6 +374,19 @@ EXPECTED: dict[str, Expect] = {
         "inputs/0/label",
         "INSUFFICIENT_EVIDENCE",
     ),
+    "stream-envelope/lowercase_key_in_residuals": (
+        {"pattern"},
+        "payload/detectors/d2/residuals",
+        "truth_value",
+    ),
+    "stream-envelope/detector_version_not_a_name_and_number": (
+        {"pattern", "not"},
+        "payload/detectors/d2/version",
+        "fault_tag_hidden",
+    ),
+    "evidence-record/input_in_another_currency": ({"pattern"}, "inputs/0/unit", "USD"),
+    "evidence-record/money_value_as_formatted_text": ({"type"}, "value", "1,000"),
+    "evidence-record/unit_with_lookalike_letters": ({"anyOf"}, "unit", ""),
     "telemetry-reading/unknown_label": ({"enum"}, "label", "VERIFIED"),
 }
 

@@ -102,20 +102,10 @@
     "template_id": {
       "type": "string",
       "pattern": "^[a-z0-9_]+(\\.[a-z0-9_]+)*\\.v[0-9]+$",
-      "description": "Id of a fixed, reviewed, versioned formula or explanation template (Master Spec 10.3)."
-    },
-    "operator_visible_key": {
-      "allOf": [
-        {
-          "$ref": "#/$defs/identifier"
-        },
-        {
-          "not": {
-            "pattern": "[Tt][Rr][Uu][Tt][Hh]|[Ff][Aa][Uu][Ll][Tt]_?[Tt][Aa][Gg]|[Hh][Ii][Dd][Dd][Ee][Nn]|[Pp][Rr][Oo][Bb][Aa][Bb]|[Cc][Oo][Nn][Ff][Ii][Dd][Ee][Nn][Cc][Ee]|[Pp][Ee][Rr][Cc][Ee][Nn][Tt]|[Gg][Rr][Oo][Uu][Nn][Dd]|[Ii][Nn][Jj][Ee][Cc][Tt]"
-          }
-        }
-      ],
-      "description": "A key in a map the operator and the detectors see. It may not name truth, hidden state, injected faults, probabilities or percent confidence, so those cannot ride in as data."
+      "description": "Id of a fixed, reviewed, versioned formula or explanation template (Master Spec 10.3).",
+      "not": {
+        "pattern": "truth|fault|hidden|ground|inject"
+      }
     },
     "evidence_label_with_value": {
       "enum": [
@@ -129,6 +119,102 @@
         "CALCULATED"
       ],
       "description": "Labels of a value that exists. An input that is INSUFFICIENT_EVIDENCE makes the result INSUFFICIENT_EVIDENCE too, so it is not an input."
+    },
+    "unit": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9/^*.%-]{1,24}$",
+      "description": "A unit written as one ASCII token (no spaces, no letters outside A-Z, a-z): m, m3, L/s, kWh, EGP/m3. Currencies are written EGP only (see money_consistency)."
+    },
+    "nullable_unit": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/unit"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "sensor_key": {
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{0,31}$",
+      "not": {
+        "pattern": "TRUTH|FAULT|HIDDEN|PROB|CONF|PERCENT|PCT|GROUND|INJECT"
+      },
+      "description": "A key in a map the operator sees, naming a sensor or a metric: upper-case letters, digits and underscore only, and none of the reserved words (truth, fault, hidden, probability, confidence, percent, ground, inject). A grammar plus a word list, not proof: code checks the key against the sensors of the run."
+    },
+    "detector_key": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,31}$",
+      "not": {
+        "pattern": "truth|fault|hidden|prob|conf|percent|pct|ground|inject"
+      },
+      "description": "A detector id used as a map key: lower-case letters, digits and underscore only, none of the reserved words."
+    },
+    "model_version": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,31}_v[0-9]+$",
+      "not": {
+        "pattern": "truth|fault|hidden|prob|conf|percent|pct|ground|inject"
+      },
+      "description": "Version of a detector or model, like d2_v1."
+    },
+    "money_consistency": {
+      "description": "Rules for an object with unit, label and value (an evidence record or one of its inputs). A unit that looks like a currency must be spelled exactly EGP or EGP/<m3|kWh|MWh|kW|h|day|month|year>. Money, whether an amount or a price, is never simulator, model, sensor or geometry output (pitfall P-14): it is CALCULATED, an ASSUMPTION, OBSERVED or BENCHMARK. A money value is a JSON number, never formatted text. The currency recogniser is a list of common codes and words: a currency it does not list is caught by the evidence kernel in code.",
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "unit": {
+                "type": "string",
+                "pattern": "[Ee]\\.?[Gg]\\.?[Pp]|[Uu]\\.?[Ss]\\.?[Dd]|[Ee]\\.?[Uu]\\.?[Rr]|[Gg]\\.?[Bb]\\.?[Pp]|[Ss]\\.?[Aa]\\.?[Rr]|[Aa]\\.?[Ee]\\.?[Dd]|[Jj]\\.?[Pp]\\.?[Yy]|[Cc]\\.?[Nn]\\.?[Yy]|[Ii]\\.?[Nn]\\.?[Rr]|[Kk]\\.?[Ww]\\.?[Dd]|[Qq]\\.?[Aa]\\.?[Rr]|[Cc]\\.?[Hh]\\.?[Ff]|(^|[^A-Za-z])[Ll]\\.?[Ee]\\.?($|[^A-Za-z])|[Pp][Oo][Uu][Nn][Dd]|[Dd][Oo][Ll][Ll][Aa][Rr]|[Ee][Uu][Rr][Oo]|[Rr][Ii][Yy][Aa][Ll]|[Dd][Ii][Rr][Hh][Aa][Mm]"
+              }
+            },
+            "required": [
+              "unit"
+            ]
+          },
+          "then": {
+            "properties": {
+              "unit": {
+                "pattern": "^EGP(/(m3|kWh|MWh|kW|h|day|month|year))?$"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "unit": {
+                "type": "string",
+                "pattern": "^EGP"
+              }
+            },
+            "required": [
+              "unit"
+            ]
+          },
+          "then": {
+            "properties": {
+              "label": {
+                "enum": [
+                  "CALCULATED",
+                  "ASSUMPTION",
+                  "OBSERVED",
+                  "BENCHMARK",
+                  "INSUFFICIENT_EVIDENCE"
+                ]
+              },
+              "value": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

@@ -49,8 +49,7 @@
       "type": "object",
       "properties": {
         "unit": {
-          "type": "string",
-          "minLength": 1
+          "$ref": "common.schema.json#/$defs/unit"
         },
         "distribution": {
           "type": "object",

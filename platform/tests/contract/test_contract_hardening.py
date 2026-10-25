@@ -486,3 +486,248 @@ def test_identifiers_are_plain_tokens(
     schema: str, stem: str, path: str, name: Any
 ) -> None:
     assert not is_valid(schema, at(example(schema, stem), path, name))
+
+
+# --------------------------------------------------------------- round 2: grammars, not blacklists
+
+# Template ids are fixed and reviewed, so "confidence" (the network confidence index) is a normal word there.
+TEMPLATE_WORDS = {"truth", "fault", "hidden", "ground", "inject"}
+RESERVED_WORDS = [
+    "truth",
+    "fault",
+    "hidden",
+    "prob",
+    "conf",
+    "percent",
+    "pct",
+    "ground",
+    "inject",
+]
+
+
+@pytest.mark.parametrize("word", RESERVED_WORDS)
+def test_each_reserved_word_is_refused_on_its_own_in_residual_and_detector_names(
+    word: str,
+) -> None:
+    frame = tick()
+    frame["payload"]["detectors"]["d2"]["residuals"] = {f"P_{word.upper()}_1": 1.0}
+    assert not is_valid("stream-envelope", frame), word
+    frame = tick()
+    frame["payload"]["detectors"][f"x_{word}_1"] = frame["payload"]["detectors"].pop(
+        "d2"
+    )
+    assert not is_valid("stream-envelope", frame), word
+    frame = tick()
+    frame["payload"]["detectors"]["d2"]["version"] = f"x_{word}_v1"
+    assert not is_valid("stream-envelope", frame), word
+    if word in TEMPLATE_WORDS:
+        reading = example("telemetry-reading", "pressure_suspect")
+        reading["quality"]["formula_ref"] = f"quality.{word}.v1"
+        assert not is_valid("telemetry-reading", reading), word
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        "fault.tag",
+        "fault-tag",
+        "fault__tag",
+        "FAULT_TAG",
+        "Fault_Tag",
+        "fault tag",
+        "p05 ",
+        "P-05",
+        "p05",
+        "ТRUTH",
+    ],
+)
+def test_residual_names_are_plain_uppercase_sensor_tokens(key: str) -> None:
+    frame = tick()
+    frame["payload"]["detectors"]["d2"]["residuals"] = {key: 1.0}
+    assert not is_valid("stream-envelope", frame), key
+
+
+@pytest.mark.parametrize("key", ["P05", "F02", "T2", "SPE", "R_P06", "PU_01"])
+def test_ordinary_sensor_tokens_pass(key: str) -> None:
+    frame = tick()
+    frame["payload"]["detectors"]["d2"]["residuals"] = {key: 1.0}
+    assert is_valid("stream-envelope", frame), key
+
+
+@pytest.mark.parametrize(
+    "version", ["fault_tag_hidden:pipe:P123", "d2", "d2_vX", "D2_v1", "d2 v1", "d2_v1 "]
+)
+def test_detector_versions_are_name_underscore_v_number(version: str) -> None:
+    frame = tick()
+    frame["payload"]["detectors"]["d2"]["version"] = version
+    assert not is_valid("stream-envelope", frame), version
+
+
+@pytest.mark.parametrize(
+    "ref",
+    [
+        "cost.lost_water.vX",
+        "cost.lost_water.vA1",
+        "cost.lost_water.v",
+        "cost..v1",
+        "Cost.v1",
+        "cost.v01x",
+    ],
+)
+def test_template_ids_end_in_a_numeric_version(ref: str) -> None:
+    reading = example("telemetry-reading", "pressure_suspect")
+    reading["quality"]["formula_ref"] = ref
+    assert not is_valid("telemetry-reading", reading), ref
+    record = evidence(explanation_template=ref)
+    assert not is_valid("evidence-record", record), ref
+
+
+CURRENCY_TOKENS = [
+    "EGP", "USD", "EUR", "GBP", "SAR", "AED", "JPY", "CNY", "INR", "KWD", "QAR", "CHF",
+    "LE", "L.E.", "E.G.P.", "LE.", "egp", "usd", "eur", "gbp", "sar", "aed", "jpy",
+    "pound", "dollar", "euro", "riyal", "dirham",
+]  # fmt: skip
+
+
+@pytest.mark.parametrize("token", CURRENCY_TOKENS)
+@pytest.mark.parametrize("suffix", ["", "/year", "/m3"])
+@pytest.mark.parametrize("label", ["SIMULATION", "MODEL", "SENSOR_SIM"])
+def test_every_recognised_currency_must_be_canonical_egp(
+    token: str, suffix: str, label: str
+) -> None:
+    unit = token + suffix
+    record = evidence(unit=unit, label=label, formula=None, inputs=[])
+    assert not is_valid("evidence-record", record), unit
+
+
+@pytest.mark.parametrize(
+    "unit",
+    [
+        "ЕGP",
+        "ＥＧＰ",
+        "ج.م",
+        "EGP​",
+        "EGP/m3 ",
+        " EGP",
+        "E GP",
+        "EGP/ year",
+        "m²",
+        "°C",
+        "µS/cm",
+    ],
+)
+def test_units_are_ascii_tokens_without_spaces(unit: str) -> None:
+    for record in (
+        evidence(unit=unit),
+        evidence(unit=unit, label="SENSOR_SIM", formula=None, inputs=[]),
+    ):
+        assert not is_valid("evidence-record", record), repr(unit)
+    reading = example("telemetry-reading", "pressure_suspect")
+    reading["unit"] = unit
+    assert not is_valid("telemetry-reading", reading), repr(unit)
+
+
+@pytest.mark.parametrize(
+    "unit",
+    [
+        "m",
+        "m3",
+        "L/s",
+        "m3/h",
+        "cm2",
+        "kPa",
+        "bar",
+        "degC",
+        "kWh",
+        "fraction",
+        "percent",
+        "%",
+        "1",
+    ],
+)
+def test_ordinary_units_pass(unit: str) -> None:
+    reading = example("telemetry-reading", "pressure_suspect")
+    reading["unit"] = unit
+    assert is_valid("telemetry-reading", reading), unit
+
+
+def test_money_rules_apply_to_the_inputs_of_a_calculation_too() -> None:
+    for unit, label in (
+        ("EGP", "SIMULATION"),
+        ("EGP/year", "MODEL"),
+        ("EGP", "SENSOR_SIM"),
+        ("EGP", "PUBLIC_GEOMETRY"),
+    ):
+        record = evidence()
+        record["inputs"][0].update(unit=unit, label=label)
+        assert not is_valid("evidence-record", record), (unit, label)
+    for unit in ("USD", "egp", "JPY", "L.E.", "ЕGP"):
+        record = evidence()
+        record["inputs"][0].update(unit=unit)
+        assert not is_valid("evidence-record", record), unit
+    record = evidence()
+    record["inputs"][0].update(unit="EGP", label="ASSUMPTION")
+    assert is_valid("evidence-record", record)
+
+
+@pytest.mark.parametrize("value", ["1,000", "1.000,00", "١٬٠٠٠", "1000", "n/a", True])
+def test_money_values_are_json_numbers(value: Any) -> None:
+    record = evidence(value=value)
+    assert not is_valid("evidence-record", record), value
+    record = evidence(kind="cost", value=value)
+    assert not is_valid("evidence-record", record), value
+    record = evidence()
+    record["inputs"][0].update(unit="EGP", label="ASSUMPTION", value=value)
+    assert not is_valid("evidence-record", record), value
+    record = evidence(
+        unit="EGP/m3", label="ASSUMPTION", formula=None, inputs=[], value=value
+    )
+    assert not is_valid("evidence-record", record), value
+
+
+@pytest.mark.parametrize(
+    "label",
+    [
+        "OBSERVED",
+        "BENCHMARK",
+        "PUBLIC_GEOMETRY",
+        "SIMULATION",
+        "SENSOR_SIM",
+        "MODEL",
+        "ASSUMPTION",
+    ],
+)
+def test_a_dimensionless_record_has_a_null_unit_under_any_label_with_a_value(
+    label: str,
+) -> None:
+    record = {
+        "schema_version": "1",
+        "evidence_id": "ev_ratio_1",
+        "value": 0.5,
+        "unit": None,
+        "label": label,
+        "formula": None,
+        "inputs": [],
+        "provenance": {"run_id": "r1"},
+    }
+    assert is_valid("evidence-record", record), label
+
+
+@pytest.mark.parametrize("unit", [None, "m3", "h", "EGP/m3", "EGP/kWh"])
+def test_a_cost_is_an_amount_in_egp(unit: Any) -> None:
+    assert not is_valid("evidence-record", evidence(kind="cost", unit=unit))
+
+
+@pytest.mark.parametrize("value", ["1,000", "1000", True])
+def test_a_cost_value_is_a_number_whatever_its_unit(value: Any) -> None:
+    assert not is_valid(
+        "evidence-record", evidence(kind="cost", unit="EGP", value=value)
+    )
+    assert not is_valid(
+        "evidence-record", evidence(kind="cost", unit=None, value=value)
+    )
+
+
+@pytest.mark.parametrize("unit", ["EGP", "EGP/year", "EGP/month", "EGP/day"])
+def test_a_cost_in_a_canonical_amount_unit_passes(unit: str) -> None:
+    assert is_valid("evidence-record", evidence(kind="cost", unit=unit))

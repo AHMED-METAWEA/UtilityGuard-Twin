@@ -22,8 +22,7 @@
       ]
     },
     "unit": {
-      "type": "string",
-      "minLength": 1
+      "$ref": "common.schema.json#/$defs/unit"
     },
     "label": {
       "$ref": "common.schema.json#/$defs/telemetry_label"

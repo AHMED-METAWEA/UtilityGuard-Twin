@@ -50,7 +50,7 @@
       "d2": {
         "state": "watch",
         "residuals": {
-          "probability": 0.99
+          "PROBABILITY": 0.99
         },
         "label": "MODEL",
         "version": "d2_v1"
