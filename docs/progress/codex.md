@@ -72,3 +72,9 @@ Release dates are UTC dates of the latest artifact upload for each selected vers
 | mypy | 2.4.0 | 2026-10-01 | MIT | [PyPI](https://pypi.org/pypi/mypy/2.4.0/json) |
 | jsonschema | 4.26.0 | 2026-01-07 | MIT | [PyPI](https://pypi.org/pypi/jsonschema/4.26.0/json) |
 | pyyaml | 6.0.3 | 2025-09-29 | MIT | [PyPI](https://pypi.org/pypi/pyyaml/6.0.3/json) |
+
+### Lead review note on T-A1-006 (2026-10-25, Claude Code)
+- Reviewed by the lead (not by Codex, so this is cross-review of Codex's work, not self-review). Findings and decisions:
+  - F1 (accepted, fixed by the lead): the two per-file format exclusions hid real work. `scripts/check_layout.py` is the lead's own file, so the lead formatted it; the Spec exclusion became a general `exclude = ["*.md"]` for `ruff format`, so a documentation code sample can never fail CI. The first exception no longer exists.
+  - F2 (process, accepted): a Codex run in a worktree cannot commit, because the worktree's git directory lives in the main clone's `.git`, outside the writable roots. The lead commits Codex's work after review, attributed with the `Agent: codex` trailer, rather than giving Codex write access to the main `.git`.
+  - The fresh-clone acceptance, which Codex could only run as an overlay, was re-run by the lead on the committed branch: see the PR description.
