@@ -61,5 +61,10 @@ This log was first named `docs/progress/claude.md`. On macOS (case-insensitive) 
 - Two mistakes of mine, fixed: a scratch file written to a mistyped path (moved, stray folders removed, other sessions' folders untouched); an early draft of the plan claimed the lead had added the Codex trust entry (it had not; corrected before commit).
 - Tooling facts learned: `codex exec -C <dir>` and the plugin `task --cwd <dir>` add the directory to Codex's trusted list; `codex exec` always shows `approval: never` (non-interactive); the Claude Code auto-mode safeguard blocks editing agent config files and merging without review, and I did not work around either.
 
+### Owner review of PR #2 and follow-ups (2026-10-25)
+- Owner decisions: F1 = real public layout (Spec change in PR #3, `DECISIONS.md` D-005); A1 dependency list approved, type generator pinned to `json-schema-to-typescript@16.0.0` after a read-only registry check (D-007); English-only naming, Arabic is a later UI translation (D-006); the owner merges all PRs, sets branch protection and pushes tags, agents never merge (D-008).
+- Found while editing the Spec: Spec section 2 has eight evidence labels, `AGENTS.md` nine. Not changed (it is the Honesty Rules); raised as a one-line question in PR #3.
+- A prototype (single HTML file, Arabic UI) was skimmed for ideas only; nothing from it was copied or committed, and the plan was not changed because of it.
+
 ### Next
 See `docs/PROGRESS.md`.

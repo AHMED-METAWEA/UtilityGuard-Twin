@@ -1,5 +1,5 @@
 # PROGRESS
-Current phase: A0 (inventory and reuse decisions written; awaiting human review of PR `claude/a0-reference-stance`)
+Current phase: A0 (inventory and reuse decisions written; PR #2 awaiting the owner's merge; A1 not started)
 Last session: 2026-10-25 (lead agent Claude Code)
 
 Done:
@@ -11,17 +11,17 @@ Done:
 - Codex verified earlier (codex-cli 0.164.0, plugin 1.0.6, review gate off); `/codex:rescue` behavior recorded in `docs/progress/claude-code.md`.
 
 Next:
-1. Human reviews and merges the PR (not merged by the lead).
-2. Merge `dev` to `main`, tag `phase-A0` (human approval).
-3. Phase A1: start with T-A1-001 (repository skeleton), then the cards in the order given in `docs/COLLAB_PLAN.md` section 4. Print a plan and wait for approval before A1 starts (CLAUDE.md).
+1. Owner reviews and merges PR #2 (reference-baseline stance, A0 deliverables), then PR #3 (Spec: F1 definition) and the records PR that carries this update.
+2. After PR #2 is merged: the lead creates the local tag `phase-A0` on the merge commit on `dev` and asks before pushing it (owner rule, D-008).
+3. Phase A1 does not start until the owner says go. The A1 plan (13 foundation cards, parallel lanes with Codex, merge waves) is printed in the session and in `docs/COLLAB_PLAN.md` section 4.
 
 Blockers / human actions pending:
-- Review and merge the PR.
-- Rule on the F1 wording (D-005); it only blocks the final banner text in T-A1-010.
-- Approve the A1 dependency list (`docs/COLLAB_PLAN.md` section 6, Q3).
-- Optional: branch protection on `dev` and `main` (GitHub settings); GitHub "keep my email private" setting (Q4); delete the stale scratch-repo trust entry Codex added to `~/.codex/config.toml`.
+- Merge PR #2, PR #3 and the records PR; say "go" for A1.
+- Set branch protection on `dev` and `main` (owner action; not set at last check).
+- One-line answer: add `PUBLIC_GEOMETRY` to Master Spec section 2 (the Spec lists eight evidence labels, `AGENTS.md` nine). Recommended yes.
+- Optional: GitHub "keep my email private" setting (COLLAB_PLAN Q4); delete the stale scratch-repo trust entry in `~/.codex/config.toml`.
 
-Decisions since last session: D-001 to D-005 in `docs/audit/DECISIONS.md`. Default Codex reasoning effort stays `medium`.
+Decisions since last session: D-001 to D-008 in `docs/audit/DECISIONS.md`: owner ruling on F1 (real public layout), English-only naming with Arabic as a later UI translation, A1 dependency list approved (type generator pinned to `json-schema-to-typescript@16.0.0`), and the owner merges all PRs and pushes tags. Default Codex reasoning effort stays `medium`.
 
 Open questions for the human: see `docs/COLLAB_PLAN.md` section 6.
 

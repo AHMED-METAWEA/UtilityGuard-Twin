@@ -30,8 +30,21 @@ Every change of stance, every reuse from `freebuff/`, and every proposed deletio
 - Known and accepted: the commit author email (the owner's GitHub account email) appears in git commit metadata, including the "Initial commit" GitHub created from the owner's account. History is not rewritten. See `COLLAB_PLAN.md` section 6 for the optional no-reply address setting.
 - Not covered by the scan: GitHub repository settings and secrets (none are used), and anything on the owner's machine outside the repository.
 
-### D-005 (open): meaning of fidelity F1 and the banner wording
-- Spec 1.4 and 5.1 define F1 as capital-inspired with all geometry hypothetical; `AGENTS.md`, the earlier `CLAUDE.md` and this plan's G01 describe F1 as real public layout with inferred pipes (`OsmCapitalProvider`, B1, after a geometry feasibility test). Until the human rules, the weaker Spec 1.4 text is used for the badge (stricter reading, `COLLABORATION.md` section 9).
+### D-005: Meaning of fidelity F1 and the banner wording (2026-10-25, resolved by the owner)
+- **Ruling (owner):** F1 is the real public layout of the capital (real districts and roads from public sources, inferred pipes, synthetic hydraulics). It is not ACUD's network and not a survey of it.
+- **Applied:** Master Spec sections 1.4 and 5.1 rewritten in PR #3: F1 geometry carries provenance and the `PUBLIC_GEOMETRY` label; the procedural generator becomes the F0 fallback and test fixture; the F1 provider is `OsmCapitalProvider` (Phase B1, after a geometry feasibility test). Banner text: `Fidelity F1: Public capital layout, inferred pipes, synthetic hydraulics`.
+- **Added by the lead, for the owner's confirmation in PR #3:** the badge states the level of the network actually loaded and never claims a higher one, so the A1 shell shows `No network loaded` until a network exists.
+- **Still open (one line):** Spec section 2 lists eight evidence labels, `AGENTS.md` nine (adds `PUBLIC_GEOMETRY`). Recommended: add `PUBLIC_GEOMETRY` to Spec section 2. Card T-A1-003 assumes nine.
+
+### D-006: Language convention (2026-10-25)
+- English for all code, identifiers, scenario and fault names, data schemas, contracts, tests, documentation and the default UI. Arabic is a UI translation (i18n with full RTL) added later, as Master Spec section 13 describes, and never appears in identifiers, schemas, data keys or scenario names. Ideas taken from non-English sources are translated into English naming first. Rule added to `AGENTS.md`.
+
+### D-007: Dependencies approved for Phase A1 (2026-10-25)
+- Approved once by the owner: the packages Master Spec section 4.7 names. Python: pydantic v2, FastAPI, uvicorn, numpy, WNTR, PyYAML, jsonschema, pytest, hypothesis, ruff, mypy. Frontend: React 18, TypeScript, Vite, Vitest, Testing Library, and the type generator below. Versions are pinned exactly through lockfiles. Anything else asks first.
+- Type generator, named before installation (card T-A1-007): `json-schema-to-typescript@16.0.0`, MIT licence, published 2026-08-28, not deprecated, Node >=16 (this machine runs 22.15.1), single maintainer, 8 runtime dependencies (lodash, js-yaml, minimist, prettier, tinyglobby, @apidevtools/json-schema-ref-parser, @types/lodash, @types/json-schema), registry integrity `sha512-Ah6kK4q6SjlMzWBH1eNOQkdRh5Qhr5T/RCFwfjQqWZA7UDW+N47A8wfyoiN0L884s4L4bAEI54IjIuN3/u0B/A==` (the lockfile entry must match). Looked up read-only on 2026-10-25; nothing installed yet.
+
+### D-008: Merge and release process (2026-10-25)
+- The owner reviews and merges every pull request, pushes phase tags, and sets branch protection on `dev` and `main`. Agents open PRs, report the link and stop. A phase tag is created locally by the lead after the owner's merge, and pushed only after the owner says so. Rule added to `AGENTS.md` and `COLLABORATION.md`.
 
 ## Reuse log (REUSE and ADAPT only)
 
