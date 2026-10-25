@@ -66,5 +66,11 @@ This log was first named `docs/progress/claude.md`. On macOS (case-insensitive) 
 - Found while editing the Spec: Spec section 2 has eight evidence labels, `AGENTS.md` nine. Not changed (it is the Honesty Rules); raised as a one-line question in PR #3.
 - A prototype (single HTML file, Arabic UI) was skimmed for ideas only; nothing from it was copied or committed, and the plan was not changed because of it.
 
+### Phase A1, Wave 0 (2026-10-25)
+- The owner merged PR #2 (A0 gate); the lead created the local tag `phase-A0` on the merge commit and did not push it (D-008). The owner said go for A1.
+- T-A1-001 (repository skeleton) built on `claude/a1-skeleton` from `origin/dev`, independent of the still-open PRs #3 and #4. Verified: `make install` from a fresh clone, imports, `platform` not shadowing the standard library (checked that an `__init__.py` really would), layout checker exits 0 and fails on five mutations. Codex read-only review: no actionable defects; it could not exercise installation in its sandbox, so the lead did.
+- One package outside the approved list, flagged in PR #4: the build backend `setuptools>=68`.
+- Tooling note: `codex-companion.mjs review --base origin/dev --cwd <worktree> --wait` runs a read-only review of a branch and works from the lead's shell; output is plain text and short.
+
 ### Next
 See `docs/PROGRESS.md`.

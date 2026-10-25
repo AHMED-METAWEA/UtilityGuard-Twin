@@ -1,28 +1,28 @@
 # PROGRESS
-Current phase: A0 (inventory and reuse decisions written; PR #2 awaiting the owner's merge; A1 not started)
+Current phase: A1 (Wave 0 built: T-A1-001 is PR #4, awaiting the owner's merge; Wave 1 not started)
 Last session: 2026-10-25 (lead agent Claude Code)
 
 Done:
-- Repository bootstrapped and baseline published (T-A0-001): `main` and `dev` at `debfd51`, tag `baseline-freebuf`, `freebuff/` imported unmodified (79 files). PR #1 (setup docs, two-agent protocol) merged into `dev`.
-- **Stance changed (D-001):** `freebuff/` is a reference only; the target is the Master Spec built fresh; reuse is selective and logged. Revised phases: A0 = short inventory and reuse decisions; A1 = foundation (Spec M0) built fresh; A2 retired; reused pieces ported inside B1. `platform/` is not a Python package (D-003).
-- A0 deliverables written: `docs/audit/INVENTORY.md` (short), `PITFALLS.md` (19 pitfalls, lead-reproduced or Codex-only, plus pilot P1 result), `DECISIONS.md` (D-001 to D-005, empty reuse log), Codex evidence (`codex_audit_raw.md`, `codex_inventory_raw.md`, `docs/progress/codex.md`).
-- Plan documents updated for the new stance: `docs/ADOPTION_PLAN.md` v2.0, `AGENTS.md`, `CLAUDE.md`, `docs/COLLABORATION.md` v1.1, `docs/COLLAB_PLAN.md` v2 (13 foundation cards T-A1-001..013), notice on superseded prompts in `docs/prompts/PROMPTS.md`.
+- **Phase A0 closed:** the owner merged PR #2 (`506e578`) on 2026-10-25: reference-baseline stance (D-001), A0 deliverables (`docs/audit/INVENTORY.md`, `PITFALLS.md`, `DECISIONS.md`, Codex evidence), plan and rule updates. Baseline: tag `baseline-freebuf` (`debfd51`), `freebuff/` is reference only. `platform/` is not a Python package (D-003).
 - Public repository hygiene scan over every ref and blob: clean (D-004).
-- Codex verified earlier (codex-cli 0.164.0, plugin 1.0.6, review gate off); `/codex:rescue` behavior recorded in `docs/progress/claude-code.md`.
+- **Owner decisions recorded** (this PR): F1 is the real public layout (D-005; Spec change is PR #3), English-only naming with Arabic as a later UI translation (D-006), A1 dependency list approved with the type generator pinned to `json-schema-to-typescript@16.0.0` (D-007), and the owner merges all PRs and pushes tags (D-008).
+- **A1 Wave 0:** T-A1-001 repository skeleton built and verified from a fresh clone (five installable projects, `make install`, `make check-layout`, mutation-checked layout script, ADR-011); Codex read-only review found no actionable defects. PR #4.
+- Open PRs: #3 (Master Spec section 1.4: F1 definition), #4 (T-A1-001 skeleton), and this records PR.
+- Local tag `phase-A0` exists on the merge commit `506e578` on `dev`; it is **not pushed** (owner rule, D-008).
 
 Next:
-1. Owner reviews and merges PR #2 (reference-baseline stance, A0 deliverables), then PR #3 (Spec: F1 definition) and the records PR that carries this update.
-2. After PR #2 is merged: the lead creates the local tag `phase-A0` on the merge commit on `dev` and asks before pushing it (owner rule, D-008).
-3. Phase A1 does not start until the owner says go. The A1 plan (13 foundation cards, parallel lanes with Codex, merge waves) is printed in the session and in `docs/COLLAB_PLAN.md` section 4.
+1. Owner merges PR #3, PR #4 and this records PR; OKs pushing the `phase-A0` tag.
+2. After PR #4 is merged and the owner says continue: Wave 1 per `docs/COLLAB_PLAN.md` section 4: Claude T-A1-003, then 002, 005, 008, 012; Codex T-A1-006 (CI). Pause after Wave 1 for a usage check. T-A1-002 (contracts) needs the owner's sign-off before merge.
 
 Blockers / human actions pending:
-- Merge PR #2, PR #3 and the records PR; say "go" for A1.
+- Merge PR #3, PR #4 and the records PR.
+- Accept or replace the build backend `setuptools>=68` (the one package outside the approved list, PR #4).
 - Set branch protection on `dev` and `main` (owner action; not set at last check).
-- One-line answer: add `PUBLIC_GEOMETRY` to Master Spec section 2 (the Spec lists eight evidence labels, `AGENTS.md` nine). Recommended yes.
+- One-line answer: add `PUBLIC_GEOMETRY` to Master Spec section 2 (the Spec lists eight evidence labels, `AGENTS.md` nine). Recommended yes; T-A1-003 assumes nine.
 - Optional: GitHub "keep my email private" setting (COLLAB_PLAN Q4); delete the stale scratch-repo trust entry in `~/.codex/config.toml`.
 
-Decisions since last session: D-001 to D-008 in `docs/audit/DECISIONS.md`: owner ruling on F1 (real public layout), English-only naming with Arabic as a later UI translation, A1 dependency list approved (type generator pinned to `json-schema-to-typescript@16.0.0`), and the owner merges all PRs and pushes tags. Default Codex reasoning effort stays `medium`.
+Decisions since last session: D-005 to D-008 in `docs/audit/DECISIONS.md` (see Done). Default Codex reasoning effort stays `medium`.
 
 Open questions for the human: see `docs/COLLAB_PLAN.md` section 6.
 
-Spend so far: 1 long lead session (setup, bootstrap, measurements, stance change); Codex: 6 small runs (config key check, rescue write test, read-only control, project-config banner check, inventory run, independent audit run).
+Spend so far: 1 long lead session (setup, bootstrap, measurements, stance change, Wave 0); Codex: 7 small runs (config key check, rescue write test, read-only control, project-config banner check, inventory run, independent audit run, T-A1-001 review).
