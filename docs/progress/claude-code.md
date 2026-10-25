@@ -73,5 +73,12 @@ This log was first named `docs/progress/claude.md`. On macOS (case-insensitive) 
 - The owner merged PRs #2, #3 and #4 within a minute of each other (08:15 UTC). My earlier reading of #3 and #4 as open was a few minutes stale; I re-fetched before acting on it.
 - Tooling note: `codex-companion.mjs review --base origin/dev --cwd <worktree> --wait` runs a read-only review of a branch and works from the lead's shell; output is plain text and short.
 
+### Phase A1, Wave 1 (2026-10-25)
+- Lead cards T-A1-003, 008, 005, 012 and 002 each went through two Codex adversarial rounds; every finding was reproduced with a failing input before it was fixed. Counts and outcomes: `docs/PROGRESS.md` and D-012. Fixes made after round 2 have no third review; the gate review must cover them.
+- Workflow facts verified this wave: (1) a Codex run in a worktree cannot commit, so the lead commits its reviewed work with the `Agent: codex` trailer; (2) a fresh clone checks out `main`, not `dev`: check out `origin/dev` or fetch the branch explicitly, otherwise the clone silently tests old code; (3) the combined fresh-clone run of `make ci` over several branches caught two problems that per-branch checks missed, so run it before opening each PR; (4) background reviews started with a trailing `&` inside a background command report completion immediately; start them with the tool's own background flag instead and wait for the output file to hold the final report; (5) local checks that skip the repository's own `ruff.toml` and `mypy.ini` hide formatting width and unused-ignore failures: use the repo configuration.
+- Review pattern worth remembering: blacklists of words, currencies and units invited a new bypass every round; closed grammars (ASCII tokens, `<name>_v<number>`, upper-case sensor tokens) plus a type-flip fuzz over every example with a reviewed allowlist, plus mutation runs (62 schema mutations), closed the class instead of the instance.
+- After the owner merged #6 to #9 (with #9 before #10), the lead rebased #10, #11 and #12 onto `dev`, resolved the single conflict (`domains/water/pyproject.toml`, both sides kept), re-ran `make ci` in a fresh clone for each and pushed with `--force-with-lease` on the lead's own branches only. Opened #14 (Spec 12.2 matches the stricter tick payload, owner's condition on #12) and #15 (Spec label table equals code labels).
+- A merge preview of every open branch on `dev` is conflict-free and `make ci` exits 0 on the result.
+
 ### Next
 See `docs/PROGRESS.md`.
