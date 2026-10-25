@@ -22,7 +22,7 @@ def scenario_manifest():
         seed=42,
         versions={"scenario": "1"},
         libraries={"numpy": "test_v1"},
-        git_commit="commit_a",
+        git_commit="aaaaaa1",
         unordered=("faults",),
     )
 
@@ -47,7 +47,7 @@ def test_manifest_input_hash_includes_recipe_fields(scenario_manifest, field):
         "config": config,
         "libraries": {"numpy": "test_v2"},
         "versions": {"scenario": "2"},
-        "git_commit": "commit_b",
+        "git_commit": "bbbbbb2",
     }[field]
     changed = replace(scenario_manifest, **{field: value})
     assert changed.input_hash() != scenario_manifest.input_hash(), (
@@ -57,8 +57,8 @@ def test_manifest_input_hash_includes_recipe_fields(scenario_manifest, field):
 
 def test_manifest_outputs_change_identity_only(scenario_manifest):
     """P-06/P-12: outputs are recorded in equality without changing the input recipe."""
-    first = replace(scenario_manifest, output_hashes={"telemetry": "output_a"})
-    second = replace(scenario_manifest, output_hashes={"telemetry": "output_b"})
+    first = replace(scenario_manifest, output_hashes={"telemetry": "a" * 64})
+    second = replace(scenario_manifest, output_hashes={"telemetry": "b" * 64})
     assert first.input_hash() == second.input_hash(), (
         "P-06/P-12: output hashes contaminated Manifest.input_hash"
     )
