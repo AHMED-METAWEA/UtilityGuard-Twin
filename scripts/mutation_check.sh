@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # All mutations run in disposable copies; editable installs must not hide them.
-# Usage: scripts/mutation_check.sh — clean suite plus ten mutations, all must be caught.
+# Usage: scripts/mutation_check.sh — clean suite plus eleven mutations, all must be caught.
 set -euo pipefail
 repo=$(git rev-parse --show-toplevel)
 python="$repo/.venv/bin/python"
@@ -55,7 +55,8 @@ echo 'CLEAN PASS'
 
 caught=0
 missed=0
-for mutation in truth_import truth_payload nan_to_zero unordered_manifest stream_source money_label exact_tick manifest_seed_dropped evidence_valueless_allowed telemetry_label_simulation; do
+mutations=(truth_import truth_payload nan_to_zero unordered_manifest stream_source money_label exact_tick manifest_seed_dropped evidence_valueless_allowed telemetry_label_simulation streams_ignore_name)
+for mutation in "${mutations[@]}"; do
     copy="$workspace/$mutation"
     "$python" - "$workspace/original" "$copy" <<'PY'
 import shutil
@@ -150,6 +151,8 @@ elif mutation == "manifest_seed_dropped":
 elif mutation == "evidence_valueless_allowed":
     replace_once(core / "evidence.py", "elif self.value is None:",
                  "elif self.value is None and False:")
+elif mutation == "streams_ignore_name":
+    replace_once(core / "rng.py", "entropy=[self._seed, *words]", "entropy=[self._seed]")
 elif mutation == "telemetry_label_simulation":
     edit_json("contracts/examples/telemetry-reading/pressure_suspect.json",
               lambda obj: obj.update(label="SIMULATION"))
@@ -180,5 +183,5 @@ PY
         exit 1
     fi
 done
-echo "Summary: clean PASS; $caught CAUGHT; $missed MISSED; 10 mutations"
-[[ "$caught" -eq 10 && "$missed" -eq 0 ]]
+echo "Summary: clean PASS; $caught CAUGHT; $missed MISSED; ${#mutations[@]} mutations"
+[[ "$caught" -eq "${#mutations[@]}" && "$missed" -eq 0 ]]

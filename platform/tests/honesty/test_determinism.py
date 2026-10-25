@@ -7,9 +7,10 @@ import sys
 import textwrap
 from dataclasses import replace
 
+import numpy as np
 import pytest
 from honesty_support import ROOT, load_json
-from ug_core import Manifest
+from ug_core import Manifest, SeedStreams
 
 
 @pytest.fixture
@@ -129,4 +130,30 @@ def test_fresh_process_determinism():
         outputs.append(result)
     assert outputs[0] == outputs[1], (
         "P-06/P-12: Manifest hash or sensor:P01 draws differ across fresh interpreters"
+    )
+
+
+def test_streams_differ_by_name_and_by_seed():
+    """P-12: every named stream is its own sequence, so no two sensors share their noise."""
+    draws = {
+        name: SeedStreams(42).stream(name).normal(size=2000)
+        for name in ("sensor:P01", "sensor:P02", "pump:PU1")
+    }
+    names = sorted(draws)
+    for i, a in enumerate(names):
+        for b in names[i + 1 :]:
+            assert not np.array_equal(draws[a], draws[b]), (
+                f"P-12: streams {a} and {b} are identical"
+            )
+            correlation = abs(float(np.corrcoef(draws[a], draws[b])[0, 1]))
+            assert correlation < 0.1, (
+                f"P-12: streams {a} and {b} are correlated ({correlation:.2f})"
+            )
+    again = SeedStreams(42).stream("sensor:P01").normal(size=2000)
+    assert np.array_equal(draws["sensor:P01"], again), (
+        "P-12: the same seed and name gave different draws"
+    )
+    other_seed = SeedStreams(43).stream("sensor:P01").normal(size=2000)
+    assert not np.array_equal(draws["sensor:P01"], other_seed), (
+        "P-12: the seed does not change the stream"
     )
