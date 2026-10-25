@@ -7,10 +7,10 @@ name = "ug-water"
 version = "0.0.0"
 description = "UtilityGuard Twin water domain plugin: network providers, WNTR solver, faults, measurement, actions."
 requires-python = ">=3.11"
-dependencies = []
+dependencies = ["wntr>=1.5,<1.6"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-ug_water = ["py.typed"]
+ug_water = ["py.typed", "wntr_api_manifest.json"]

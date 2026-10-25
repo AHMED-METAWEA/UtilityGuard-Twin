@@ -1,0 +1,164 @@
+{
+  "callables": {
+    "wntr.network.WaterNetworkModel.add_curve": "(self, name, curve_type, xy_tuples_list)",
+    "wntr.network.WaterNetworkModel.add_junction": "(self, name, base_demand=0.0, demand_pattern=None, elevation=0.0, coordinates=None, demand_category=None)",
+    "wntr.network.WaterNetworkModel.add_pattern": "(self, name, pattern=None)",
+    "wntr.network.WaterNetworkModel.add_pipe": "(self, name, start_node_name, end_node_name, length=304.8, diameter=0.3048, roughness=100, minor_loss=0.0, initial_status='OPEN', check_valve=False)",
+    "wntr.network.WaterNetworkModel.add_pump": "(self, name, start_node_name, end_node_name, pump_type='POWER', pump_parameter=50.0, speed=1.0, pattern=None, initial_status='OPEN')",
+    "wntr.network.WaterNetworkModel.add_reservoir": "(self, name, base_head=0.0, head_pattern=None, coordinates=None)",
+    "wntr.network.WaterNetworkModel.add_tank": "(self, name, elevation=0.0, init_level=3.048, min_level=0.0, max_level=6.096, diameter=15.24, min_vol=0.0, vol_curve=None, overflow=False, coordinates=None)",
+    "wntr.network.WaterNetworkModel.add_valve": "(self, name, start_node_name, end_node_name, diameter=0.3048, valve_type='PRV', minor_loss=0.0, initial_setting=0.0, initial_status='ACTIVE')",
+    "wntr.network.WaterNetworkModel.get_link": "(self, name)",
+    "wntr.network.WaterNetworkModel.get_node": "(self, name)",
+    "wntr.network.WaterNetworkModel.get_pattern": "(self, name)",
+    "wntr.network.WaterNetworkModel.remove_link": "(self, name, with_control=False, force=False)",
+    "wntr.network.elements.Junction.add_leak": "(self, wn, area, discharge_coeff=0.75, start_time=None, end_time=None)",
+    "wntr.sim.WNTRSimulator.run_sim": "(self, solver=<class 'wntr.sim.solvers.NewtonSolver'>, backup_solver=None, solver_options=None, backup_solver_options=None, convergence_error=False, HW_approx='default', diagnostics=False)"
+  },
+  "members": [
+    {
+      "path": "link_name_list",
+      "root": "wn"
+    },
+    {
+      "path": "options.time.duration",
+      "root": "wn"
+    },
+    {
+      "path": "options.time.hydraulic_timestep",
+      "root": "wn"
+    },
+    {
+      "path": "options.time.report_timestep",
+      "root": "wn"
+    },
+    {
+      "path": "options.time.pattern_timestep",
+      "root": "wn"
+    },
+    {
+      "path": "options.hydraulic.demand_model",
+      "root": "wn"
+    },
+    {
+      "path": "options.hydraulic.minimum_pressure",
+      "root": "wn"
+    },
+    {
+      "path": "options.hydraulic.required_pressure",
+      "root": "wn"
+    },
+    {
+      "path": "options.hydraulic.pressure_exponent",
+      "root": "wn"
+    },
+    {
+      "path": "options.quality.parameter",
+      "root": "wn"
+    },
+    {
+      "path": "demand_timeseries_list[0].base_value",
+      "root": "junction"
+    },
+    {
+      "path": "coordinates",
+      "root": "junction"
+    },
+    {
+      "path": "elevation",
+      "root": "junction"
+    },
+    {
+      "path": "init_level",
+      "root": "tank"
+    },
+    {
+      "path": "min_level",
+      "root": "tank"
+    },
+    {
+      "path": "max_level",
+      "root": "tank"
+    },
+    {
+      "path": "diameter",
+      "root": "tank"
+    },
+    {
+      "path": "initial_status",
+      "root": "pump"
+    },
+    {
+      "path": "start_node_name",
+      "root": "pipe"
+    },
+    {
+      "path": "end_node_name",
+      "root": "pipe"
+    },
+    {
+      "path": "length",
+      "root": "pipe"
+    },
+    {
+      "path": "diameter",
+      "root": "pipe"
+    },
+    {
+      "path": "roughness",
+      "root": "pipe"
+    },
+    {
+      "path": "minor_loss",
+      "root": "pipe"
+    },
+    {
+      "path": "initial_status",
+      "root": "pipe"
+    },
+    {
+      "path": "link_type",
+      "root": "pipe"
+    },
+    {
+      "path": "multipliers",
+      "root": "pattern"
+    },
+    {
+      "path": "Open",
+      "root": "link_status"
+    },
+    {
+      "path": "Closed",
+      "root": "link_status"
+    }
+  ],
+  "result_keys": [
+    {
+      "key": "pressure",
+      "table": "node"
+    },
+    {
+      "key": "demand",
+      "table": "node"
+    },
+    {
+      "key": "leak_demand",
+      "table": "node"
+    },
+    {
+      "key": "head",
+      "table": "node"
+    },
+    {
+      "key": "flowrate",
+      "table": "link"
+    },
+    {
+      "key": "status",
+      "table": "link"
+    }
+  ],
+  "schema_version": "1",
+  "wntr_version": "1.5.0"
+}
