@@ -90,10 +90,7 @@ def test_one_domain_importing_another_is_reported(tmp_path: Path) -> None:
     )
     result = lint(root)
     assert result.returncode == 1
-    assert (
-        "domain 'water' imports the package 'ug_power' of domain 'power'"
-        in result.stderr
-    )
+    assert "domain 'water' imports 'ug_power' from domain power" in result.stderr
 
 
 def test_a_file_that_cannot_be_parsed_is_reported_not_skipped(tmp_path: Path) -> None:
@@ -114,3 +111,75 @@ def test_virtual_environments_are_not_scanned(tmp_path: Path) -> None:
 
 def test_a_tree_without_platform_and_domains_is_an_error(tmp_path: Path) -> None:
     assert lint(tmp_path).returncode == 2
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "from importlib import import_module as load\nload('ug_water.adapter')",
+        "import importlib\nimportlib.import_module(name='ug_water.adapter')",
+        "import importlib as il\nil.import_module('ug_water')",
+        "from importlib import import_module\nimport_module(name='ug_power')",
+        "__import__(name='ug_water')",
+        "import builtins\nbuiltins.__import__('ug_water')",
+    ],
+)
+def test_dynamic_imports_are_found_through_aliases_and_keywords(
+    tmp_path: Path, source: str
+) -> None:
+    root = make_tree(tmp_path)
+    (root / "platform/ug_core/src/ug_core/bad.py").write_text(source + "\n")
+    assert lint(root).returncode == 1
+
+
+def test_an_unrelated_method_named_import_module_is_not_an_import(
+    tmp_path: Path,
+) -> None:
+    root = make_tree(tmp_path)
+    source = (
+        "class Catalog:\n"
+        "    def import_module(self, name):\n"
+        "        return name\n"
+        "\n"
+        "Catalog().import_module('ug_water')\n"
+    )
+    (root / "platform/ug_core/src/ug_core/ok.py").write_text(source)
+    result = lint(root)
+    assert result.returncode == 0, result.stderr
+
+
+def test_namespace_packages_and_single_modules_are_domain_packages(
+    tmp_path: Path,
+) -> None:
+    root = make_tree(tmp_path)
+    (
+        root / "domains/water/src/ug_water/__init__.py"
+    ).unlink()  # now a namespace package
+    (root / "domains/water/src/ug_single.py").write_text("")
+    for module in ("ug_water.adapter", "ug_single"):
+        (root / "platform/ug_core/src/ug_core/bad.py").write_text(f"import {module}\n")
+        result = lint(root)
+        assert result.returncode == 1, module
+        assert module.split(".")[0] in result.stderr
+
+
+def test_domains_sharing_a_namespace_keep_their_own_ownership(tmp_path: Path) -> None:
+    root = tmp_path
+    for domain in ("water", "power"):
+        package = root / "domains" / domain / "src" / "ug_domains" / domain
+        package.mkdir(parents=True)
+        (package / "__init__.py").write_text("")
+    (root / "platform/ug_core/src/ug_core").mkdir(parents=True)
+    (root / "platform/ug_core/src/ug_core/__init__.py").write_text("")
+    water = root / "domains/water/src/ug_domains/water"
+    (water / "own.py").write_text("from ug_domains.water import other\n")
+    assert lint(root).returncode == 0
+    (water / "bad.py").write_text("import ug_domains.power.grid\n")
+    result = lint(root)
+    assert result.returncode == 1
+    assert "domain 'water' imports" in result.stderr
+    (water / "bad.py").unlink()
+    (root / "platform/ug_core/src/ug_core/bad.py").write_text(
+        "import ug_domains.water\n"
+    )
+    assert lint(root).returncode == 1

@@ -113,3 +113,19 @@ def test_a_method_declared_implemented_that_raises_not_implemented_fails(
     result = run_case(tmp_path, "Lazy", body)
     assert result.returncode == 1, result.stdout
     assert "NotImplementedError" in result.stdout
+
+
+def test_an_instance_level_override_returning_placeholder_data_fails(
+    tmp_path: Path,
+) -> None:
+    body = """
+    def __init__(self):
+        class Sneaky(list):
+            def __iter__(self):
+                raise NotImplementedError("raised while checking")
+        self.detectors = lambda: Sneaky([42])
+    """
+    result = run_case(tmp_path, "Sneaky", body)
+    assert result.returncode == 1, result.stdout
+    assert "11 xfailed" in result.stdout
+    assert "1 failed" in result.stdout

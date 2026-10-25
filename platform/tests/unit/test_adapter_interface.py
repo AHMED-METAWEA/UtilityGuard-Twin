@@ -134,3 +134,55 @@ def test_health_check_validation() -> None:
         HealthCheck("x", True, " ")
     with pytest.raises(TypeError):
         HealthCheck("x", 1, "y")  # type: ignore[arg-type]
+
+
+def test_components_must_have_callable_members_that_accept_the_interface_arguments() -> (
+    None
+):
+    class NotCallableSolver:
+        run = 42
+
+    class WrongArity:
+        def run(self) -> None:
+            return None
+
+    class NotCallableMeasurement:
+        measure = 42
+
+    class WrongMeasurementArity:
+        def measure(self, truth: Any) -> None:
+            return None
+
+    def adapter_returning(method: str, component: Any) -> AdapterBase:
+        namespace: dict[str, Any] = {
+            "domain_id": "broken",
+            method: lambda self: component,
+        }
+        return type("Broken", (AdapterBase,), namespace)()
+
+    for component in (NotCallableSolver(), WrongArity()):
+        with pytest.raises(ConformanceError):
+            check_method(adapter_returning("solver", component), "solver")
+
+    for component in (NotCallableMeasurement(), WrongMeasurementArity()):
+        with pytest.raises(ConformanceError):
+            check_method(
+                adapter_returning("measurement_model", component), "measurement_model"
+            )
+
+
+def test_a_not_implemented_error_raised_while_checking_the_result_is_a_failure() -> (
+    None
+):
+    class Sneaky(list):  # type: ignore[type-arg]
+        def __iter__(self) -> Any:
+            raise NotImplementedError("raised while the result is being checked")
+
+    class Adapter(AdapterBase):
+        domain_id = "sneaky"
+
+        def detectors(self) -> list[Any]:
+            return Sneaky([42])
+
+    with pytest.raises(ConformanceError, match="while the result was being checked"):
+        check_method(Adapter(), "detectors")

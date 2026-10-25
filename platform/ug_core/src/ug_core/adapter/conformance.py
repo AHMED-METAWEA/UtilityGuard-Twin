@@ -14,6 +14,7 @@ The contract for each interface method:
 
 from __future__ import annotations
 
+import inspect
 import re
 from pathlib import Path
 from typing import Any
@@ -112,12 +113,32 @@ def unimplemented_reason(adapter: object, name: str) -> str:
     return f"{getattr(adapter, 'domain_id', '?')}.{name}: declared unimplemented"
 
 
-def check_method(adapter: object, name: str) -> None:
-    """Call `adapter.<name>` and check the result. `NotImplementedError` is not caught here."""
-    if name not in ADAPTER_METHODS:
-        raise ConformanceError(f"{name!r} is not a DomainAdapter method")
-    result = getattr(adapter, name)(*_ARGUMENTS.get(name, ()))
-    label = f"{getattr(adapter, 'domain_id', '?')}.{name}()"
+# Members the platform will call on a component, and how many positional arguments it passes.
+_REQUIRED_CALLS: dict[type, dict[str, int]] = {
+    PhysicalSolver: {"run": 3},  # run(state, scenario, horizon)
+    MeasurementModel: {"measure": 2},  # measure(truth, seeds)
+}
+
+
+def _check_calls(label: str, result: object, expected: type) -> None:
+    """A runtime protocol check only proves the name exists; check it can be called."""
+    for member, argument_count in _REQUIRED_CALLS.get(expected, {}).items():
+        attribute = getattr(result, member)
+        if not callable(attribute):
+            raise ConformanceError(f"{label}: {member} must be callable")
+        try:
+            inspect.signature(attribute).bind(*([None] * argument_count))
+        except TypeError:
+            raise ConformanceError(
+                f"{label}: {member}() must accept {argument_count} positional arguments"
+            ) from None
+        except ValueError:
+            raise ConformanceError(
+                f"{label}: the signature of {member} cannot be inspected"
+            ) from None
+
+
+def _validate(label: str, name: str, result: object) -> None:
     if name in _OPTIONAL:
         expected = _OPTIONAL[name]
         if result is not None and (
@@ -144,3 +165,26 @@ def check_method(adapter: object, name: str) -> None:
             raise ConformanceError(
                 f"{label} must return {expected.__name__}, got {type(result).__name__}"
             )
+        _check_calls(label, result, expected)
+
+
+def check_method(adapter: object, name: str) -> None:
+    """Call `adapter.<name>` and check the result.
+
+    A `NotImplementedError` raised by the call itself propagates: that is how an unimplemented
+    method answers, and the suite expects it for declared-unimplemented methods. Anything the
+    checking itself raises, `NotImplementedError` included, is a `ConformanceError`, so a result
+    object cannot turn a failed check into an expected failure.
+    """
+    if name not in ADAPTER_METHODS:
+        raise ConformanceError(f"{name!r} is not a DomainAdapter method")
+    result = getattr(adapter, name)(*_ARGUMENTS.get(name, ()))
+    label = f"{getattr(adapter, 'domain_id', '?')}.{name}()"
+    try:
+        _validate(label, name, result)
+    except ConformanceError:
+        raise
+    except Exception as exc:
+        raise ConformanceError(
+            f"{label} raised {type(exc).__name__} while the result was being checked: {exc}"
+        ) from exc
