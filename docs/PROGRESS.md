@@ -1,46 +1,45 @@
 # PROGRESS
-Current phase: A1. Wave 1: PRs #6, #7, #8 and #9 are merged; #10, #11, #12 (approved with conditions), #13, #14 and #15 are open. **Wave 2 does not start until the owner confirms that all Wave 1 PRs are merged.**
+Current phase: A1. Waves 0 and 1 are merged. **Wave 2 is delivered as four open pull requests (#16 to #19) and the lead has stopped at the usage check the owner asked for.** Wave 3 does not start until the owner says "continue".
 Last session: 2026-10-25 (lead agent Claude Code)
 
 Done:
-- **Phase A0 closed** (merged by the owner, PR #2; tag `phase-A0` on `506e578`, pushed after the owner's OK, D-009). Baseline `baseline-freebuf`; `freebuff/` is reference only (D-001).
-- **A1 Wave 0:** T-A1-001 skeleton merged (PR #4).
-- **A1 Wave 1, all seven cards have a pull request.** The owner merged #6, #7, #8 and #9. The lead merges nothing. After #9 merged before #10, the lead rebased #10, #11 and #12 onto `dev` (only #10 conflicted, in `domains/water/pyproject.toml`; both sides kept), re-ran `make ci` in a fresh clone for each, and pushed with `--force-with-lease` on the lead's own branches.
+- **Phase A0 closed** (PR #2; tag `phase-A0` on `506e578`, pushed, D-009). `freebuff/` is reference only (D-001).
+- **A1 Wave 0:** T-A1-001 skeleton (PR #4). **Wave 1:** #6 to #15, all merged by the owner (core types, CI, WNTR manifest, adapter and import lint, ADR stubs and assumptions, contracts v1 approved with conditions, Spec 12.2 update, label test, records). Details in `docs/reviews/` and `docs/audit/DECISIONS.md` D-009 to D-013.
+- **A1 Wave 2 (this session):** every card was built in its own worktree, cross-reviewed, and checked in a fresh clone with `make install install-dev && make ci`. None is merged. The owner's first task, the conformance test, is #17.
 
-| PR | Card | Owner | What | Review rounds (defects found and fixed) | Tests |
+| PR | Card | Author | What | Reviews (by the other agent) | Tests |
 |---|---|---|---|---|---|
-| #6 (merged) | Spec change | lead | nine evidence labels in Spec section 2; `fault_tag_hidden` only in `truth.parquet` | owner-requested | n/a |
-| #7 (merged) | T-A1-006 CI | Codex | `make ci`, pinned dev tools, GitHub Actions; one lead fix commit (D-013) | lead review, hosted CI passes | 4 |
-| #8 (merged) | T-A1-003 core types | lead | evidence labels, truth and telemetry as unrelated types, `Timebase`, canonical `Manifest` hash, seed streams | 2 rounds: 6 then 2 | 59 |
-| #9 (merged) | T-A1-008 WNTR manifest | lead | 49 WNTR symbols checked by introspection; `--check` in `make ci` | 2 rounds: 2 then 1 | 22 |
-| #10 | T-A1-005 adapter | lead | `DomainAdapter`, registry, conformance suite, import lint | 2 rounds: 4 then 3 | 110 unit, 8 conformance + 12 expected failures |
-| #11 | T-A1-012 ADR and assumptions | lead | ADR stubs 001-010, strict assumptions loader, `assumptions/v1.yaml` | 2 rounds: 3 then 2 | 127 unit (with #8) |
-| #12 | T-A1-002 contracts v1 | lead | 7 JSON Schemas, 19 examples, 67 rejected cases | 2 rounds: 5 then 4 | 680 contract |
-| #14 | Spec 12.2 update | lead | the tick example and text match the stricter tick payload (owner's condition on #12); stacked on #12 | n/a | 1 test replaced |
-| #15 | label test | lead | the Spec label table must equal the code labels (promised in #8) | n/a | 1 test tightened |
+| #17 | T-A1-002b | Claude | the code's outputs validate against the schemas; 23 gaps listed by signature | Codex, 2 rounds (4 then 1 weakness) | 180 in the file |
+| #16 | T-A1-007 | Codex | TypeScript types from contracts v1 and a drift check | Claude: 1 finding, fixed | drift check, 2 mutations |
+| #18 | T-A1-004 | Codex | honesty tests and an 11-mutation runner (in `make ci`) | Claude: 25 mutations, 4 gaps then 1 | 202 |
+| #19 | T-A1-010 | Claude | shell: honesty notice, Fidelity badge, stream-source indicator | Codex, 2 rounds (4 then 3 findings) | 269 |
 
-  #10 and #11 were stacked on #8 and are now rebased onto `dev`. #14 is stacked on #12.
-- Every combination was checked in a fresh clone with `make install install-dev && make ci` over the CI branch. Two combined runs caught real problems that single-branch checks missed (a platform test importing a domain package; unused `type: ignore` comments under the repository's mypy settings). Both are fixed.
-- Records: D-009 to D-013 in `docs/audit/DECISIONS.md`; card statuses in `docs/COLLAB_PLAN.md`.
+  #16 and #18 both append to `docs/progress/codex.md`: whichever merges second needs a trivial rebase (keep both sections). #16 and #19 add the same three `.gitignore` lines (identical, they merge cleanly).
+- A merge preview of the four branches on `dev` has exactly that one conflict; every branch passes `make ci` alone.
+- Records: review logs for every reviewed task in `docs/reviews/` (findings, decisions, fixes); D-014 to D-016 in `docs/audit/DECISIONS.md`; follow-up card T-A1-002c; the deploy card's acceptance text corrected.
 
-What works: the core types enforce the Honesty Rules by structure (a value cannot exist without a known label; truth and telemetry are different types; the manifest hash ignores order and the interpreter's hash seed). Domains plug in through one interface and a registry, and a lint fails if `platform/` imports a domain. The WNTR calls the code may use are checked against the installed library. Contracts reject truth fields, missing stream sources, mislabelled money and unknown faults, each shown by a rejected example.
+What works: the code's payloads for the manifest, assumption set and telemetry rows validate against the contracts (and the places where the code is looser are written down and tested for staleness); TypeScript types are generated offline from the schemas and a drift check fails when they differ; the honesty suite fails when truth reaches the operator side, a number is unlabelled, money is mislabelled, a hash or random stream loses its determinism, NaN becomes zero, or a write-capable control library appears, and a runner proves it by applying 11 mutations; the shell shows the notice, the badge and the stream source in every state and survives failures, with a strict Content-Security-Policy on the built page and a build-time offline check.
 
-What is approximated: the word lists and the currency list in the contracts are best-effort (a grammar plus words, not proof); the source note of a verified assumption is checked for hygiene only; the lint cannot see a module name built at run time; the WNTR manifest was verified on WNTR 1.5.0 only.
+What is approximated: the shell and the offline check cannot prove that a real browser makes no request (no browser test; Playwright is not on the approved list); the word and currency lists in the contracts are best-effort; the scanners understand literal syntax only; the frontend lockfile was generated with `legacy-peer-deps` because of an npm 10.9.2 crash (D-014).
 
-What is not proven: the code that produces a contract payload (`Manifest.to_dict()` against `run-manifest`, and so on) is not yet tested against the schemas; no TypeScript types exist yet (T-A1-007); `ug doctor` does not exist (T-A1-009); nothing runs end to end. **The fixes made after review round 2 have had no third review** (D-012); the A1 exit-gate review must cover them.
+What is not proven: the 23 gaps (the code accepts what the contract rejects: id and unit grammars, the money label on `Evidenced`, commit and hash formats) stay open until T-A1-002c; the generated types are not yet imported by the shell; `ug doctor` and the water adapter health check (T-A1-008b) do not exist; there is no API or Docker deployment yet (Wave 3). **Fixes made after review round 2 have had no third review (D-016); T-A1-013 must cover them.**
 
 Next:
-1. Owner merges the rest, in this order: #10, #11, #12 (approved with conditions), #14 (stacked on #12), #15, #13. #13 may need a small update after the merges.
-2. **Conditions the owner set on #12:** (a) update Spec 12.2 to the stricter tick payload: done, PR #14; (b) the test that `to_dict()` outputs validate against the schemas is the **first Wave 2 task** (card T-A1-002b, needs #8, #11 and #12 merged); (c) the four main decisions of #12 explained in plain words: done in the lead's report to the owner.
-3. **Wave 2 does not start until the owner confirms that all Wave 1 PRs are merged.** Then: first T-A1-002b (Claude), together with Codex T-A1-004 (honesty tests) and T-A1-007 (TypeScript types; the schemas use relative references and the pinned generator was verified to work offline), and Claude T-A1-010 (shell). Small follow-up after #10: T-A1-008b, `WaterAdapter.health_checks()` wired to the WNTR check so `ug doctor` can reach it through the registry. Then Wave 3 (Codex T-A1-009 `ug` CLI, T-A1-011 deploy) and Wave 4 (T-A1-013 gate).
+1. Owner reviews and merges #17, #16, #18, #19 (suggested order; #16 before #18 so the shared `codex.md` conflict is resolved once by the lead), then this records PR.
+2. **Usage check (below), then pause.** When the owner says "continue": Wave 3. Codex: T-A1-009 (`ug` CLI and `ug doctor`) and T-A1-011 (deploy, with the corrected acceptance text); Claude: T-A1-008b (water adapter health check) first, because 009 needs it, and T-A1-002c if the owner approves it. Then Wave 4: T-A1-013 (gate review).
+3. Decisions for the owner: approve T-A1-002c (closing the 23 gaps, a T2 change to `ug_core`); accept the frontend dependency set and the npm workaround (D-014).
 
 Blockers / human actions pending:
-- Merge #10, #11, #12, #14, #15, #13 (see Next). #12 is approved by the owner with the conditions above.
-- Branch protection on `dev` and `main` (owner action). Once #7 is merged, the `ci` check can be made required.
+- Merge the Wave 2 pull requests and this records PR.
+- Branch protection on `dev` and `main` (owner action; the `ci` check exists since #7).
 - Optional: GitHub "keep my email private" setting (COLLAB_PLAN Q4); delete the stale scratch-repo trust entry in `~/.codex/config.toml`.
 
-Decisions since last session: D-009 to D-013 in `docs/audit/DECISIONS.md`. Default Codex reasoning effort stays `medium` (raised for T2 reviews).
+Decisions since last session: D-014 (dependencies and tooling), D-015 (acceptance texts that could not be met), D-016 (unreviewed round-2 fixes, running list).
 
-Open questions for the human: see `docs/COLLAB_PLAN.md` section 6, and the decision list in PR #12.
+Open questions for the human: see `docs/COLLAB_PLAN.md` section 6.
 
-Spend so far: two long lead sessions (setup and Wave 0; Wave 1). Codex: 7 small runs earlier, 1 CI implementation run, and 10 adversarial review rounds in Wave 1 (two per lead card).
+Usage check for Wave 2 (what I can measure):
+- Codex implementation runs: 3 (T-A1-007: 44,780 tokens; T-A1-004: 82,187; T-A1-004 fixes: 55,480; total 182,447). Codex review runs: 4 adversarial reviews of the lead's cards (T-A1-002b twice, T-A1-010 twice), about 5 minutes each; the plugin does not report their tokens.
+- Lead: about 0.31 million tokens of the 15 million budget (14.99 to 14.69 million remaining), about 2 percent, plus over a hundred local mutation runs of test suites (a few seconds each, no cost).
+- Review: every card that Codex reviewed needed both rounds and round 2 found something new each time, so plan two rounds per Tier-2 card in Wave 3.
+- No money was spent; nothing outside the approved dependency list was installed; Codex ran offline.

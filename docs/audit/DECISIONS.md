@@ -63,6 +63,21 @@ Every change of stance, every reuse from `freebuff/`, and every proposed deletio
 ### D-013: A lead fix inside a Codex pull request
 - The new import lint (PR #10) found that `platform/tests/unit/test_smoke.py` in Codex's CI pull request (#7) imported `ug_water`, which the architecture rule forbids. The lead's original review of #7 missed it. The lead added one commit to #7 (marked `Agent: claude-code`, with a PR comment) rather than leaving the combination broken. Precedent: a fix to a Codex branch before merge is allowed when a check the lead owns finds the problem, and it is announced on the pull request.
 
+### D-014: Frontend and tooling dependencies added in Wave 2 (approved list, exact pins)
+- **Frontend (PR #19), the Master Spec 4.7 list:** react and react-dom 18.3.1, typescript 6.0.3, vite 8.3.4, vitest 5.0.3, jsdom 29.1.1, @testing-library/react 16.3.3 and @testing-library/dom 10.4.2, @types/react 18.3.31 and @types/react-dom 18.3.7. All at least 14 days old, MIT except TypeScript (Apache-2.0), none deprecated. 122 packages in the tree, all from registry.npmjs.org with integrity hashes, `npm audit`: 0 vulnerabilities. `frontend/.npmrc`: `ignore-scripts=true` and `legacy-peer-deps=true`. The second is needed because npm 10.9.2 crashes ("reading 'edgesOut'") on the vitest peer graph; `npm ci` from the lockfile works without it. jsdom is held at 29.x because 30 needs Node 22.22 and this machine has 22.15. No router library: hash routes (react-router is not on the approved list).
+- **Type generator (PR #16), D-007:** `json-schema-to-typescript@16.0.0` in its own tool folder `scripts/types/` (15 packages, 0 vulnerabilities, integrity equal to the approved value), kept out of the app's dependency tree. Installed by the lead with `--ignore-scripts` because Codex has no network.
+- **CI (PR #19):** `actions/setup-node@v7` (GitHub-owned) added to the workflow so the frontend and type checks run on the hosted runner; Node 22.
+- **`.gitignore`:** `node_modules/`, `frontend/dist/`, `*.tsbuildinfo` (the Python template does not cover Node).
+
+### D-015: Acceptance texts that could not be met as written
+- **T-A1-011:** the card required `curl localhost/ | grep "Fidelity F1"`. The shell is rendered by JavaScript, so the served HTML holds no badge text, and the badge correctly says `No network loaded` until a network is loaded (D-005). The card now checks the title, the Content-Security-Policy tag and the strings in the bundle.
+- **T-A1-010:** the card's grep for external URLs in `frontend/dist` prints nothing only because React's bundle puts its one inert message string on a line that also holds `w3.org`. The gate is `frontend/scripts/check-offline.mjs` (browser-like URL normalisation, exact namespace exemptions, and a strict Content-Security-Policy on the built page).
+- **T-A1-007:** the card put the generator in `frontend/package.json`; it lives in `scripts/types/` instead so the two Wave 2 cards (007 and 010) did not edit the same package file and lockfile.
+
+### D-016: Code fixed after review round 2 and not reviewed again (running list)
+- Wave 1: core types (#8), WNTR manifest (#9), adapter and import lint (#10), assumptions (#11), contracts (#12).
+- Wave 2: conformance tests (#17), honesty suite (#18, the stream-independence test and mutation), shell (#19). Every one of these cards needed both rounds and found something new in the second. T-A1-013 (the A1 gate review) must review exactly this code, and `docs/reviews/` has one log per task listing the findings.
+
 ## Reuse log (REUSE and ADAPT only)
 
 No reuse has been decided yet. Candidates and likely verdicts are in `ADOPTION_PLAN.md` section 8. A line is added here, in the same PR that brings the code in, with: date, source file and lines in `freebuff/`, what was reused, verdict (REUSE or ADAPT), target path, tests added (including golden tests for the reused behavior), reviewer, and why it is better than writing it new.

@@ -80,5 +80,12 @@ This log was first named `docs/progress/claude.md`. On macOS (case-insensitive) 
 - After the owner merged #6 to #9 (with #9 before #10), the lead rebased #10, #11 and #12 onto `dev`, resolved the single conflict (`domains/water/pyproject.toml`, both sides kept), re-ran `make ci` in a fresh clone for each and pushed with `--force-with-lease` on the lead's own branches only. Opened #14 (Spec 12.2 matches the stricter tick payload, owner's condition on #12) and #15 (Spec label table equals code labels).
 - A merge preview of every open branch on `dev` is conflict-free and `make ci` exits 0 on the result.
 
+### Phase A1, Wave 2 (2026-10-25)
+- Order kept as the owner set it: T-A1-002b first (the code's outputs validate against the schemas), then Codex on the honesty tests (T-A1-004) and the TypeScript types (T-A1-007), the lead on the shell (T-A1-010), each in its own worktree with its own `.venv`/`node_modules`. The lead pre-installed the pinned type generator in `scripts/types/` (Codex has no network) and the node ignore rules, and verified the approved integrity hash.
+- Codex tasks: launched with `codex exec -s workspace-write -C <worktree> -o <file> -c model_reasoning_effort=...`, no network. Codex again could not commit (git directory outside its sandbox); the lead reviewed and committed with the `Agent: codex` trailer. Codex reported honestly what it could not run (no Python environment in one worktree: the lead had only prepared the other) and stopped on a wrong expectation in the lead's own prompt instead of changing a module (`finite()` raises `TypeError` for wrong types).
+- Review method that worked: the reviewer applies mutations to the REAL code and checks that the suite notices (25 for the honesty suite, 13 for the conformance tests, about 75 for the shell). A hand-made list of cases always had blind spots (round 2 of T-A1-002b); generated inputs classified by signature closed the class. Codex reviews found real problems in every card that it reviewed.
+- Pitfalls: (1) typing a scratch path with slashes instead of hyphens created a stray folder again; I moved only my own file and removed only my empty folders; (2) `set -- $var` does not split in zsh; (3) fresh clones check out `main`: use `origin/dev` or fetch the branch; (4) npm 10.9.2 crashes on the vitest peer graph: the lockfile needs `legacy-peer-deps` (D-014); (5) the Python template did not ignore `node_modules`.
+- The owner's usage check is in `docs/PROGRESS.md`; the lead paused there.
+
 ### Next
 See `docs/PROGRESS.md`.
