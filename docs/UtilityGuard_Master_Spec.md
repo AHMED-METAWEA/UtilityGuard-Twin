@@ -47,13 +47,15 @@ A digital twin is defined by how closely it is tied to the real asset. We make t
 | Level | Name | What it means | Status |
 |---|---|---|---|
 | F0 | Generic synthetic | Procedurally generated network, no relation to any city | Fallback for tests |
-| **F1** | **Capital-inspired synthetic** | District structure, scale, land-use mix and naming inspired by public information about the New Administrative Capital. All geometry, pipe sizes, demands and equipment are hypothetical placeholders | **What we build now** |
+| **F1** | **Public layout, synthetic hydraulics** | The real layout of the New Administrative Capital taken from public sources (districts, roads, parks and other land use), with pipe routes inferred from that layout. Pipe sizes, demands, equipment and all hydraulics are synthetic placeholders. It is not ACUD's network and not a survey of it | **What we build now** |
 | F2 | Calibrated | Network topology, demand patterns and equipment curves replaced or calibrated with ACUD-provided data. Detectors re-tuned | Enabled by architecture, needs ACUD data |
 | F3 | Live-synced | Real SCADA/IoT stream replaces the replay source; model re-calibrates continuously | Enabled by architecture, needs integration |
 
 F1 rules:
-- District names (for example Government District, Central Business District, Diplomatic District, residential districts, Green River and park corridors, medical, education and sports clusters) are used only as **labels for demand zones and map regions**. Verify the list against the official ACUD masterplan before the demo. Layout positions, areas and demands are synthetic.
-- The UI MUST show `Fidelity F1: Capital-inspired, synthetic hydraulics` in the shell at all times.
+- Geometry (district boundaries, roads, parks, land use) comes from public sources and carries provenance: source, licence, retrieval date and a coverage report. It is labelled `PUBLIC_GEOMETRY`. Whether a source is usable is decided by a geometry feasibility test before the provider is built (Adoption Plan, Phase B1).
+- Pipe routes are inferred from the street layout by a documented, seeded rule. Pipe sizes, demands and equipment are placeholders. All of these are `ASSUMPTION` and are never presented as ACUD's network.
+- District names (for example Government District, Central Business District, Diplomatic District, residential districts, Green River and park corridors, medical, education and sports clusters) are used as **labels for demand zones and map regions**. Verify the list against the official ACUD masterplan before the demo. Areas come from the public geometry; demands are synthetic.
+- The UI MUST show the Fidelity badge in the shell at all times. For an F1 network the text is `Fidelity F1: Public capital layout, inferred pipes, synthetic hydraulics`. The badge states the level of the network that is actually loaded (`Fidelity F0: Generic synthetic` for the procedural fallback, `No network loaded` before any run) and never claims a higher level than the loaded network has.
 - Every module MUST read its network, demand and equipment parameters from versioned data files and providers, never from constants, so moving from F1 to F2 is a data swap and a re-calibration, not a rewrite.
 
 ### 1.5 Differentiation
@@ -305,7 +307,9 @@ Every artifact carries a version: `network_version`, `scenario_schema_version`, 
 
 ## 5. Domain 1: the Capital Water Twin
 
-### 5.1 Network (fidelity F1, capital-inspired, synthetic)
+### 5.1 Network (fidelity F1: public layout, inferred pipes, synthetic hydraulics)
+
+> Note (2026-10-25, owner ruling): F1 is defined in section 1.4 as the real public layout with inferred pipes. The generator below, `ProceduralCapitalProvider`, builds a capital-inspired synthetic network and is therefore the **F0 fallback** and the test fixture. The F1 provider (`OsmCapitalProvider`: public geometry, inferred pipes, scale tiers) is specified in `docs/ADOPTION_PLAN.md` (G01, G02, Phase B1) and will be written into this section when Phase B1 starts.
 
 Hierarchy modeled: abstract source and treatment, transmission mains, pump stations, ground and elevated storage, district metered areas (DMAs), distribution grids.
 
@@ -327,7 +331,7 @@ Generator (`ProceduralCapitalProvider`, seeded, deterministic):
 5. Place sensors by a coverage heuristic (greedy maximization of residual observability) with a fixed seed, and expose three named sensor sets: `S_base`, `S_dense`, `S_sparse`.
 6. Validate: connectivity, no isolated junction, minimum pressure at peak demand (default 15 m, assumption), no tank overflow or starvation over a 7-day normal run, velocity limits. Failure means re-seed or fail loudly.
 
-`NetworkProvider` implementations: `ProceduralCapitalProvider` (F1), `InpFileProvider` (any EPANET `.inp`, used for the BattLeDIM L-Town benchmark and future ACUD files), `GeoJsonProvider` (future GIS import). Coordinates are local Cartesian metres with an optional CRS transform for georeferenced F2 data.
+`NetworkProvider` implementations: `OsmCapitalProvider` (F1, Phase B1), `ProceduralCapitalProvider` (F0 fallback and test fixture), `InpFileProvider` (any EPANET `.inp`, used for the BattLeDIM L-Town benchmark and future ACUD files), `GeoJsonProvider` (future GIS import). Coordinates are local Cartesian metres with an optional CRS transform for georeferenced F2 data.
 
 ### 5.2 Demand model
 
@@ -772,7 +776,7 @@ Motion principles:
 
 ```
 ┌ top bar ──────────────────────────────────────────────────────────────────────────┐
-│ mark  Fidelity F1 · Capital-inspired   source: REPLAY   sim clock   run ▾  🔔  AR/EN  ☾ │
+│ mark  Fidelity F1 · Public layout   source: REPLAY   sim clock   run ▾  🔔  AR/EN  ☾ │
 ├ honesty strip (collapsible to a permanent chip) ──────────────────────────────────┤
 │ rail │                  main canvas (screen-specific)                  │ inspector │
 │ (nav)│                                                                 │ (context) │
@@ -1112,7 +1116,7 @@ All values below are **placeholders** to show the format. None is a real price o
 ```yaml
 set_id: v1
 parent: null
-note: "Placeholder assumptions for the F1 synthetic twin. Not ACUD data."
+note: "Placeholder assumptions for the F1 twin (public layout, synthetic hydraulics). Not ACUD data."
 assumptions:
   water_production_cost:
     unit: EGP/m3
