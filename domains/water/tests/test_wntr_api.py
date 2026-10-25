@@ -22,7 +22,7 @@ def manifest() -> dict:
 
 def test_committed_manifest_verifies_against_the_installed_wntr(manifest: dict) -> None:
     assert wntr_api.verify(manifest) == []
-    assert wntr_api.declared_matches_manifest(manifest) == []
+    assert wntr_api.manifest_problems(manifest) == []
 
 
 def test_manifest_records_the_version_and_enough_symbols(manifest: dict) -> None:
@@ -68,11 +68,20 @@ def test_verify_names_a_changed_signature(manifest: dict) -> None:
     )
 
 
-def test_verify_names_a_missing_member_and_a_missing_result_key(manifest: dict) -> None:
-    broken = copy.deepcopy(manifest)
-    broken["members"].append({"root": "pipe", "path": "no_such_attribute"})
-    broken["result_keys"].append({"table": "node", "key": "no_such_column"})
-    problems = wntr_api.verify(broken)
+def test_verify_names_a_missing_member_and_a_missing_result_key(
+    manifest: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Declare two symbols the installed WNTR does not have, and list them in the manifest.
+    monkeypatch.setattr(
+        wntr_api, "MEMBERS", (*wntr_api.MEMBERS, ("pipe", "no_such_attribute"))
+    )
+    monkeypatch.setattr(
+        wntr_api, "RESULT_KEYS", (*wntr_api.RESULT_KEYS, ("node", "no_such_column"))
+    )
+    declared = copy.deepcopy(manifest)
+    declared["members"].append({"root": "pipe", "path": "no_such_attribute"})
+    declared["result_keys"].append({"table": "node", "key": "no_such_column"})
+    problems = wntr_api.verify(declared)
     assert any("no_such_attribute" in problem for problem in problems)
     assert any("no_such_column" in problem for problem in problems)
 
@@ -83,17 +92,24 @@ def test_verify_reports_a_different_wntr_version(manifest: dict) -> None:
     assert any("WNTR version" in problem for problem in wntr_api.verify(broken))
 
 
-def test_verify_rejects_unsupported_path_syntax(manifest: dict) -> None:
-    broken = copy.deepcopy(manifest)
-    broken["members"].append({"root": "wn", "path": "options; __import__('os')"})
-    problems = wntr_api.verify(broken)
+def test_verify_rejects_unsupported_path_syntax(
+    manifest: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    bad_path = "options; __import__('os')"
+    monkeypatch.setattr(wntr_api, "MEMBERS", (*wntr_api.MEMBERS, ("wn", bad_path)))
+    declared = copy.deepcopy(manifest)
+    declared["members"].append({"root": "wn", "path": bad_path})
+    problems = wntr_api.verify(declared)
     assert any("unsupported path syntax" in problem for problem in problems)
 
 
 def test_declared_lists_and_manifest_drift_is_reported(manifest: dict) -> None:
     broken = copy.deepcopy(manifest)
     broken["callables"].pop("wntr.sim.WNTRSimulator.run_sim")
-    assert wntr_api.declared_matches_manifest(broken)
+    assert any(
+        "run_sim" in problem and "missing from the manifest" in problem
+        for problem in wntr_api.manifest_problems(broken)
+    )
 
 
 def run_script(*args: str) -> subprocess.CompletedProcess[str]:
@@ -130,3 +146,73 @@ def test_script_write_then_check_round_trip(tmp_path: Path) -> None:
     assert run_script("--write", "--manifest", str(target)).returncode == 0
     assert run_script("--check", "--manifest", str(target)).returncode == 0
     assert json.loads(target.read_text(encoding="utf-8")) == wntr_api.load_manifest()
+
+
+class ImportRecorder:
+    """A meta-path finder that records every module name Python tries to import."""
+
+    def __init__(self) -> None:
+        self.names: list[str] = []
+
+    def find_spec(self, name: str, path: object = None, target: object = None) -> None:
+        self.names.append(name)
+
+
+def test_verify_never_imports_a_module_named_only_in_the_manifest(
+    manifest: dict,
+) -> None:
+    broken = copy.deepcopy(manifest)
+    broken["callables"]["review_payload.fn"] = "()"
+    recorder = ImportRecorder()
+    sys.meta_path.insert(0, recorder)  # type: ignore[arg-type]
+    try:
+        problems = wntr_api.verify(broken)
+    finally:
+        sys.meta_path.remove(recorder)  # type: ignore[arg-type]
+    assert not any(name.split(".")[0] == "review_payload" for name in recorder.names)
+    assert any("review_payload.fn" in problem for problem in problems)
+
+
+def test_resolver_only_follows_paths_inside_wntr() -> None:
+    for path in ("os.getcwd", "review_payload.fn", "wntrx.thing"):
+        with pytest.raises(ValueError):
+            wntr_api._resolve_callable(path)
+
+
+def test_verify_requires_every_declared_symbol_to_be_in_the_manifest(
+    manifest: dict,
+) -> None:
+    broken = copy.deepcopy(manifest)
+    del broken["callables"]["wntr.network.WaterNetworkModel.add_valve"]
+    assert any("add_valve" in p for p in wntr_api.verify(broken))
+    for section in ("callables", "members", "result_keys"):
+        missing_section = {k: v for k, v in manifest.items() if k != section}
+        assert wntr_api.verify(missing_section), section
+    short = copy.deepcopy(manifest)
+    short["members"].pop()
+    short["result_keys"].pop()
+    assert len(wntr_api.verify(short)) >= 2
+
+
+def test_verify_rejects_a_malformed_manifest_without_raising() -> None:
+    assert wntr_api.verify({})
+    assert wntr_api.verify({"callables": [], "members": {}, "result_keys": 3})
+    assert wntr_api.verify(
+        {
+            "schema_version": "1",
+            "wntr_version": wntr_api.installed_version(),
+            "callables": {},
+            "members": [{"root": "wn"}],
+            "result_keys": ["node.pressure"],
+        }
+    )
+
+
+def test_verify_fails_when_an_installed_callable_is_unusable(
+    manifest: dict, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import wntr
+
+    monkeypatch.setattr(wntr.network.WaterNetworkModel, "add_valve", None)
+    problems = wntr_api.verify(manifest)
+    assert any("add_valve" in problem for problem in problems)

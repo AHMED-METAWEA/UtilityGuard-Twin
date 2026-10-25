@@ -96,8 +96,10 @@ def installed_version() -> str:
 
 
 def _resolve_callable(path: str) -> Any:
-    """Import the longest module prefix of `path`, then follow the remaining attributes."""
+    """Import the longest module prefix of `path` (inside `wntr` only), then follow attributes."""
     parts = path.split(".")
+    if parts[0] != "wntr" or len(parts) < 2:
+        raise ValueError(f"only symbols inside wntr can be resolved, got {path!r}")
     for split in range(len(parts) - 1, 0, -1):
         try:
             obj: Any = importlib.import_module(".".join(parts[:split]))
@@ -204,14 +206,74 @@ def load_manifest() -> dict[str, Any]:
     return loaded
 
 
-def verify(manifest: dict[str, Any]) -> list[str]:
-    """Problems found when checking `manifest` against the installed WNTR. Empty means OK."""
+def manifest_problems(manifest: object) -> list[str]:
+    """Structure and completeness: the manifest must hold exactly the symbols declared above.
+
+    Nothing from the manifest is resolved or imported here; this runs before any check against
+    the installed library, so a manifest cannot make the verifier import anything.
+    """
+    if not isinstance(manifest, dict):
+        return ["manifest must be a JSON object"]
     problems: list[str] = []
     if manifest.get("schema_version") != MANIFEST_SCHEMA_VERSION:
         problems.append(
             f"manifest schema_version {manifest.get('schema_version')!r} not supported"
         )
-    recorded_version = manifest.get("wntr_version")
+    if not isinstance(manifest.get("wntr_version"), str):
+        problems.append("manifest has no wntr_version")
+
+    callables = manifest.get("callables")
+    if not isinstance(callables, dict) or not all(
+        isinstance(k, str) and isinstance(v, str) for k, v in callables.items()
+    ):
+        problems.append(
+            "manifest 'callables' must map each symbol path to a signature text"
+        )
+    else:
+        for path in sorted(set(callables) - set(CALLABLES)):
+            problems.append(
+                f"callable {path}: in the manifest but not declared in wntr_api.py"
+            )
+        for path in sorted(set(CALLABLES) - set(callables)):
+            problems.append(
+                f"callable {path}: declared in wntr_api.py but missing from the manifest"
+            )
+
+    for section, keys, declared in (
+        ("members", ("root", "path"), MEMBERS),
+        ("result_keys", ("table", "key"), RESULT_KEYS),
+    ):
+        entries = manifest.get(section)
+        if not isinstance(entries, list) or not all(
+            isinstance(e, dict) and all(isinstance(e.get(k), str) for k in keys)
+            for e in entries
+        ):
+            problems.append(
+                f"manifest '{section}' must be a list of objects with {keys}"
+            )
+            continue
+        recorded = [tuple(e[k] for k in keys) for e in entries]
+        for item in sorted(set(recorded) - set(declared)):
+            problems.append(
+                f"{section[:-1]} {'.'.join(item)}: in the manifest but not declared in wntr_api.py"
+            )
+        for item in sorted(set(declared) - set(recorded)):
+            problems.append(
+                f"{section[:-1]} {'.'.join(item)}: declared in wntr_api.py but missing from the manifest"
+            )
+    return problems
+
+
+def verify(manifest: object) -> list[str]:
+    """Problems found when checking `manifest` against the installed WNTR. Empty means OK.
+
+    A manifest that is malformed, incomplete or lists symbols that are not declared in this
+    module is reported and nothing is resolved. Only then is the installed library inspected.
+    """
+    problems = manifest_problems(manifest)
+    if problems or not isinstance(manifest, dict):
+        return problems
+    recorded_version = manifest["wntr_version"]
     if recorded_version != installed_version():
         problems.append(
             f"WNTR version: manifest was generated for {recorded_version!r}, "
@@ -248,22 +310,4 @@ def verify(manifest: dict[str, Any]) -> list[str]:
             problems.append(
                 f"result key {table}[{key!r}]: missing from simulation results"
             )
-    return problems
-
-
-def declared_matches_manifest(manifest: dict[str, Any]) -> list[str]:
-    """Problems if the committed manifest and the lists in this module have drifted apart."""
-    problems: list[str] = []
-    if sorted(manifest.get("callables", {})) != sorted(CALLABLES):
-        problems.append(
-            "callables in the manifest differ from CALLABLES in wntr_api.py"
-        )
-    recorded_members = [(m["root"], m["path"]) for m in manifest.get("members", [])]
-    if recorded_members != list(MEMBERS):
-        problems.append("members in the manifest differ from MEMBERS in wntr_api.py")
-    recorded_keys = [(k["table"], k["key"]) for k in manifest.get("result_keys", [])]
-    if recorded_keys != list(RESULT_KEYS):
-        problems.append(
-            "result keys in the manifest differ from RESULT_KEYS in wntr_api.py"
-        )
     return problems

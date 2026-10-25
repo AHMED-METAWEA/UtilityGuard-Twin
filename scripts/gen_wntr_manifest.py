@@ -65,7 +65,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    problems = wntr_api.declared_matches_manifest(manifest) + wntr_api.verify(manifest)
+    problems = wntr_api.verify(manifest)
     if problems:
         print(
             f"WNTR API manifest check FAILED ({len(problems)} problem(s)):",
