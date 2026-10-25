@@ -1,0 +1,28 @@
+{
+  "schema_version": "1",
+  "scenario_id": "normal_week",
+  "network_version": "capital_f1_v1",
+  "sensor_set": "S_base",
+  "seed": 42,
+  "start": "2026-01-01T00:00:00Z",
+  "duration_hours": 168,
+  "timestep_minutes": 5,
+  "demand": {
+    "calendar": "default_egypt",
+    "holiday": false,
+    "ramadan": false,
+    "heatwave_multiplier": 1.0,
+    "zone_multipliers": {
+      "gov": 1.0,
+      "res": 1.0,
+      "cbd": 1.0
+    },
+    "forecast_error": {
+      "model": "ar1",
+      "sigma_pct": 6.0
+    }
+  },
+  "faults": [],
+  "cross_domain_inputs": [],
+  "assumption_set": "v1"
+}

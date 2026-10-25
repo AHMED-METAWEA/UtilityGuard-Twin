@@ -1,0 +1,13 @@
+{
+  "schema_version": "1",
+  "evidence_id": "ev_leak_size_0009",
+  "value": null,
+  "unit": "cm2",
+  "label": "INSUFFICIENT_EVIDENCE",
+  "formula": null,
+  "inputs": [],
+  "provenance": {
+    "run_id": "run_0042",
+    "detector_version": "d2_v1"
+  }
+}

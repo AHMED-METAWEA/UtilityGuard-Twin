@@ -1,0 +1,22 @@
+{
+  "schema_version": "1",
+  "incident_id": "inc_004",
+  "run_id": "run_0042",
+  "status": "closed",
+  "false_alarm": true,
+  "severity": "high",
+  "hypothesis": "unknown",
+  "support": "weak",
+  "rules_fired": [],
+  "location": {
+    "zone_id": null,
+    "candidates": []
+  },
+  "first_detected_tick": 171,
+  "closed_at": "2026-01-02T08:30:00Z",
+  "contributing_sensors": [
+    "P05",
+    "P06",
+    "F02"
+  ]
+}
