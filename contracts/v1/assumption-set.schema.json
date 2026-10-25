@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://utilityguard.invalid/contracts/v1/assumption-set.schema.json",
+  "title": "Assumption set",
+  "description": "Master Spec 11.1 and Appendix A. Every assumption is a triangular distribution with a unit, a source note and a verified flag. `min <= mode <= max` is checked by the loader, not by this schema. A value may be marked verified only with a source note of some length; whether the source is real is a human review.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "common.schema.json#/$defs/schema_version"
+    },
+    "set_id": {
+      "$ref": "common.schema.json#/$defs/identifier"
+    },
+    "parent": {
+      "oneOf": [
+        {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "note": {
+      "type": "string",
+      "minLength": 1
+    },
+    "assumptions": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {
+        "pattern": "^[a-z][a-z0-9_]*$"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/assumption"
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "set_id",
+    "parent",
+    "note",
+    "assumptions"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "assumption": {
+      "type": "object",
+      "properties": {
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "distribution": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "const": "triangular"
+            },
+            "min": {
+              "type": "number"
+            },
+            "mode": {
+              "type": "number"
+            },
+            "max": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "type",
+            "min",
+            "mode",
+            "max"
+          ],
+          "additionalProperties": false
+        },
+        "source_note": {
+          "type": "string",
+          "minLength": 1
+        },
+        "verified": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "unit",
+        "distribution",
+        "source_note",
+        "verified"
+      ],
+      "additionalProperties": false,
+      "if": {
+        "properties": {
+          "verified": {
+            "const": true
+          }
+        },
+        "required": [
+          "verified"
+        ]
+      },
+      "then": {
+        "properties": {
+          "source_note": {
+            "minLength": 10
+          }
+        }
+      }
+    }
+  }
+}

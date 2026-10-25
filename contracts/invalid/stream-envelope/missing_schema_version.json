@@ -1,0 +1,56 @@
+{
+  "type": "tick",
+  "run_id": "run_0042",
+  "seq": 8123,
+  "payload": {
+    "tick": 144,
+    "sim_time": "2026-01-01T12:00:00Z",
+    "stream_source": "REPLAY",
+    "speed": 60,
+    "readings": [
+      {
+        "sensor_id": "P05",
+        "value": 31.2,
+        "unit": "m",
+        "label": "SENSOR_SIM",
+        "quality": {
+          "status": "suspect",
+          "score": 0.62,
+          "flags": [
+            "Q07"
+          ]
+        }
+      },
+      {
+        "sensor_id": "F02",
+        "value": null,
+        "unit": "L/s",
+        "label": "SENSOR_SIM",
+        "quality": {
+          "status": "bad",
+          "score": 0.0,
+          "flags": [
+            "Q01"
+          ]
+        }
+      }
+    ],
+    "network_confidence": {
+      "value": 0.91,
+      "basis": "observability-weighted sensor quality",
+      "label": "CALCULATED"
+    },
+    "detectors": {
+      "d2": {
+        "state": "watch",
+        "residuals": {
+          "P05": -8.1
+        },
+        "label": "MODEL"
+      }
+    },
+    "incidents_changed": [
+      "inc_003"
+    ]
+  }
+}

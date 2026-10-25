@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://utilityguard.invalid/contracts/v1/stream-envelope.schema.json",
+  "title": "Stream envelope",
+  "description": "WebSocket frame (Master Spec 12.2). Version 1 specifies the `tick` frame only; the other frame types of the Spec (incident.updated, analysis.progress, analysis.done, run.control, notification) are added when their payloads are specified, and until then they are rejected rather than accepted without a shape. A tick always states its stream source and never carries truth or hidden fault tags.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "common.schema.json#/$defs/schema_version"
+    },
+    "type": {
+      "enum": [
+        "tick"
+      ]
+    },
+    "run_id": {
+      "$ref": "common.schema.json#/$defs/identifier"
+    },
+    "seq": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "payload": {
+      "$ref": "#/$defs/tick_payload"
+    }
+  },
+  "required": [
+    "schema_version",
+    "type",
+    "run_id",
+    "seq",
+    "payload"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "stream_reading": {
+      "type": "object",
+      "properties": {
+        "sensor_id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "$ref": "common.schema.json#/$defs/telemetry_label"
+        },
+        "quality": {
+          "$ref": "common.schema.json#/$defs/quality"
+        }
+      },
+      "required": [
+        "sensor_id",
+        "value",
+        "unit",
+        "label",
+        "quality"
+      ],
+      "additionalProperties": false
+    },
+    "tick_payload": {
+      "type": "object",
+      "properties": {
+        "tick": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sim_time": {
+          "$ref": "common.schema.json#/$defs/utc_timestamp"
+        },
+        "stream_source": {
+          "$ref": "common.schema.json#/$defs/stream_source"
+        },
+        "speed": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "readings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/stream_reading"
+          }
+        },
+        "network_confidence": {
+          "type": "object",
+          "properties": {
+            "value": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "basis": {
+              "type": "string",
+              "minLength": 1
+            },
+            "label": {
+              "const": "CALCULATED"
+            }
+          },
+          "required": [
+            "value",
+            "basis",
+            "label"
+          ],
+          "additionalProperties": false
+        },
+        "detectors": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "state": {
+                "enum": [
+                  "normal",
+                  "watch",
+                  "alert"
+                ]
+              },
+              "residuals": {
+                "type": "object",
+                "propertyNames": {
+                  "$ref": "common.schema.json#/$defs/identifier"
+                },
+                "additionalProperties": {
+                  "type": "number"
+                }
+              },
+              "label": {
+                "const": "MODEL"
+              }
+            },
+            "required": [
+              "state",
+              "residuals",
+              "label"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "incidents_changed": {
+          "type": "array",
+          "items": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "uniqueItems": true
+        }
+      },
+      "required": [
+        "tick",
+        "sim_time",
+        "stream_source",
+        "speed",
+        "readings",
+        "network_confidence",
+        "detectors",
+        "incidents_changed"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

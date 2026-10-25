@@ -1,0 +1,20 @@
+{
+  "schema_version": "1",
+  "set_id": "v2_draft",
+  "parent": "v1",
+  "note": "Example of a verified entry.",
+  "assumptions": {
+    "electricity_price": {
+      "unit": "EGP/kWh",
+      "distribution": {
+        "type": "triangular",
+        "min": 1.8,
+        "mode": 2.0,
+        "max": 2.2
+      },
+      "source_note": "Example only: tariff schedule, table 2, 2026",
+      "verified": true,
+      "price": 2
+    }
+  }
+}

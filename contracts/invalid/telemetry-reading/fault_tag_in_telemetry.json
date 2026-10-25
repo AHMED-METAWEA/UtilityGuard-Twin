@@ -1,0 +1,17 @@
+{
+  "schema_version": "1",
+  "tick": 144,
+  "sensor_id": "P05",
+  "value": 31.2,
+  "unit": "m",
+  "label": "SENSOR_SIM",
+  "delivered_at": "2026-01-01T12:00:03Z",
+  "quality": {
+    "status": "suspect",
+    "score": 0.62,
+    "flags": [
+      "Q07"
+    ]
+  },
+  "fault_tag_hidden": "sensor_drift"
+}

@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://utilityguard.invalid/contracts/v1/incident.schema.json",
+  "title": "Incident",
+  "description": "Master Spec 8 and 11.1. A hypothesis comes with a rule-based support strength and the rules that fired, never with an invented probability; a model score, where one exists, is labelled MODEL. Candidate locations are scored by the localizer (MODEL).",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "common.schema.json#/$defs/schema_version"
+    },
+    "incident_id": {
+      "$ref": "common.schema.json#/$defs/identifier"
+    },
+    "run_id": {
+      "$ref": "common.schema.json#/$defs/identifier"
+    },
+    "status": {
+      "enum": [
+        "watch",
+        "open",
+        "acknowledged",
+        "mitigating",
+        "resolved",
+        "closed"
+      ]
+    },
+    "false_alarm": {
+      "type": "boolean"
+    },
+    "severity": {
+      "enum": [
+        "low",
+        "medium",
+        "high",
+        "critical"
+      ]
+    },
+    "hypothesis": {
+      "enum": [
+        "leak",
+        "burst",
+        "sensor_fault",
+        "demand_change",
+        "pump_issue",
+        "valve_issue",
+        "comms_outage",
+        "unknown"
+      ]
+    },
+    "support": {
+      "enum": [
+        "strong",
+        "moderate",
+        "weak"
+      ]
+    },
+    "rules_fired": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/identifier"
+      },
+      "uniqueItems": true
+    },
+    "model_score": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "number"
+        },
+        "label": {
+          "const": "MODEL"
+        },
+        "basis": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "value",
+        "label",
+        "basis"
+      ],
+      "additionalProperties": false
+    },
+    "location": {
+      "type": "object",
+      "properties": {
+        "zone_id": {
+          "oneOf": [
+            {
+              "$ref": "common.schema.json#/$defs/identifier"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "candidates": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "asset_id": {
+                "$ref": "common.schema.json#/$defs/identifier"
+              },
+              "score": {
+                "type": "number"
+              },
+              "label": {
+                "const": "MODEL"
+              }
+            },
+            "required": [
+              "asset_id",
+              "score",
+              "label"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "zone_id",
+        "candidates"
+      ],
+      "additionalProperties": false
+    },
+    "first_detected_tick": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "closed_at": {
+      "oneOf": [
+        {
+          "$ref": "common.schema.json#/$defs/utc_timestamp"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "contributing_sensors": {
+      "type": "array",
+      "items": {
+        "$ref": "common.schema.json#/$defs/identifier"
+      },
+      "uniqueItems": true
+    }
+  },
+  "required": [
+    "schema_version",
+    "incident_id",
+    "run_id",
+    "status",
+    "false_alarm",
+    "severity",
+    "hypothesis",
+    "support",
+    "rules_fired",
+    "location",
+    "first_detected_tick",
+    "closed_at",
+    "contributing_sensors"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "closed"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "then": {
+        "properties": {
+          "closed_at": {
+            "$ref": "common.schema.json#/$defs/utc_timestamp"
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "closed_at": {
+            "type": "null"
+          }
+        }
+      }
+    }
+  ]
+}

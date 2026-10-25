@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://utilityguard.invalid/contracts/v1/telemetry-reading.schema.json",
+  "title": "Telemetry reading",
+  "description": "One sensor reading at one tick (Master Spec 11.2 and 12.2). A missing reading has value null, never 0. By design there is no field for twin truth, injected faults or fault tags: telemetry is what a sensor would report, and detectors and the operator view only ever see this shape.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "common.schema.json#/$defs/schema_version"
+    },
+    "tick": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sensor_id": {
+      "$ref": "common.schema.json#/$defs/identifier"
+    },
+    "value": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "unit": {
+      "type": "string",
+      "minLength": 1
+    },
+    "label": {
+      "$ref": "common.schema.json#/$defs/telemetry_label"
+    },
+    "delivered_at": {
+      "$ref": "common.schema.json#/$defs/utc_timestamp"
+    },
+    "quality": {
+      "$ref": "common.schema.json#/$defs/quality"
+    }
+  },
+  "required": [
+    "schema_version",
+    "tick",
+    "sensor_id",
+    "value",
+    "unit",
+    "label"
+  ],
+  "additionalProperties": false
+}
