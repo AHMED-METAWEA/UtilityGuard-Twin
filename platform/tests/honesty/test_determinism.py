@@ -5,8 +5,64 @@ import os
 import subprocess
 import sys
 import textwrap
+from dataclasses import replace
 
-from honesty_support import ROOT
+import pytest
+from honesty_support import ROOT, load_json
+from ug_core import Manifest
+
+
+@pytest.fixture
+def scenario_manifest():
+    return Manifest(
+        config=load_json(
+            ROOT / "contracts/examples/scenario-config/every_fault_type.json"
+        ),
+        seed=42,
+        versions={"scenario": "1"},
+        libraries={"numpy": "test_v1"},
+        git_commit="commit_a",
+        unordered=("faults",),
+    )
+
+
+@pytest.mark.parametrize("hash_method", ["input_hash", "config_hash"])
+def test_manifest_hash_includes_seed(scenario_manifest, hash_method):
+    """P-06/P-12: changing only the manifest seed changes both recipe hashes."""
+    changed = replace(scenario_manifest, seed=scenario_manifest.seed + 1)
+    assert (
+        getattr(changed, hash_method)() != getattr(scenario_manifest, hash_method)()
+    ), f"P-06/P-12: Manifest.{hash_method} ignored a seed-only change"
+
+
+@pytest.mark.parametrize("field", ["config", "libraries", "versions", "git_commit"])
+def test_manifest_input_hash_includes_recipe_fields(scenario_manifest, field):
+    """P-06/P-12: each fault parameter or code-version change identifies a new recipe."""
+    config = load_json(
+        ROOT / "contracts/examples/scenario-config/every_fault_type.json"
+    )
+    config["faults"][0]["final_area_cm2"] += 0.125
+    value = {
+        "config": config,
+        "libraries": {"numpy": "test_v2"},
+        "versions": {"scenario": "2"},
+        "git_commit": "commit_b",
+    }[field]
+    changed = replace(scenario_manifest, **{field: value})
+    assert changed.input_hash() != scenario_manifest.input_hash(), (
+        f"P-06/P-12: Manifest.input_hash ignored {field}"
+    )
+
+
+def test_manifest_outputs_change_identity_only(scenario_manifest):
+    """P-06/P-12: outputs are recorded in equality without changing the input recipe."""
+    first = replace(scenario_manifest, output_hashes={"telemetry": "output_a"})
+    second = replace(scenario_manifest, output_hashes={"telemetry": "output_b"})
+    assert first.input_hash() == second.input_hash(), (
+        "P-06/P-12: output hashes contaminated Manifest.input_hash"
+    )
+    assert first != second, "P-06/P-12: Manifest equality ignored output hashes"
+
 
 PROBE = r"""
 import copy

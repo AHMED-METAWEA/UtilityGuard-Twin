@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # All mutations run in disposable copies; editable installs must not hide them.
+# Usage: scripts/mutation_check.sh — clean suite plus ten mutations, all must be caught.
 set -euo pipefail
 repo=$(git rev-parse --show-toplevel)
 python="$repo/.venv/bin/python"
@@ -54,7 +55,7 @@ echo 'CLEAN PASS'
 
 caught=0
 missed=0
-for mutation in truth_import truth_payload nan_to_zero unordered_manifest stream_source money_label exact_tick; do
+for mutation in truth_import truth_payload nan_to_zero unordered_manifest stream_source money_label exact_tick manifest_seed_dropped evidence_valueless_allowed telemetry_label_simulation; do
     copy="$workspace/$mutation"
     "$python" - "$workspace/original" "$copy" <<'PY'
 import shutil
@@ -141,6 +142,17 @@ elif mutation == "exact_tick":
     lines = source.splitlines(keepends=True)
     old = "".join(lines[guard.lineno - 1:guard.end_lineno])
     replace_once(path, old, " " * guard.col_offset + "steps = round(seconds / self.step_seconds)\n")
+elif mutation == "manifest_seed_dropped":
+    replace_once(core / "manifest.py", '            "seed": self.seed,\n', '')
+    replace_once(core / "manifest.py",
+                 '{"config": thaw(self.config), "seed": self.seed}',
+                 '{"config": thaw(self.config)}')
+elif mutation == "evidence_valueless_allowed":
+    replace_once(core / "evidence.py", "elif self.value is None:",
+                 "elif self.value is None and False:")
+elif mutation == "telemetry_label_simulation":
+    edit_json("contracts/examples/telemetry-reading/pressure_suspect.json",
+              lambda obj: obj.update(label="SIMULATION"))
 else:
     raise SystemExit(f"ABORT: unknown mutation {mutation}")
 
@@ -168,5 +180,5 @@ PY
         exit 1
     fi
 done
-echo "Summary: clean PASS; $caught CAUGHT; $missed MISSED; 7 mutations"
-[[ "$caught" -eq 7 && "$missed" -eq 0 ]]
+echo "Summary: clean PASS; $caught CAUGHT; $missed MISSED; 10 mutations"
+[[ "$caught" -eq 10 && "$missed" -eq 0 ]]

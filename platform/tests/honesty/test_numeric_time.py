@@ -103,6 +103,48 @@ def test_missing_telemetry_stays_missing():
     assert series.missing_count("P01") == 1, "P-17: TelemetrySeries missing count wrong"
 
 
+@pytest.mark.parametrize(
+    "label",
+    [label for label in EvidenceLabel if label != EvidenceLabel.INSUFFICIENT_EVIDENCE],
+)
+def test_evidenced_requires_value(label):
+    """P-14: every source label gives a value; only INSUFFICIENT_EVIDENCE declines."""
+    kwargs = (
+        {"formula": "x", "inputs": ("ev_input",)}
+        if label == EvidenceLabel.CALCULATED
+        else {}
+    )
+    # Valid positive control, including CALCULATED provenance, rules out unrelated failures.
+    assert Evidenced(1.0, label, "ev_1", **kwargs).value == 1.0
+    with rejects(ValueError, f"P-14: {label} accepted no value", "cannot be None"):
+        Evidenced(None, label, "ev_1", **kwargs)
+
+
+def test_insufficient_evidence_declines_value():
+    """P-14: declining evidence is represented by None and cannot claim a number."""
+    assert Evidenced(None, EvidenceLabel.INSUFFICIENT_EVIDENCE, "ev_1").value is None
+    with rejects(ValueError, "P-14: INSUFFICIENT_EVIDENCE gave a number", "no value"):
+        Evidenced(1.0, EvidenceLabel.INSUFFICIENT_EVIDENCE, "ev_1")
+
+
+@pytest.mark.parametrize("label", list(EvidenceLabel))
+def test_telemetry_refuses_nonmeasurement_labels(label):
+    """P-01: truth and derived evidence cannot masquerade as sensor measurements."""
+    tb = timebase()
+    readings = {"P01": [None] * tb.n_ticks}
+    if label in {
+        EvidenceLabel.SENSOR_SIM,
+        EvidenceLabel.OBSERVED,
+        EvidenceLabel.BENCHMARK,
+    }:
+        assert TelemetrySeries(tb, readings, label).readings["P01"][0] is None
+    else:
+        with rejects(
+            ValueError, f"P-01: TelemetrySeries accepted {label}", "telemetry label"
+        ):
+            TelemetrySeries(tb, readings, label)
+
+
 @pytest.mark.parametrize("tick", range(8))
 def test_exact_onset_ticks(tick):
     """P-05: exact fault onsets map to their tick, including zero and the last tick."""
