@@ -88,3 +88,15 @@ class AdapterBase:
 
     def validate_dataset(self, path: Path) -> ValidationReport:
         self._unimplemented("validate_dataset")
+
+    def presets(self) -> Mapping[str, Mapping[str, Any]]:
+        """Optional named run recipes."""
+        return {}
+
+    def run_versions(self, asset: Any) -> Mapping[str, str]:
+        """Domain inputs that affect simulation output."""
+        return {}
+
+    def run_libraries(self) -> tuple[str, ...]:
+        """Additional installed distributions recorded by the runner."""
+        return ()
