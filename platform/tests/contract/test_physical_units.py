@@ -106,3 +106,50 @@ def test_the_pattern_accepts_exactly_what_the_code_accepts() -> None:
         seen_true += expected
         seen_false += not expected
     assert seen_true > 2000 and seen_false > 2000  # the fuzz covers both outcomes
+
+
+FOUR_LABELS = ["SIMULATION", "MODEL", "SENSOR_SIM", "PUBLIC_GEOMETRY"]
+RECORD = load_json(ROOT / "contracts/examples/evidence-record/sensor_reading.json")
+
+
+def record(unit: str, label: str) -> dict[str, Any]:
+    out = copy.deepcopy(RECORD)
+    out.update(unit=unit, label=label)
+    return out
+
+
+@pytest.mark.parametrize("label", FOUR_LABELS)
+@pytest.mark.parametrize("unit", GOOD_UNITS)
+def test_an_evidence_record_of_simulator_origin_accepts_physical_units(
+    unit: str, label: str
+) -> None:
+    assert is_valid("evidence-record", record(unit, label)), (unit, label)
+
+
+@pytest.mark.parametrize("label", FOUR_LABELS)
+@pytest.mark.parametrize("unit", [u for u in BAD_UNITS if u])
+def test_an_evidence_record_of_simulator_origin_refuses_every_other_unit(
+    unit: str, label: str
+) -> None:
+    assert not is_valid("evidence-record", record(unit, label)), (unit, label)
+
+
+@pytest.mark.parametrize("label", FOUR_LABELS)
+def test_the_inputs_of_a_calculation_follow_the_same_rule(label: str) -> None:
+    calc = load_json(ROOT / "contracts/examples/evidence-record/cost_24h.json")
+    assert is_valid("evidence-record", calc)
+    assert calc["inputs"] and calc["inputs"][0]["label"] == "SIMULATION"
+    bad = copy.deepcopy(calc)
+    bad["inputs"][0].update(unit="CAD.m^-3", label=label, value=1.0)
+    assert not is_valid("evidence-record", bad), label
+    good = copy.deepcopy(calc)
+    good["inputs"][0].update(unit="m3/h", label=label, value=1.0)
+    assert is_valid("evidence-record", good), label
+
+
+@pytest.mark.parametrize("label", ["ASSUMPTION", "OBSERVED", "BENCHMARK"])
+def test_other_labels_keep_any_unit_token_and_the_money_spelling_rule(
+    label: str,
+) -> None:
+    assert is_valid("evidence-record", record("furlong", label))
+    assert not is_valid("evidence-record", record("USD", label))
