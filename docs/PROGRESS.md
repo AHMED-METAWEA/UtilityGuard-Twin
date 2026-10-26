@@ -1,6 +1,18 @@
 # PROGRESS
-Current phase: A1. Waves 0 to 3 are built and **every Wave 3 pull request except #27 is merged into `dev` by the owner**. Open: #27 (browser test, adds the Playwright dependency, so the owner merges it under D-018) and the records PR. Wave 4 (T-A1-013, the A1 gate review) does not start without the owner's go-ahead.
+Current phase: A1, **exit gate report delivered (T-A1-013, 2026-10-26); waiting for the owner's approval.** Not tagged `phase-A1`, `dev` not merged into `main`, B1 not started. One S1 fix is open as PR #31 (a contract change that needs the owner).
 Last session: 2026-10-26 (lead agent Claude Code)
+
+## A1 exit gate, T-A1-013 (2026-10-26)
+Full log: `docs/reviews/T-A1-013.md` (findings, decisions, fixing PRs, the lead's runs, the Spec M0 criteria one by one).
+
+- **Fresh clone of `dev`**: `make install install-dev` exit 0; `make ci` exit 0 (1,155 unit, 870 contract, 283 frontend, 202 honesty with 11 of 11 mutations caught, 35 water, 2 browser tests, 8 adapter-conformance passes and 12 expected failures until M1 to M4); `make up` serves the shell (healthy container, `make smoke` 5 of 5, a real Chromium shows the notice, the badge `No network loaded` and `REPLAY no stream connected`, every request to the same origin); `ug doctor` exits 0 and exits 1 on an edited WNTR manifest; the import rule fails when `platform/` imports a domain. Hosted CI on `dev` is green at `fd012b1`.
+- **Codex adversarial review since `phase-A0`**, 2 rounds, 4 runs: 8 findings (1 S1, 6 S2, 1 S3), all reproduced with failing tests and fixed. None in the code only the lead had reviewed (`ug_api`, the container, `grammar.py`) or in the second-round fixes of #24.
+- **Fixed and merged by the lead (#30, Tier 1)**: `ug doctor` now checks that every reference target is a schema, and follows references inside targets; a number that overflows to infinity (`1e9999`) is refused by the contract test loader and by the doctor.
+- **Open, needs the owner (#31, Tier 2, contract change)**: the S1 (`{"value":100,"unit":"EGP","label":"SENSOR_SIM"}` was a valid telemetry reading and a valid tick reading) and its siblings (the same hole in evidence records labelled SIMULATION, MODEL, SENSOR_SIM or PUBLIC_GEOMETRY; `INSUFFICIENT_EVIDENCE` carrying numeric estimates). The fix puts the code's fail-closed unit vocabulary into the contract. It tightens `v1` in place, which the contracts README forbids unless the owner approves (no `v1` payload is produced or stored yet).
+- **Spec M0 not fully met**: the UI design plan (tokens, wireframes) is B2 by the Adoption Plan; the mock dataset and mock stream are partial (valid example payloads exist; no stream player or server); the shell does not import the generated TypeScript types yet.
+- **Decisions for the owner**: (1) approve or reject #31 (including the in-place tightening of `v1`); (2) approve the gate, then the owner merges `dev` into `main` and pushes the tag `phase-A1` (the lead does neither); (3) whether to start B1.
+- **Not reviewed a third time (D-016, D-021)**: the transitive reference walk (#30), the evidence-record rule and the `FNU`/`FTU` atoms (#31), plus the earlier list.
+- **Suggested follow-ups, none started**: a CI job that builds the image and runs the smoke script (hosted CI only validates the compose file), the shell importing the generated types, a mock stream, a Python dependency audit.
 
 ## Wave 3 state (2026-10-26)
 The "Done", "Next" and usage lines further down are the Wave 2 record; this section supersedes their status.
@@ -16,7 +28,7 @@ Owner decisions applied this wave: T-A1-002c approved; frontend packages, the `l
 | #24 | T-A1-002c objects refuse what the contracts refuse | Claude | merged by the owner | Codex adversarial, 2 rounds, 5 findings fixed; no third round (`T-A1-002c.md`) |
 | #26 | T-A1-011 health API, Docker Compose, `make up` | Codex | merged by the owner after three rebases | lead: run in Docker, 14 smoke and 29 API mutations (`T-A1-011.md`) |
 | #22 | Wave 3 plan | Claude | merged by the owner | docs only |
-| #27 | T-A1-014 browser test | Claude | **open**; Tier 1 but adds a dependency, so the owner merges it | Codex T1: no defects (`T-A1-014.md`) |
+| #27 | T-A1-014 browser test | Claude | merged by the owner (Tier 1 but adds a dependency) | Codex T1: no defects (`T-A1-014.md`) |
 | records PR | review logs, D-018, D-019, this state | Claude | Tier 0 | none needed |
 
 Hosted CI on `dev` was green after the last four merges (#18, #24, #26, #22); I did not check it after #21, #23 and #25.
@@ -31,7 +43,7 @@ What is not proven: the second-round fixes of #24 had no third Codex round, and 
 
 Decision for the owner (open since #24): keep the fail-closed unit vocabulary (D-019), or ask the lead to remove it and keep only the spelling reader.
 
-**Exact next step:** (1) owner: merge #27 (it adds `@playwright/test` 1.64.0); (2) owner: say "continue" to start Wave 4, T-A1-013 (the A1 gate review of everything above; it needs Codex and a full usage budget); (3) optional proposal: one handoff file per task instead of one `docs/progress/codex.md`, which conflicted on every merge this wave (D-019).
+**Exact next step:** superseded by the section "A1 exit gate" above.
 
 Usage check for Wave 3: Codex implementation runs 2 (CLI, deploy), adversarial reviews 2 (both rounds of #24), T1 reviews 2 (#23, #27); the lead applied more than 150 mutation runs locally; no money was spent; new dependencies are `fastapi` and `uvicorn` (hash-pinned, releases at least 14 days old) and `@playwright/test` 1.64.0 (exact pin, audit clean); Docker images and a Chromium build were downloaded. The lead's token counter read 14.60 million remaining when it stopped for the usage limit and 14.97 million after this task: it was reset when the date changed, so I cannot give a combined figure.
 
