@@ -1,44 +1,39 @@
 # PROGRESS
-Current phase: A1. Waves 0 to 2 are merged by the owner except #18. **Wave 3 is built and in review as open pull requests (#18, #21 to #26) plus one local branch; the lead stopped early because the usage limit is almost reached (owner's instruction).** Wave 4 (T-A1-013, the gate) does not start without the owner's go-ahead.
-Last session: 2026-10-25 (lead agent Claude Code)
+Current phase: A1. Waves 0 to 3 are built and **every Wave 3 pull request except #27 is merged into `dev` by the owner**. Open: #27 (browser test, adds the Playwright dependency, so the owner merges it under D-018) and the records PR. Wave 4 (T-A1-013, the A1 gate review) does not start without the owner's go-ahead.
+Last session: 2026-10-26 (lead agent Claude Code)
 
-## Wave 3 state (2026-10-25, written at the stop for the usage limit)
+## Wave 3 state (2026-10-26)
 The "Done", "Next" and usage lines further down are the Wave 2 record; this section supersedes their status.
 
-Owner decisions applied this wave: T-A1-002c approved; frontend packages, the `legacy-peer-deps` workaround and `actions/setup-node@v7` accepted; corrected T-A1-011 acceptance text accepted; Playwright accepted as a pinned dev dependency (`@playwright/test` 1.64.0).
+Owner decisions applied this wave: T-A1-002c approved; frontend packages, the `legacy-peer-deps` workaround and `actions/setup-node@v7` accepted; corrected T-A1-011 acceptance text accepted; Playwright accepted as a pinned dev dependency (`@playwright/test` 1.64.0). **New standing rule D-018 (2026-10-26): the lead may squash-merge Tier 0 and Tier 1 PRs into `dev` when hosted CI is green, the cross-review is logged and the PR touches no contracts, assumptions, Honesty Rules text, Master Spec, dependencies or deletions; never Tier 2, `main` or tags.**
 
-| PR / branch | Card | Author | State | Evidence |
+| PR | Card | Author | State | Cross-review (log in `docs/reviews/`) |
 |---|---|---|---|---|
-| #18 `codex/a1-honesty-tests` | T-A1-004 (Wave 2) | Codex | open; rebased onto `dev`, conflict in `docs/progress/codex.md` resolved keeping both sides; lead added commit `e706cce` (valid hex commit and SHA-256 values in the determinism fixtures, assertions unchanged) | green with and without #24 |
-| #21 `claude/fix-offline-generated` | fix | Claude | open; **dev is red until it merges** (the offline check flagged the generated `.d.ts`) | tests added in the PR |
-| #22 `claude/a1-wave3-plan` | plan, cards T-A1-008b and T-A1-014, D-017 | Claude | open; this records update is committed on it | docs only |
-| #23 `claude/a1-water-health` (`fe68955`) | T-A1-008b | Claude | open; **no Codex review yet** | 13 tests; fresh clone `make ci` exit 0 |
-| #24 `claude/a1-contract-gaps` (`d7afb1a`) | T-A1-002c | Claude | open; Tier 2, **two Codex rounds done** (3 then 2 findings, all reproduced and fixed test-first); the round-2 fixes have no third review | 1927 unit and contract tests; about 80 mutations; fresh clone `make ci` exit 0 alone and with #18 merged |
-| #25 `codex/a1-ug-cli` (`7847b6f`) | T-A1-009 | Codex | open; stacked on #23 (contains its commit); lead-reviewed | 29 mutations: Codex's tests caught 25, the lead added tests for 3 real gaps, 1 is equivalent (`allow_nan`); fresh clone `make ci` exit 0 |
-| #26 `codex/a1-deploy` (`e409b93`) | T-A1-011 | Codex | open; lead-reviewed and **run in Docker** | `make up` healthy, uid 10001, read-only root, loopback port; `make smoke` 5/5; 14 smoke-script mutations all fail it; 29 API mutations caught after the lead's added tests; fresh clone `make ci` exit 0 |
-| `claude/a1-browser-test` (`38e269e`), **local only, not pushed, no PR** | T-A1-014 | Claude | committed; the test is green; hosted-CI install step missing | 2 browser tests pass; 21 mutations of the build or sources fail it as required; `npm audit` 0 vulnerabilities |
+| #21 | fix: offline check ignores type declarations | Claude | merged by the owner | tests in the PR |
+| #23 | T-A1-008b water adapter health check | Claude | merged by the owner | Codex T1 after the merge: no defects (`T-A1-008b.md`) |
+| #25 | T-A1-009 `ug` CLI, `ug doctor` | Codex | merged by the owner | lead: 29 mutations, 3 test gaps closed (`T-A1-009.md`) |
+| #18 | T-A1-004 honesty tests and mutation runner | Codex | merged by the owner after two rebases (conflicts in `docs/progress/codex.md`, both sections kept) and one lead fixture commit | `T-A1-004.md` |
+| #24 | T-A1-002c objects refuse what the contracts refuse | Claude | merged by the owner | Codex adversarial, 2 rounds, 5 findings fixed; no third round (`T-A1-002c.md`) |
+| #26 | T-A1-011 health API, Docker Compose, `make up` | Codex | merged by the owner after three rebases | lead: run in Docker, 14 smoke and 29 API mutations (`T-A1-011.md`) |
+| #22 | Wave 3 plan | Claude | merged by the owner | docs only |
+| #27 | T-A1-014 browser test | Claude | **open**; Tier 1 but adds a dependency, so the owner merges it | Codex T1: no defects (`T-A1-014.md`) |
+| records PR | review logs, D-018, D-019, this state | Claude | Tier 0 | none needed |
 
-Codex jobs: none running. Finished: the CLI run (T-A1-009), the deploy run (task `bn9c2ft04`, T-A1-011), the two adversarial reviews of #24 (`b0hig3el2` round 1, `b79c2e7tu` round 2). Not started: Codex T1 reviews of #23 and of T-A1-014. Idle Codex `app-server-broker` processes from earlier worktrees are still alive (they are not jobs; they can be killed).
+Hosted CI on `dev` was green after the last four merges (#18, #24, #26, #22); I did not check it after #21, #23 and #25.
 
-What works: `ug_core` objects refuse what the contracts refuse (the 23 gaps are closed, one by-design gap remains); the money rule is fail-closed (a SIMULATION, MODEL, SENSOR_SIM or PUBLIC_GEOMETRY value needs a unit from `grammar.PHYSICAL_UNIT_ATOMS`); `ug doctor` checks Python, domains and their health hooks, every contract schema offline, node and docker; `make up` serves the shell and `/api/health` from one origin in a hardened container; a real Chromium confirms the shell requests nothing from another origin and that the Content-Security-Policy stops fetch, image, stylesheet, script, frame, WebSocket, EventSource and beacon attempts.
+Codex jobs: none running at the end. Finished this wave: the CLI run, the deploy run, two adversarial reviews of #24, two T1 reviews (#23 after its merge, #27). The idle Codex broker processes left by earlier worktrees were stopped at the end of this session.
 
-What is approximated: the currency spelling reader is best-effort (the fail-closed unit vocabulary is the real guard for the four simulator labels); other labels may carry any unit token; the container is not firewalled, only the shell CSP and the smoke gate check offline behaviour; base images are pinned by digest (read 2026-10-25) and do not update themselves.
+What works: `ug_core` objects refuse what the contracts refuse (the gaps are closed, one by-design gap remains); the money rule is fail-closed (a SIMULATION, MODEL, SENSOR_SIM or PUBLIC_GEOMETRY value needs a unit from `grammar.PHYSICAL_UNIT_ATOMS`); `ug doctor` checks Python, domains and their health hooks, every contract schema offline, node and docker; `make up` serves the shell and `/api/health` from one origin in a hardened container; a real Chromium confirms the shell requests nothing from another origin and that the Content-Security-Policy stops fetch, image, stylesheet, script, frame, WebSocket, EventSource and beacon attempts (in #27, not yet merged).
 
-What is not proven: the round-2 fixes of #24 have had no third Codex round; #23 and the browser test have had no Codex review; the browser test is not yet in hosted CI; Docker was run on macOS arm64 Docker Desktop only, not on a Linux runner; `make ci` was verified in fresh clones that merged #21 locally, so hosted CI on every branch is red until #21 is merged.
+What is approximated: the currency spelling reader is best-effort (the unit vocabulary is the real guard for the four simulator labels; other labels may carry any unit token); the container is not firewalled, only the shell CSP and the smoke gate check offline behaviour; base images are pinned by digest (read 2026-10-25) and do not update themselves.
 
-**Decision for the owner (in #24):** the fail-closed physical-unit vocabulary is stricter than the contract for the four simulator labels (a new physical unit must first be added to `PHYSICAL_UNIT_ATOMS`). Keep it, or say so and the lead removes it and keeps only the spelling reader.
+What is not proven: the second-round fixes of #24 had no third Codex round, and #25 and #26 were reviewed by the lead only (D-016, and T-A1-013 must cover them); the browser test runs in Chromium only; Docker was run on macOS arm64 only, not on a Linux runner; Codex's two T1 reviews could not run the code (read-only sandbox), so they are reading reviews.
 
-**Merge order:** #21 first. Then #23 before #25 (stacked). #24, #18, #26 and #22 in any order after #21 (a #18 and #24 merge needs no further change).
+Decision for the owner (open since #24): keep the fail-closed unit vocabulary (D-019), or ask the lead to remove it and keep only the spelling reader.
 
-**Exact next step (when usage allows):**
-1. Owner: merge #21, then the others in the order above.
-2. Lead, `claude/a1-browser-test`: add the CI step `cd frontend && npm ci && npx playwright install --with-deps chromium` before `make ci` in `.github/workflows/ci.yml` (the card allows exactly that edit); in a fresh clone run `make install install-dev && make browser-install && make ci`; push the branch and open the PR; run the Codex T1 review of it.
-3. Lead: Codex T1 review of #23 (`codex-companion.mjs review --base origin/dev --cwd ~/Desktop/UG-wt/claude-a1-water-health --wait`); at most 2 Codex runs at once.
-4. Lead, records PR for Wave 3: `docs/reviews/T-A1-002c.md`, `T-A1-009.md`, `T-A1-011.md`, `T-A1-014.md` (and `T-A1-008b.md` after its review); D-018 in `docs/audit/DECISIONS.md` (the fail-closed unit rule, the digest pins, the Playwright dependency as installed, the round-2 fixes without a third review); update the `GAPS` wording of T-A1-002b in `docs/COLLAB_PLAN.md`; fix the commit message of `7847b6f`, which says 28 caught where 25 is right (the PR text is corrected).
-5. Cleanup the lead started: Docker Desktop is running (container stopped; quit it from the menu if wanted); Chromium (about 100 MB) is in `~/Library/Caches/ms-playwright`.
-6. Then stop at the Wave 3 gate; Wave 4 (T-A1-013) only on the owner's go-ahead.
+**Exact next step:** (1) owner: merge #27 (it adds `@playwright/test` 1.64.0); (2) owner: say "continue" to start Wave 4, T-A1-013 (the A1 gate review of everything above; it needs Codex and a full usage budget); (3) optional proposal: one handoff file per task instead of one `docs/progress/codex.md`, which conflicted on every merge this wave (D-019).
 
-Usage check for Wave 3 (what I can measure): Codex implementation runs 2 (CLI, deploy; tokens are in the run logs in the scratchpad), Codex adversarial reviews 2 (both rounds of #24, about 5 minutes each); the lead used roughly 0.4 million tokens in this session (14.89 to 14.60 million remaining) plus more than 150 local mutation runs; no money was spent; the new dependencies are `fastapi`, `uvicorn` (hash-pinned, at least 14 days old) and `@playwright/test` 1.64.0 (exact pin, audit clean); Docker images and the Chromium build were downloaded.
+Usage check for Wave 3: Codex implementation runs 2 (CLI, deploy), adversarial reviews 2 (both rounds of #24), T1 reviews 2 (#23, #27); the lead applied more than 150 mutation runs locally; no money was spent; new dependencies are `fastapi` and `uvicorn` (hash-pinned, releases at least 14 days old) and `@playwright/test` 1.64.0 (exact pin, audit clean); Docker images and a Chromium build were downloaded. The lead's token counter read 14.60 million remaining when it stopped for the usage limit and 14.97 million after this task: it was reset when the date changed, so I cannot give a combined figure.
 
 Done:
 - **Phase A0 closed** (PR #2; tag `phase-A0` on `506e578`, pushed, D-009). `freebuff/` is reference only (D-001).

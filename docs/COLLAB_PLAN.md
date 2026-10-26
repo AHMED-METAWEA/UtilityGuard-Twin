@@ -92,7 +92,7 @@ Status: **merged (PR #17)**   Owner: claude   Reviewer: codex   Tier: T1   Branc
 **Budget:** 1 session.
 
 ### T-A1-002c: Close the gaps between the code and the contracts
-Status: **approved by the owner 2026-10-25; Wave 3** (lead)   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-contract-gaps`   Spec refs: 10.1, 11, 12
+Status: **merged (PR #24)**; two Codex adversarial rounds (3 then 2 findings); the second-round fixes were not reviewed a third time (D-016); the fail-closed unit rule is recorded in D-019   Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/a1-contract-gaps`   Spec refs: 10.1, 11, 12
 **Goal:** `Evidenced`, `Manifest`, `TelemetrySeries` and `AssumptionSet` refuse what the contracts reject, so the API can never build an invalid payload: the money label rule for `Evidenced` (an amount or a price is never SIMULATION, MODEL, SENSOR_SIM or PUBLIC_GEOMETRY, a money value is a number, currencies are written `EGP`), the identifier and unit grammars, git commit format, `schema_version`, output hash format, repeated names, empty formula strings, and empty directly built assumption sets.
 **Allowed:** `platform/ug_core/**`, the tests of those types, and `GAPS` in `platform/tests/contract/test_code_matches_contracts.py` (entries are removed, never added). **Forbidden:** changing a schema.
 **Acceptance:** `GAPS` contains only the one by-design entry (`Manifest.config` is generic); `test_no_listed_gap_is_stale` and `test_no_unlisted_gap_between_the_code_and_the_contract` pass; `make ci` passes; the honesty suite and its mutation runner still pass.
@@ -107,7 +107,7 @@ Status: **merged (PR #8)**; core label test tightened to equality (PR #15, merge
 **Budget:** 2 sessions.
 
 ### T-A1-004: Honesty tests (written before the code they guard)
-Status: **PR #18 open** (rebased onto `dev`; needs PR #21 first so its hosted CI is green)   Owner: codex (author, non-owner of the guarded modules)   Reviewer: claude   Tier: T2   Branch: `codex/a1-honesty-tests`   Pilot: **P2**   Spec refs: 2, 4.1, 16
+Status: **merged (PR #18)**; the lead added one fixture commit so it is green with or without T-A1-002c   Owner: codex (author, non-owner of the guarded modules)   Reviewer: claude   Tier: T2   Branch: `codex/a1-honesty-tests`   Pilot: **P2**   Spec refs: 2, 4.1, 16
 **Goal:** A test suite that fails if any pitfall in `PITFALLS.md` is reintroduced in the structure.
 **Allowed:** `platform/tests/honesty/**`, `scripts/mutation_check.sh`, `Makefile` target `test-honesty`. **Forbidden:** the modules under test.
 **Tests (each names its pitfall ID in the docstring):** truth-leak structural (P-01, P-03): an AST import-graph test shows nothing under `platform/ug_intel/**` or the stream and operator parts of `platform/ug_api/**` imports `TruthSeries`, and their entry points are annotated with `Timebase` and `TelemetrySeries`; payload walker (P-01, P-02): no schema reachable from telemetry, stream or operator contracts has a property named like a `TruthSeries` field or a fault tag (the denylist is derived by introspection so it cannot drift); determinism (P-06): same manifest in two subprocesses gives the same hash, and permuted fault lists give the same canonical hash; label coverage and money labels (P-14): every displayable number in the contracts carries one of the nine labels and cost objects are `CALCULATED`; finite guard (P-17): no `ug_core` path turns NaN or infinity into zero; unknown ids and fault types rejected (P-18).
@@ -146,14 +146,14 @@ Status: **merged (PR #9)** (two Codex adversarial rounds, 3 defects found and fi
 **Budget:** 1 session.
 
 ### T-A1-008b: The water adapter reports its environment health
-Status: Wave 3 (lead, first, because T-A1-009 builds on it)   Owner: claude   Reviewer: codex   Tier: T1   Branch: `claude/a1-water-health`   Spec refs: 4.6, M0 (`ug doctor`)
+Status: **merged (PR #23)**; Codex T1 review logged after the merge in `docs/reviews/T-A1-008b.md`   Owner: claude   Reviewer: codex   Tier: T1   Branch: `claude/a1-water-health`   Spec refs: 4.6, M0 (`ug doctor`)
 **Goal:** `ug doctor` can ask a domain whether its environment is sound without `platform/` importing `domains/`: `WaterAdapter.health_checks()` (the optional `HasHealthChecks` hook of ADR-004) runs the WNTR manifest check.
 **Allowed:** `domains/water/src/ug_water/adapter.py`, `domains/water/tests/test_adapter_health.py`. **Forbidden:** `platform/**`, the manifest itself.
 **Acceptance:** `discover()["water"]` satisfies `HasHealthChecks`; `health_checks()` returns `HealthCheck` objects including `wntr_api_manifest` (ok, with the WNTR version and symbol count in the detail) and `wntr_version`; with a manifest edited in a temporary copy (a symbol renamed) the check is not ok and its detail names the symbol; the conformance suite and `make ci` still pass.
 **Budget:** small.
 
 ### T-A1-014: Browser test: the built shell makes no outside request
-Status: Wave 3 (lead); the owner approved Playwright as a pinned dev dependency on 2026-10-25   Owner: claude   Reviewer: codex   Tier: T1   Branch: `claude/a1-browser-test`   Spec refs: P10 (offline-first), 16
+Status: **PR #27 open** (Tier 1, but it adds the dependency approved in D-017, so the owner merges it under D-018)   Owner: claude   Reviewer: codex   Tier: T1   Branch: `claude/a1-browser-test`   Spec refs: P10 (offline-first), 16
 **Dependency, stated before installing (as the owner required):** `@playwright/test` **1.64.0** (npm; Apache-2.0; published 2026-10-07; Node >=20; not deprecated). One runtime dependency, `playwright@1.64.0`, which depends on `playwright-core@1.64.0` (same licence and date); `fsevents` is an optional macOS-only extra. Installed in `frontend/` as an exact-pinned dev dependency, with `ignore-scripts=true` (`frontend/.npmrc`) and `npm audit` reported in the PR. **It also downloads a browser:** `npx playwright install chromium` fetches the Chromium build that matches 1.64.0 (about 150 to 200 MB) from Playwright's download host into the user cache (`~/Library/Caches/ms-playwright` on macOS), outside the repository; on the hosted runner CI uses `--with-deps` (apt packages for the browser). Nothing is downloaded at application run time; this is development tooling only.
 **Goal:** Prove in a real browser what the static scan and the Content-Security-Policy only claim: the built shell makes no request to any other origin.
 **Allowed:** `frontend/e2e/**`, `frontend/playwright.config.ts`, `frontend/package.json` and `package-lock.json` (the one dependency), `frontend/tsconfig.json` (include the test folder), `mk/browser.mk`, `.github/workflows/ci.yml` (one browser install step). **Forbidden:** shell behaviour (`frontend/src/**`).
@@ -162,7 +162,7 @@ Status: Wave 3 (lead); the owner approved Playwright as a pinned dev dependency 
 **Budget:** 1 session.
 
 ### T-A1-009: `ug` CLI skeleton and `ug doctor`
-Status: Wave 3 (Codex), stacked on T-A1-008b because `ug doctor` reaches the WNTR check through the water adapter   Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/a1-ug-cli`   Spec refs: 14, M0
+Status: **merged (PR #25)** (lead review by running and mutating the code, see `docs/reviews/T-A1-009.md`)   Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/a1-ug-cli`   Spec refs: 14, M0
 **Allowed:** `platform/ug_cli/**`, `platform/tests/unit/test_cli.py`. Standard library only (`argparse`); no new dependency.
 **Behaviour:** `ug --version`; `ug doctor` checks Python version, WNTR version and every manifest symbol signature, that every file in `contracts/` is a valid JSON Schema, and (warning only) Node version; `run`, `reproduce`, `eval`, `import`, `export` exist as stubs that print "not implemented" and exit 2.
 **Acceptance:** `.venv/bin/ug doctor` exits 0 here; with a manifest edited in a temporary copy it exits 1 and the message names the symbol; `ug doctor --json` prints valid JSON (`python -m json.tool` accepts it).
@@ -176,7 +176,7 @@ Status: **merged (PR #19)**; the offline check fix for the combination with #16 
 **Budget:** 1 to 2 sessions.
 
 ### T-A1-011: Deploy: API skeleton, Docker Compose, `make up`
-Status: Wave 3 (Codex); acceptance text corrected and approved by the owner 2026-10-25, see D-015   Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/a1-deploy`   Spec refs: 4.4, 17, M0
+Status: **merged (PR #26)** (lead review, run in Docker, see `docs/reviews/T-A1-011.md`)   Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/a1-deploy`   Spec refs: 4.4, 17, M0
 **Goal:** `make up` serves the built shell offline with a minimal API (`/api/health` returning version and the honesty disclaimer).
 **Allowed:** `deploy/**`, `mk/deploy.mk` (the root Makefile is not edited; targets register through `mk/*.mk`), `platform/ug_api/**` (skeleton only; it never imports a domain). **Forbidden:** domain logic, `frontend/**` (owned by the shell card).
 **Acceptance:** `docker compose -f deploy/docker-compose.yml config` exits 0; `make up` builds and serves the shell; `curl -s localhost:<documented port>/` returns the page whose `<title>` is `UtilityGuard Twin` and whose `Content-Security-Policy` meta tag is present, and the served bundle contains the strings `No network loaded` and the honesty statement (the shell is rendered by JavaScript, so the page text is not in the HTML); `curl -s localhost:<port>/api/health` returns JSON with `schema_version`, the version and the honesty disclaimer; `make down` stops it; the built image makes no external request at runtime (`frontend/scripts/check-offline.mjs` passes on the served files, and the page must keep working under its CSP, which allows only same-origin requests, so the API is served from the same origin).
