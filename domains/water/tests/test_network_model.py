@@ -240,3 +240,28 @@ def test_provenance_is_frozen_and_serialised() -> None:
         p.labels["demands"] = "PUBLIC_GEOMETRY"  # type: ignore[index]
     assert p.to_dict()["geometry"]["source"] == "OpenStreetMap"
     assert small(provenance=f0()).to_dict()["schema_version"] == "1"
+
+
+def test_inferred_topology_is_never_public_geometry() -> None:
+    """Review of the model: only the street geometry is public; pipe connections are inferred."""
+    with pytest.raises(ValueError):
+        f1(
+            labels={
+                **F0_LABELS,
+                "coordinates": "PUBLIC_GEOMETRY",
+                "topology": "PUBLIC_GEOMETRY",
+            }
+        )
+
+
+def test_a_single_point_pump_curve_needs_a_positive_flow() -> None:
+    """WNTR fits a one-point curve with H / Q**2: a zero flow would divide by zero."""
+    with pytest.raises(ValueError, match="positive flow"):
+        Pump("pu1", "r1", "j1", "ps1", "duty", ((0.0, 60.0),), 0.75)
+    assert Pump("pu1", "r1", "j1", "ps1", "duty", ((0.05, 50.0),), 0.75).curve == (
+        (0.05, 50.0),
+    )
+    shutoff = Pump(
+        "pu2", "r1", "j1", "ps1", "duty", ((0.0, 60.0), (0.05, 50.0), (0.1, 30.0)), 0.75
+    )
+    assert shutoff.curve[0] == (0.0, 60.0)

@@ -43,7 +43,8 @@ FIDELITIES: frozenset[str] = frozenset({"F0", "F1"})
 # The parts of a network that carry an evidence label, and the labels each part may carry.
 LABELLED_PARTS: dict[str, frozenset[str]] = {
     "coordinates": frozenset({"PUBLIC_GEOMETRY", "ASSUMPTION"}),
-    "topology": frozenset({"PUBLIC_GEOMETRY", "ASSUMPTION"}),
+    # Pipe connections are inferred from the streets, so topology is never public (review).
+    "topology": frozenset({"ASSUMPTION"}),
     "zones": frozenset({"PUBLIC_GEOMETRY", "ASSUMPTION"}),
     "diameters": frozenset({"ASSUMPTION"}),
     "demands": frozenset({"ASSUMPTION"}),
@@ -231,6 +232,9 @@ class Pump:
         )
         if not points:
             raise ValueError(f"pump {self.id}: needs at least one curve point")
+        if len(points) == 1 and points[0][0] <= 0:
+            # WNTR fits a one-point curve as H = 4/3 H0 - (1/3 H0 / Q0**2) Q**2: Q0 must be > 0.
+            raise ValueError(f"pump {self.id}: a one-point curve needs a positive flow")
         flows = [q for q, _ in points]
         heads = [h for _, h in points]
         if flows != sorted(set(flows)):
