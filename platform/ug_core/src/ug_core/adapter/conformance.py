@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import inspect
 import re
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
@@ -170,6 +171,16 @@ def _validate(label: str, name: str, result: object) -> None:
         _check_calls(label, result, expected)
 
 
+def _arguments(adapter: object, name: str) -> tuple[Any, ...]:
+    """The call's arguments. `asset_model` gets the adapter's first preset when it offers presets
+    (a domain-agnostic suite cannot know a domain's parameters), and `{}` otherwise."""
+    if name == "asset_model":
+        presets: Mapping[str, Any] = getattr(adapter, "presets", dict)()
+        if presets:
+            return (presets[sorted(presets)[0]],)
+    return _ARGUMENTS.get(name, ())
+
+
 def check_method(adapter: object, name: str) -> None:
     """Call `adapter.<name>` and check the result.
 
@@ -180,7 +191,7 @@ def check_method(adapter: object, name: str) -> None:
     """
     if name not in ADAPTER_METHODS:
         raise ConformanceError(f"{name!r} is not a DomainAdapter method")
-    result = getattr(adapter, name)(*_ARGUMENTS.get(name, ()))
+    result = getattr(adapter, name)(*_arguments(adapter, name))
     domain = getattr(adapter, "domain_id", None)
     label = f"{domain if isinstance(domain, str) else '?'}.{name}()"
     try:
