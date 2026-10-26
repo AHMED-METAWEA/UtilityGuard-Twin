@@ -27,7 +27,60 @@ def test_committed_manifest_verifies_against_the_installed_wntr(manifest: dict) 
 
 def test_manifest_records_the_version_and_enough_symbols(manifest: dict) -> None:
     assert manifest["wntr_version"] == wntr_api.installed_version()
-    assert wntr_api.symbol_count(manifest) >= 40
+    assert wntr_api.symbol_count(manifest) >= 81
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "wntr.sim.EpanetSimulator.run_sim",
+        "wntr.sim.WNTRSimulator",
+        "wntr.sim.EpanetSimulator",
+        "wntr.morph.split_pipe",
+        "wntr.morph.break_pipe",
+        "wntr.network.WaterNetworkModel.add_control",
+        "wntr.network.WaterNetworkModel.remove_control",
+        "wntr.network.WaterNetworkModel.reset_initial_values",
+        "wntr.network.WaterNetworkModel.get_curve",
+        "wntr.network.elements.Pump.add_outage",
+        "wntr.network.controls.Control",
+        "wntr.network.controls.ControlAction",
+        "wntr.network.controls.SimTimeCondition",
+        "wntr.metrics.pump_energy",
+        "wntr.metrics.pump_power",
+    ],
+)
+def test_b1_callable_is_recorded(manifest: dict, path: str) -> None:
+    assert path in manifest["callables"]
+
+
+@pytest.mark.parametrize(
+    ("root", "path"),
+    [
+        ("wn", "junction_name_list"),
+        ("wn", "tank_name_list"),
+        ("wn", "reservoir_name_list"),
+        ("wn", "pipe_name_list"),
+        ("wn", "pump_name_list"),
+        ("wn", "valve_name_list"),
+        ("wn", "node_name_list"),
+        ("wn", "options.hydraulic.headloss"),
+        ("wn", "options.time.start_clocktime"),
+        ("tank", "elevation"),
+        ("reservoir", "base_head"),
+        ("pump", "pump_type"),
+        ("pump", "pump_curve_name"),
+        ("pump", "speed_timeseries.base_value"),
+        ("valve", "valve_type"),
+        ("valve", "initial_setting"),
+    ],
+)
+def test_b1_member_is_recorded(manifest: dict, root: str, path: str) -> None:
+    assert {"root": root, "path": path} in manifest["members"]
+
+
+def test_b1_velocity_result_key_is_recorded(manifest: dict) -> None:
+    assert {"table": "link", "key": "velocity"} in manifest["result_keys"]
 
 
 def test_generation_is_deterministic() -> None:
