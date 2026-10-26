@@ -15,7 +15,7 @@
     "zone_multipliers": {},
     "forecast_error": {
       "model": "ar1",
-      "sigma_pct": 0.0
+      "sigma_pct": 6.0
     }
   },
   "faults": [],

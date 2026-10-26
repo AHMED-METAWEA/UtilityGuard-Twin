@@ -121,7 +121,7 @@ def test_contract_filename_and_values(preset_id, network):
         "ramadan": preset_id == "ramadan_peak",
         "heatwave_multiplier": 1.25 if preset_id == "heatwave" else 1.0,
         "zone_multipliers": {},
-        "forecast_error": {"model": "ar1", "sigma_pct": 0.0},
+        "forecast_error": {"model": "ar1", "sigma_pct": 6.0},
     }
     assert config["faults"] == ([EVENTS[preset_id]] if preset_id in EVENTS else [])
     expected_duration = (
@@ -234,3 +234,12 @@ def test_no_freebuff_imports():
                 names = [node.module or ""]
                 names.extend(alias.name for alias in node.names)
             assert all("freebuff" not in name.split(".") for name in names), path
+
+
+def test_every_preset_has_a_forecast_error() -> None:
+    """Pitfall P-08: an expectation without forecast error is the truth's own expectation, so a
+    detector compared with it raises no false alarm by construction. The presets carry the
+    demand set's forecast error (forecast_sigma 0.06 in assumptions/demand_v1.yaml, lead review)."""
+    for preset_id in list_presets():
+        error = load_preset(preset_id)["demand"]["forecast_error"]
+        assert error["model"] == "ar1" and error["sigma_pct"] == 6.0, preset_id
