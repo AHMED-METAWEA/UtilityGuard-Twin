@@ -53,6 +53,7 @@ resolved dependency set. Obtain SHA-256 hashes from PyPI's file metadata for
 those exact releases (wheels and source archives), and write each resolved
 package as `name==version` with its `--hash=sha256:...` entries in
 `deploy/requirements-api.lock`. Do not hand-invent hashes or omit transitives.
+After a lock change, run `make constraints` and commit `constraints/runtime.txt` (CI fails otherwise).
 Verify a fresh `pip install --require-hashes -r deploy/requirements-api.lock`,
 run the API tests and CI, rebuild the image, and have the lead run the Docker
 smoke checks. Record the resolution date, release-age cutoff and approvals in

@@ -73,7 +73,7 @@ describe("UI strings", () => {
 
   it("states the fidelity wording of the Master Spec", () => {
     expect(STRINGS.fidelity.f1).toBe(
-      "Fidelity F1: Public capital layout, inferred pipes, synthetic hydraulics",
+      "Fidelity F1: Real OSM streets, hand-drawn districts, inferred pipes, synthetic hydraulics",
     );
     expect(STRINGS.fidelity.none).toBe("No network loaded");
   });

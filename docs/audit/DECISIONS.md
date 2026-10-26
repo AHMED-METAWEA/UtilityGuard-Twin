@@ -114,6 +114,11 @@ Every change of stance, every reuse from `freebuff/`, and every proposed deletio
 - **Carried into B1** (the B1 gate must cover them): the fixes after review round 2 that had no third review (D-016, D-021: #30 reference walk, #31 evidence-record unit rule and `FNU`/`FTU`), the code only the lead reviewed (#25, #26), and the M0 items not delivered in A1: the UI design plan and the mock stream (B2), the shell importing the generated types (B2).
 - `dev` is one merge commit behind `main` (no content difference); the next gate merge handles it. The owner's decision on #31 and the gate approval also close the question left open in D-019 about the fail-closed unit vocabulary: it stays.
 
+### D-023: Owner decisions for Phase B1 (2026-10-26)
+- **Approved:** G1, F1 is a hybrid of OpenStreetMap streets and a hand-drawn district overlay; G2, OpenStreetMap data and everything derived from it stays in a git-ignored local cache and is never committed, and the ODbL attribution is kept; G3, hand-drawn boundaries are `ASSUMPTION` and only geometry from OpenStreetMap is `PUBLIC_GEOMETRY`; D1, `pyarrow==26.0.0` and `duckdb==1.5.6`; D2, `networkx==3.6.1` as a direct dependency; D3, the owner merged #37 (Python dependency audit) and #38 (the B1 plan).
+- **Added by the owner:** card T-B1-005, the banner and Fidelity badge wording for the hybrid geometry (real OSM street network, district boundaries as hand-drawn approximations). It replaces the F1 badge text of D-005 and adds a notice line with the attribution; the honesty statement is unchanged.
+- **Order:** T-B1-004 (the fastapi version drift) first, then the rest of Wave 1.
+
 ## Reuse log (REUSE and ADAPT only)
 
 No reuse has been decided yet. Candidates and likely verdicts are in `ADOPTION_PLAN.md` section 8. A line is added here, in the same PR that brings the code in, with: date, source file and lines in `freebuff/`, what was reused, verdict (REUSE or ADAPT), target path, tests added (including golden tests for the reused behavior), reviewer, and why it is better than writing it new.

@@ -84,6 +84,11 @@ body {
   flex: 1;
 }
 
+.ug-geometry-notice {
+  font-size: 0.85rem;
+  color: var(--ug-muted);
+}
+
 .ug-chip {
   font-size: 0.85rem;
   color: var(--ug-warn);

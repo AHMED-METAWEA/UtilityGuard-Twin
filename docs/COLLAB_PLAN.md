@@ -195,7 +195,7 @@ Status: **closed 2026-10-26** (two Codex rounds, `docs/reviews/T-A1-013.md`; #31
 
 ---
 
-## 4b. Phase B1 cards: Twin core (Spec M1). PROPOSED 2026-10-26, waiting for the owner's approval
+## 4b. Phase B1 cards: Twin core (Spec M1). APPROVED by the owner on 2026-10-26 (decisions G1 to G3 and D1 to D3, D-023)
 
 Nothing below is built until the owner approves this plan (approval: merging the plan PR, or a message). Source: Adoption Plan Phase B1, Master Spec 21 (M1), 5.1 to 5.5, 4.6, 4.8, 10.4, 11.2. The geometry feasibility test came first, as Prompt 5 requires: `docs/audit/B1_GEOMETRY_FEASIBILITY.md`.
 
@@ -230,6 +230,12 @@ Status: **delivered** (`docs/audit/B1_GEOMETRY_FEASIBILITY.md`); decisions G1 to
 ### T-B1-004: The development and CI environments install what the container ships
 Owner: codex   Reviewer: claude   Tier: T1 (the owner merges: dependency handling)   Branch: `codex/b1-dev-constraints`
 **Why:** the audit found that `make install` resolves `fastapi` to 0.143.5 (8 days old) while the container's lock pins 0.143.0, and that package builds fetch the newest `setuptools>=68`. **Allowed:** `Makefile` (the `install` recipe only), `requirements-dev.txt`, a new `constraints/` folder, `mk/audit.mk`, tests in `platform/tests/unit/test_environment.py`. **Behaviour:** `make install` uses `deploy/requirements-api.lock` as a pip constraints file and a pinned build-backend constraint. **Acceptance:** in a fresh clone, `make install install-dev`, then `.venv/bin/python -c "import fastapi; assert fastapi.__version__ == '0.143.0'"`; `pip check` clean; `make audit-python` exit 0; `make ci` exit 0.
+
+### T-B1-005: Banner and Fidelity badge wording for the hybrid geometry
+Status: Wave 1 (added by the owner on 2026-10-26)   Owner: claude   Reviewer: codex   Tier: T2 (honesty text and the Master Spec; the owner merges)   Branch: `claude/b1-fidelity-wording`   Spec refs: 1.4, 5.1, 13.3
+**Allowed:** `frontend/src/app/strings.ts`, `fidelity.ts`, `App.tsx` and their tests, `frontend/src/ui/HonestyStrip.tsx`, `tokens.css`, `docs/UtilityGuard_Master_Spec.md` (1.4 and the 5.1 note), `platform/tests/unit/test_spec_wording.py`, `docs/`.
+**Behaviour:** the F1 badge says `Fidelity F1: Real OSM streets, hand-drawn districts, inferred pipes, synthetic hydraulics`; for an F1 network the honesty notice adds `Street network © OpenStreetMap contributors (ODbL). District boundaries are hand-drawn approximations. Pipes, demands and equipment are synthetic.`, which stays visible when the notice is collapsed; a network is F1 only when its streets carry `PUBLIC_GEOMETRY` provenance and its district boundaries are declared as hand-drawn `ASSUMPTION`, otherwise the badge shows the lowest level; the honesty statement itself is unchanged.
+**Acceptance:** `make test-frontend` (the F1 cases, the downgrade cases, the line only for F1, the line kept when collapsed, a failing network read keeps the plain notice); `test_spec_wording.py` keeps the shell's texts equal to the Spec's; mutations of the rule and of the wording are caught.
 
 ### T-B1-010: `ug fetch-geometry` and the coverage report
 Owner: claude   Reviewer: codex   Tier: T2 (provenance and labels)   Branch: `claude/b1-fetch-geometry`   Spec refs: 1.4, 5.1
@@ -322,7 +328,7 @@ Owner: codex (review) and claude (review of Codex PRs)   Reviewer: human   Tier:
 | Wave | Cards | Claude | Codex | Gate before the next wave |
 |---|---|---|---|---|
 | 0 | T-B1-001, 002, 003 | 001 (merged), 002 (PR #37), 003 (report) | reviews | owner decisions G1 to G3, D1 to D3 |
-| 1 | T-B1-004, 010, 011, 015 | 010 | 004, 011, 015 | usage check, pause |
+| 1 | T-B1-004 (first), 005, 010, 011, 015 | 005, 010 | 004, 011, 015 | usage check, pause |
 | 2 | T-B1-013, 012, 016, 020 | 013, 016 | 012, 020 | usage check, pause |
 | 3 | T-B1-014, 017, 018, 019, 021 | 014, 017, 018 | 019, 021, tests of 017 | usage check, pause |
 | 4 | T-B1-022, 030 | 022, review of Codex PRs | gate review, tests of 022 | owner approval of the B1 gate |

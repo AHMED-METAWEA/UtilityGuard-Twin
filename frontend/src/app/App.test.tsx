@@ -1,5 +1,5 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent } from "@testing-library/react";
 
 import { App } from "./App";
@@ -13,16 +13,24 @@ afterEach(cleanup);
 
 const PROVENANCE = {
   label: "PUBLIC_GEOMETRY" as const,
-  source: "public map data",
-  licence: "ODbL",
+  source: "OpenStreetMap",
+  licence: "ODbL-1.0",
   retrieved: "2026-10-01",
   coverage_report: "coverage.json",
+};
+
+const DISTRICTS = {
+  label: "ASSUMPTION" as const,
+  method: "hand-drawn" as const,
+  source: "manual overlay capital_districts_v1",
+  drawn: "2026-10-26",
 };
 
 const F1_NETWORK: LoadedNetwork = {
   network_version: "capital_f1_v1",
   fidelity: "F1",
   geometry_provenance: PROVENANCE,
+  district_boundaries: DISTRICTS,
 };
 
 const envelope = (source: string) => ({ type: "tick", payload: { stream_source: source } });
@@ -141,3 +149,93 @@ describe("the shell", () => {
     window.location.hash = "";
   });
 });
+
+describe("the geometry line of an F1 network (decisions G1 to G3)", () => {
+  it("adds the attribution and keeps it visible when the notice is collapsed", () => {
+    render(<App state={{ ...INITIAL_STATE, network: F1_NETWORK }} path="/" />);
+    const notice = screen.getByRole("region", { name: STRINGS.honesty.regionLabel });
+    expect(within(notice).getByText(STRINGS.fidelity.f1Notice)).toBeTruthy();
+    fireEvent.click(within(notice).getByRole("button", { name: STRINGS.honesty.collapse }));
+    expect(within(notice).getByText(STRINGS.honesty.chip)).toBeTruthy();
+    expect(within(notice).getByText(STRINGS.fidelity.f1Notice)).toBeTruthy();
+  });
+
+  it("shows no geometry line without an F1 network", () => {
+    const noDistricts = { ...F1_NETWORK, district_boundaries: null };
+    for (const network of [null, { ...F1_NETWORK, fidelity: "F0" as const }, noDistricts]) {
+      cleanup();
+      render(<App state={{ ...INITIAL_STATE, network }} path="/" />);
+      expect(document.body.textContent).not.toContain("OpenStreetMap");
+      expect(document.body.textContent).toContain(STRINGS.honesty.statement);
+    }
+  });
+
+  it("keeps the notice when reading the network for the line fails", () => {
+    const state = { ...INITIAL_STATE };
+    Object.defineProperty(state, "network", { get() { throw new Error("network exploded"); } });
+    render(<App state={state} path="/" />);
+    const notice = screen.getByRole("region", { name: STRINGS.honesty.regionLabel });
+    expect(notice.textContent).toContain(STRINGS.honesty.statement);
+    expect(document.body.textContent).not.toContain("OpenStreetMap");
+  });
+});
+
+describe("badge and notice come from one read of the network (review round 1)", () => {
+  it("never shows the F1 badge without the attribution when the network changes between reads", () => {
+    let reads = 0;
+    const state = { ...INITIAL_STATE };
+    Object.defineProperty(state, "network", {
+      get() {
+        reads += 1;
+        return reads === 1 ? F1_NETWORK : null;
+      },
+      enumerable: true,
+    });
+    render(<App state={state} path="/" />);
+    expect(reads).toBe(0); // an accessor is never called
+    const text = document.body.textContent ?? "";
+    expect(text).not.toContain("Fidelity F1");
+    expect(text).not.toContain("OpenStreetMap");
+    expect(text).toContain(STRINGS.fidelity.unknown);
+  });
+
+  it("shows the badge and the attribution again when a valid F1 network follows a failed read", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const broken = { ...INITIAL_STATE };
+    Object.defineProperty(broken, "network", { get() { throw new Error("network exploded"); } });
+    const { rerender } = render(<App state={broken} path="/" />);
+    expect(document.body.textContent).not.toContain("Fidelity F1");
+    rerender(<App state={{ ...INITIAL_STATE, network: F1_NETWORK }} path="/" />);
+    expect(screen.getByText(STRINGS.fidelity.f1)).toBeTruthy();
+    expect(screen.getByText(STRINGS.fidelity.f1Notice)).toBeTruthy();
+  });
+
+  it("shows the F1 badge exactly when it shows the attribution", () => {
+    const networks = [
+      null,
+      F1_NETWORK,
+      { ...F1_NETWORK, district_boundaries: null },
+      { ...F1_NETWORK, geometry_provenance: { ...PROVENANCE, licence: "CC0" } },
+      { ...F1_NETWORK, fidelity: "F0" as const },
+    ];
+    for (const network of networks) {
+      cleanup();
+      render(<App state={{ ...INITIAL_STATE, network }} path="/" />);
+      const text = document.body.textContent ?? "";
+      expect(text.includes(STRINGS.fidelity.f1)).toBe(text.includes(STRINGS.fidelity.f1Notice));
+    }
+  });
+});
+
+describe("a failed part of the shell recovers when new state arrives (review round 1)", () => {
+  it("shows the stream source again after the envelope could not be read", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const broken = { ...INITIAL_STATE };
+    Object.defineProperty(broken, "lastEnvelope", { get() { throw new Error("envelope exploded"); } });
+    const { rerender } = render(<App state={broken} path="/" />);
+    expect(screen.getByLabelText(STRINGS.stream.label).textContent).toContain(STRINGS.stream.unknown);
+    rerender(<App state={{ ...INITIAL_STATE, lastEnvelope: envelope("SIMULATED") }} path="/" />);
+    expect(screen.getByLabelText(STRINGS.stream.label).textContent).toContain("SIMULATED");
+  });
+});
+
