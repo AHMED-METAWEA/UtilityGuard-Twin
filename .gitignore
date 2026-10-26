@@ -229,3 +229,6 @@ freebuff/.freebuff/
 node_modules/
 frontend/dist/
 *.tsbuildinfo
+
+# Local data: runs and the geometry cache (OpenStreetMap extracts stay local, decision G2).
+/data/
