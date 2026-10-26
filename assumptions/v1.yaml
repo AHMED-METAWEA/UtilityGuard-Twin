@@ -1,0 +1,72 @@
+# Assumption set v1 (format: Master Spec Appendix A).
+# Every value is a PLACEHOLDER that shows the format. None is a real price or a measured value.
+# Set `verified: true` only when a real source exists and `source_note` names it.
+set_id: v1
+parent: null
+note: "Placeholder assumptions for the F1 twin (public layout, synthetic hydraulics). Not ACUD data. Every value is unverified."
+assumptions:
+  water_production_cost:
+    unit: EGP/m3
+    distribution: {type: triangular, min: 5.0, mode: 8.0, max: 12.0}
+    source_note: "Placeholder"
+    verified: false
+  unserved_water_penalty:
+    unit: EGP/m3
+    distribution: {type: triangular, min: 0.0, mode: 15.0, max: 60.0}
+    source_note: "Placeholder; can be zero if no penalty applies"
+    verified: false
+  electricity_price:
+    unit: EGP/kWh
+    distribution: {type: triangular, min: 1.0, mode: 2.0, max: 3.5}
+    source_note: "Placeholder"
+    verified: false
+  inspection_cost:
+    unit: EGP
+    distribution: {type: triangular, min: 2000, mode: 4000, max: 8000}
+    source_note: "Placeholder"
+    verified: false
+  repair_cost_planned:
+    unit: EGP
+    distribution: {type: triangular, min: 10000, mode: 25000, max: 60000}
+    source_note: "Placeholder"
+    verified: false
+  repair_cost_emergency:
+    unit: EGP
+    distribution: {type: triangular, min: 20000, mode: 45000, max: 120000}
+    source_note: "Placeholder"
+    verified: false
+  crew_response_hours:
+    unit: h
+    distribution: {type: triangular, min: 2, mode: 6, max: 18}
+    source_note: "Placeholder"
+    verified: false
+  repair_duration_hours:
+    unit: h
+    distribution: {type: triangular, min: 4, mode: 10, max: 30}
+    source_note: "Placeholder"
+    verified: false
+  intervention_effectiveness:
+    unit: fraction
+    distribution: {type: triangular, min: 0.7, mode: 0.95, max: 1.0}
+    source_note: "Placeholder"
+    verified: false
+  holiday_gov_demand_factor:
+    unit: fraction
+    distribution: {type: triangular, min: 0.45, mode: 0.6, max: 0.8}
+    source_note: "Placeholder"
+    verified: false
+  heatwave_demand_multiplier:
+    unit: fraction
+    distribution: {type: triangular, min: 1.1, mode: 1.25, max: 1.45}
+    source_note: "Placeholder"
+    verified: false
+  demand_forecast_error_sigma_pct:
+    unit: percent
+    distribution: {type: triangular, min: 3, mode: 6, max: 12}
+    source_note: "Placeholder"
+    verified: false
+  min_service_pressure:
+    unit: m
+    distribution: {type: triangular, min: 12, mode: 15, max: 20}
+    source_note: "Placeholder"
+    verified: false

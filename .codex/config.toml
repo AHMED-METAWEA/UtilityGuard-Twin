@@ -1,0 +1,17 @@
+# .codex/config.toml (project level). Loads only when this path is trusted in ~/.codex/config.toml.
+# All keys below were validated with `codex exec --strict-config` on codex-cli 0.164.0.
+# No `model` key: inherit the user's setting. Project files cannot set profile, provider, notify or base URLs.
+
+# Default effort for implementation and tests. Task cards raise it for audits, hydraulics and T2 reviews:
+#   codex exec -c 'model_reasoning_effort="high"' ...
+model_reasoning_effort = "medium"
+
+# Reviews and audits are launched with `-s read-only` explicitly. Never use danger-full-access on the host.
+sandbox_mode = "workspace-write"
+
+# 0.164 accepts only "on-request" and "never".
+approval_policy = "on-request"
+
+[sandbox_workspace_write]
+# Turn on per run (-c 'sandbox_workspace_write.network_access=true') only for tasks that install dependencies.
+network_access = false

@@ -1,0 +1,8 @@
+{
+  "schema_version": "1",
+  "tick": 145,
+  "sensor_id": "P05",
+  "value": null,
+  "unit": "m",
+  "label": "SENSOR_SIM"
+}

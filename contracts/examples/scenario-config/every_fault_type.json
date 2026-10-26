@@ -1,0 +1,124 @@
+{
+  "schema_version": "1",
+  "scenario_id": "every_fault_type",
+  "network_version": "capital_f1_v1",
+  "sensor_set": "S_base",
+  "seed": 42,
+  "start": "2026-01-01T00:00:00Z",
+  "duration_hours": 168,
+  "timestep_minutes": 5,
+  "demand": {
+    "calendar": "default_egypt",
+    "holiday": false,
+    "ramadan": false,
+    "heatwave_multiplier": 1.0,
+    "zone_multipliers": {
+      "gov": 1.0,
+      "res": 1.0,
+      "cbd": 1.0
+    },
+    "forecast_error": {
+      "model": "ar1",
+      "sigma_pct": 6.0
+    }
+  },
+  "faults": [
+    {
+      "type": "leak",
+      "start_hour": 5,
+      "location": "pipe:P_0001",
+      "profile": "gradual",
+      "ramp_hours": 4,
+      "final_area_cm2": 2
+    },
+    {
+      "type": "leak",
+      "start_hour": 6,
+      "location": "pipe:P_0002",
+      "profile": "sudden",
+      "final_area_cm2": 3.5
+    },
+    {
+      "type": "burst",
+      "start_hour": 7,
+      "location": "pipe:P_0003",
+      "final_area_cm2": 20
+    },
+    {
+      "type": "background_leakage",
+      "start_hour": 0,
+      "zone_id": "res",
+      "fraction": 0.05
+    },
+    {
+      "type": "sensor_drift",
+      "start_hour": 8,
+      "sensor_id": "P05",
+      "drift_per_hour": 0.3
+    },
+    {
+      "type": "sensor_offset",
+      "start_hour": 9,
+      "sensor_id": "P06",
+      "magnitude": 1.5
+    },
+    {
+      "type": "sensor_stuck",
+      "start_hour": 10,
+      "sensor_id": "P07",
+      "duration_hours": 3
+    },
+    {
+      "type": "sensor_noise_growth",
+      "start_hour": 11,
+      "sensor_id": "P08",
+      "factor": 3
+    },
+    {
+      "type": "sensor_dropout",
+      "start_hour": 12,
+      "sensor_id": "F02",
+      "duration_hours": 2,
+      "probability": 0.3
+    },
+    {
+      "type": "comms_outage",
+      "start_hour": 13,
+      "rtu_group": "RTU_1",
+      "duration_hours": 2
+    },
+    {
+      "type": "pump_outage",
+      "start_hour": 14,
+      "pump_id": "PU_1",
+      "duration_hours": 4
+    },
+    {
+      "type": "pump_degradation",
+      "start_hour": 15,
+      "pump_id": "PU_1",
+      "rate_per_hour": 0.001
+    },
+    {
+      "type": "valve_state",
+      "start_hour": 16,
+      "valve_id": "V1",
+      "state": "closed"
+    },
+    {
+      "type": "fire_flow",
+      "start_hour": 17,
+      "node": "node:J_0042",
+      "flow_l_s": 30,
+      "duration_hours": 2
+    },
+    {
+      "type": "power_loss",
+      "start_hour": 18,
+      "station_id": "PS_1",
+      "duration_hours": 3
+    }
+  ],
+  "cross_domain_inputs": [],
+  "assumption_set": "v1"
+}

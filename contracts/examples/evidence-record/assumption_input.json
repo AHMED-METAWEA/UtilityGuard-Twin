@@ -1,0 +1,12 @@
+{
+  "schema_version": "1",
+  "evidence_id": "as_inspection_cost@v1",
+  "value": 4000,
+  "unit": "EGP",
+  "label": "ASSUMPTION",
+  "formula": null,
+  "inputs": [],
+  "provenance": {
+    "assumption_set": "v1"
+  }
+}

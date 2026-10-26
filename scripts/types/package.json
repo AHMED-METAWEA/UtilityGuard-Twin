@@ -1,0 +1,9 @@
+{
+  "name": "ug-types-tool",
+  "private": true,
+  "description": "Generates TypeScript types from contracts/v1. A tool, not part of the app dependency tree.",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "json-schema-to-typescript": "16.0.0"
+  }
+}

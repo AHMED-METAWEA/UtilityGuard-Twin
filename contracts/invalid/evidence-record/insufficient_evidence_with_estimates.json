@@ -1,0 +1,20 @@
+{
+  "schema_version": "1",
+  "evidence_id": "ev_leak_size_0009",
+  "value": null,
+  "unit": "cm2",
+  "label": "INSUFFICIENT_EVIDENCE",
+  "formula": null,
+  "inputs": [],
+  "reason": "Flow sensor F02 is missing during the window; the leak size is not estimated without it.",
+  "provenance": {
+    "run_id": "run_0042",
+    "detector_version": "d2_v1"
+  },
+  "uncertainty": {
+    "p10": 100,
+    "p50": 200,
+    "p90": 300,
+    "basis": "No evidence"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "schema_version": "1",
+  "evidence_id": "ev_cost_24h_0007",
+  "value": "1,000",
+  "unit": "EGP",
+  "label": "CALCULATED",
+  "formula": "lost_water_m3 * unit_price_egp_per_m3",
+  "inputs": [
+    {
+      "name": "lost_water_m3",
+      "value": 1440.0,
+      "unit": "m3",
+      "label": "SIMULATION",
+      "ref": "ev_sim_loss_0003"
+    },
+    {
+      "name": "unit_price_egp_per_m3",
+      "value": 8.0,
+      "unit": "EGP/m3",
+      "label": "ASSUMPTION",
+      "ref": "as_water_production_cost@v1"
+    }
+  ],
+  "provenance": {
+    "run_id": "run_0042",
+    "scenario_id": "leak_gradual_medium",
+    "seed": 42,
+    "network_version": "capital_f1_v1",
+    "detector_version": "d2_v1",
+    "assumption_set": "v1",
+    "cost_model": "v1",
+    "git_commit": "abc123"
+  },
+  "explanation_template": "cost.lost_water.v1",
+  "uncertainty": {
+    "p10": 7400,
+    "p50": 11520,
+    "p90": 19000,
+    "basis": "300 draws over assumed ranges"
+  }
+}

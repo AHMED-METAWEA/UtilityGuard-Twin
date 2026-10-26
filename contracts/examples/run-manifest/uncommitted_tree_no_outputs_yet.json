@@ -1,0 +1,61 @@
+{
+  "schema_version": "1",
+  "config": {
+    "schema_version": "1",
+    "scenario_id": "leak_gradual_medium",
+    "network_version": "capital_f1_v1",
+    "sensor_set": "S_base",
+    "seed": 42,
+    "start": "2026-01-01T00:00:00Z",
+    "duration_hours": 72,
+    "timestep_minutes": 5,
+    "demand": {
+      "calendar": "default_egypt",
+      "holiday": false,
+      "ramadan": false,
+      "heatwave_multiplier": 1.0,
+      "zone_multipliers": {
+        "gov": 1.0,
+        "res": 1.0,
+        "cbd": 1.0
+      },
+      "forecast_error": {
+        "model": "ar1",
+        "sigma_pct": 6.0
+      }
+    },
+    "faults": [
+      {
+        "type": "leak",
+        "location": "pipe:P_0217",
+        "start_hour": 20,
+        "profile": "gradual",
+        "ramp_hours": 24,
+        "final_area_cm2": 6.0
+      },
+      {
+        "type": "sensor_drift",
+        "sensor_id": "P05",
+        "start_hour": 14,
+        "drift_per_hour": 0.3
+      }
+    ],
+    "cross_domain_inputs": [],
+    "assumption_set": "v1"
+  },
+  "seed": 42,
+  "versions": {
+    "network_version": "capital_f1_v1",
+    "contract_version": "1",
+    "assumption_set": "v1"
+  },
+  "libraries": {
+    "numpy": "2.4.6",
+    "wntr": "1.5.0"
+  },
+  "git_commit": null,
+  "unordered": [
+    "faults"
+  ],
+  "output_hashes": {}
+}

@@ -1,0 +1,623 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://utilityguard.invalid/contracts/v1/scenario-config.schema.json",
+  "title": "Scenario configuration",
+  "description": "Master Spec 12.3. Shape and ranges only; whether faults refer to existing elements and fit the horizon is checked by scenario validation against a network.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "common.schema.json#/$defs/schema_version"
+    },
+    "scenario_id": {
+      "$ref": "common.schema.json#/$defs/identifier"
+    },
+    "network_version": {
+      "$ref": "common.schema.json#/$defs/identifier"
+    },
+    "sensor_set": {
+      "$ref": "common.schema.json#/$defs/identifier"
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "start": {
+      "$ref": "common.schema.json#/$defs/utc_timestamp"
+    },
+    "duration_hours": {
+      "type": "number",
+      "exclusiveMinimum": 0
+    },
+    "timestep_minutes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "demand": {
+      "type": "object",
+      "properties": {
+        "calendar": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "holiday": {
+          "type": "boolean"
+        },
+        "ramadan": {
+          "type": "boolean"
+        },
+        "heatwave_multiplier": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "zone_multipliers": {
+          "type": "object",
+          "propertyNames": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "additionalProperties": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        },
+        "forecast_error": {
+          "type": "object",
+          "properties": {
+            "model": {
+              "enum": [
+                "ar1"
+              ]
+            },
+            "sigma_pct": {
+              "type": "number",
+              "minimum": 0
+            }
+          },
+          "required": [
+            "model",
+            "sigma_pct"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "calendar",
+        "holiday",
+        "ramadan",
+        "heatwave_multiplier",
+        "zone_multipliers",
+        "forecast_error"
+      ],
+      "additionalProperties": false
+    },
+    "faults": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/fault"
+      }
+    },
+    "cross_domain_inputs": {
+      "type": "array",
+      "maxItems": 0,
+      "description": "No cross-domain input is defined in v1 (water only). Electricity and cooling add their shape in a later version."
+    },
+    "assumption_set": {
+      "$ref": "common.schema.json#/$defs/identifier"
+    }
+  },
+  "required": [
+    "schema_version",
+    "scenario_id",
+    "network_version",
+    "sensor_set",
+    "seed",
+    "start",
+    "duration_hours",
+    "timestep_minutes",
+    "demand",
+    "faults",
+    "cross_domain_inputs",
+    "assumption_set"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "fault": {
+      "title": "Fault",
+      "description": "One injected fault: one of the catalogue of Master Spec 5.4. A type that is not in the catalogue matches none of the alternatives and is rejected.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/leak_gradual"
+        },
+        {
+          "$ref": "#/$defs/leak_sudden"
+        },
+        {
+          "$ref": "#/$defs/burst"
+        },
+        {
+          "$ref": "#/$defs/background_leakage"
+        },
+        {
+          "$ref": "#/$defs/sensor_drift"
+        },
+        {
+          "$ref": "#/$defs/sensor_offset"
+        },
+        {
+          "$ref": "#/$defs/sensor_stuck"
+        },
+        {
+          "$ref": "#/$defs/sensor_noise_growth"
+        },
+        {
+          "$ref": "#/$defs/sensor_dropout"
+        },
+        {
+          "$ref": "#/$defs/comms_outage"
+        },
+        {
+          "$ref": "#/$defs/pump_outage"
+        },
+        {
+          "$ref": "#/$defs/pump_degradation"
+        },
+        {
+          "$ref": "#/$defs/valve_state"
+        },
+        {
+          "$ref": "#/$defs/fire_flow"
+        },
+        {
+          "$ref": "#/$defs/power_loss"
+        }
+      ]
+    },
+    "leak_gradual": {
+      "title": "LeakGradualFault",
+      "description": "F-LEAK-G: a leak that grows over ramp_hours to final_area_cm2.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "leak"
+        },
+        "start_hour": {
+          "type": "number",
+          "minimum": 0
+        },
+        "profile": {
+          "const": "gradual"
+        },
+        "location": {
+          "type": "string",
+          "pattern": "^pipe:[A-Za-z0-9_.-]+$"
+        },
+        "ramp_hours": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "final_area_cm2": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "type",
+        "start_hour",
+        "profile",
+        "location",
+        "ramp_hours",
+        "final_area_cm2"
+      ],
+      "additionalProperties": false
+    },
+    "leak_sudden": {
+      "title": "LeakSuddenFault",
+      "description": "F-LEAK-S: a leak that starts at final_area_cm2 at once.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "leak"
+        },
+        "start_hour": {
+          "type": "number",
+          "minimum": 0
+        },
+        "profile": {
+          "const": "sudden"
+        },
+        "location": {
+          "type": "string",
+          "pattern": "^pipe:[A-Za-z0-9_.-]+$"
+        },
+        "final_area_cm2": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "type",
+        "start_hour",
+        "profile",
+        "location",
+        "final_area_cm2"
+      ],
+      "additionalProperties": false
+    },
+    "burst": {
+      "title": "BurstFault",
+      "description": "F-BURST: a large step outflow.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "burst"
+        },
+        "start_hour": {
+          "type": "number",
+          "minimum": 0
+        },
+        "location": {
+          "type": "string",
+          "pattern": "^pipe:[A-Za-z0-9_.-]+$"
+        },
+        "final_area_cm2": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "type",
+        "start_hour",
+        "location",
+        "final_area_cm2"
+      ],
+      "additionalProperties": false
+    },
+    "background_leakage": {
+      "title": "BackgroundLeakageFault",
+      "description": "F-LEAK-BG: raised night flow in one zone.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "background_leakage"
+        },
+        "start_hour": {
+          "type": "number",
+          "minimum": 0
+        },
+        "zone_id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "fraction": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "type",
+        "start_hour",
+        "zone_id",
+        "fraction"
+      ],
+      "additionalProperties": false
+    },
+    "sensor_drift": {
+      "title": "SensorDriftFault",
+      "description": "F-SEN-DRIFT: linear bias.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "sensor_drift"
+        },
+        "start_hour": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sensor_id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "drift_per_hour": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "start_hour",
+        "sensor_id",
+        "drift_per_hour"
+      ],
+      "additionalProperties": false
+    },
+    "sensor_offset": {
+      "title": "SensorOffsetFault",
+      "description": "F-SEN-OFFSET: constant bias.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "sensor_offset"
+        },
+        "start_hour": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sensor_id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "magnitude": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "type",
+        "start_hour",
+        "sensor_id",
+        "magnitude"
+      ],
+      "additionalProperties": false
+    },
+    "sensor_stuck": {
+      "title": "SensorStuckFault",
+      "description": "F-SEN-STUCK: frozen value.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "sensor_stuck"
+        },
+        "start_hour": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sensor_id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "duration_hours": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "type",
+        "start_hour",
+        "sensor_id",
+        "duration_hours"
+      ],
+      "additionalProperties": false
+    },
+    "sensor_noise_growth": {
+      "title": "SensorNoiseGrowthFault",
+      "description": "F-SEN-NOISE: increased variance.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "sensor_noise_growth"
+        },
+        "start_hour": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sensor_id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "factor": {
+          "type": "number",
+          "exclusiveMinimum": 1
+        }
+      },
+      "required": [
+        "type",
+        "start_hour",
+        "sensor_id",
+        "factor"
+      ],
+      "additionalProperties": false
+    },
+    "sensor_dropout": {
+      "title": "SensorDropoutFault",
+      "description": "F-SEN-DROP: missing readings; probability is an input of the scenario.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "sensor_dropout"
+        },
+        "start_hour": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sensor_id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "duration_hours": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "probability": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [
+        "type",
+        "start_hour",
+        "sensor_id",
+        "duration_hours",
+        "probability"
+      ],
+      "additionalProperties": false
+    },
+    "comms_outage": {
+      "title": "CommsOutageFault",
+      "description": "F-COMMS: group-wide missing data.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "comms_outage"
+        },
+        "start_hour": {
+          "type": "number",
+          "minimum": 0
+        },
+        "rtu_group": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "duration_hours": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "type",
+        "start_hour",
+        "rtu_group",
+        "duration_hours"
+      ],
+      "additionalProperties": false
+    },
+    "pump_outage": {
+      "title": "PumpOutageFault",
+      "description": "F-PUMP-OUT: pump off.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "pump_outage"
+        },
+        "start_hour": {
+          "type": "number",
+          "minimum": 0
+        },
+        "pump_id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "duration_hours": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "type",
+        "start_hour",
+        "pump_id",
+        "duration_hours"
+      ],
+      "additionalProperties": false
+    },
+    "pump_degradation": {
+      "title": "PumpDegradationFault",
+      "description": "F-PUMP-DEG: custom degradation model, an ASSUMPTION everywhere it is shown.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "pump_degradation"
+        },
+        "start_hour": {
+          "type": "number",
+          "minimum": 0
+        },
+        "pump_id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "rate_per_hour": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "type",
+        "start_hour",
+        "pump_id",
+        "rate_per_hour"
+      ],
+      "additionalProperties": false
+    },
+    "valve_state": {
+      "title": "ValveStateFault",
+      "description": "F-VALVE: valve closed or stuck.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "valve_state"
+        },
+        "start_hour": {
+          "type": "number",
+          "minimum": 0
+        },
+        "valve_id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "state": {
+          "enum": [
+            "closed",
+            "stuck"
+          ]
+        }
+      },
+      "required": [
+        "type",
+        "start_hour",
+        "valve_id",
+        "state"
+      ],
+      "additionalProperties": false
+    },
+    "fire_flow": {
+      "title": "FireFlowFault",
+      "description": "F-FIRE: local demand spike.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "fire_flow"
+        },
+        "start_hour": {
+          "type": "number",
+          "minimum": 0
+        },
+        "node": {
+          "type": "string",
+          "pattern": "^node:[A-Za-z0-9_.-]+$"
+        },
+        "flow_l_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "duration_hours": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "type",
+        "start_hour",
+        "node",
+        "flow_l_s",
+        "duration_hours"
+      ],
+      "additionalProperties": false
+    },
+    "power_loss": {
+      "title": "PowerLossFault",
+      "description": "F-POWER: power loss at a station; the pump outage follows through the dependency.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "const": "power_loss"
+        },
+        "start_hour": {
+          "type": "number",
+          "minimum": 0
+        },
+        "station_id": {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        "duration_hours": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "type",
+        "start_hour",
+        "station_id",
+        "duration_hours"
+      ],
+      "additionalProperties": false
+    }
+  }
+}
