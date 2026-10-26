@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from functools import cache
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,14 @@ def _no_constant(name: str) -> Any:
     raise ValueError(f"{name} is not valid JSON; use null for a missing value")
 
 
+def _finite_float(text: str) -> float:
+    """1e9999 overflows to infinity, which JSON Schema `number` accepts: refuse it here."""
+    value = float(text)
+    if not math.isfinite(value):
+        raise ValueError(f"{text} is not a finite number")
+    return value
+
+
 def _no_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     keys = [key for key, _ in pairs]
     if len(keys) != len(set(keys)):
@@ -30,9 +39,12 @@ def _no_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
 
 
 def parse_json(text: str) -> Any:
-    """Strict JSON: no NaN or infinity literals, no repeated keys."""
+    """Strict JSON: no NaN or infinity (literal or overflowing), no repeated keys."""
     return json.loads(
-        text, parse_constant=_no_constant, object_pairs_hook=_no_duplicate_keys
+        text,
+        parse_constant=_no_constant,
+        parse_float=_finite_float,
+        object_pairs_hook=_no_duplicate_keys,
     )
 
 

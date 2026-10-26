@@ -149,6 +149,12 @@ def contracts_root(tmp_path: Path) -> Path:
         ),
         ('{"$ref":"common.schema.json#/$defs/missing"}', "$defs/missing"),
         ('{"$dynamicRef":"#missing_anchor"}', "unresolvable $dynamicRef"),
+        # Gate round 1 (T-A1-013): a reference that resolves to something that is not a schema.
+        ('{"$ref":"#/default","default":{"type":"not-a-type"}}', "not-a-type"),
+        ('{"$ref":"#/default","default":5}', "#/default"),
+        # A number that overflows to infinity is not finite JSON either.
+        ('{"default":1e9999}', "not a finite number"),
+        ('{"default":-1e9999}', "not a finite number"),
     ],
 )
 def test_bad_contract(

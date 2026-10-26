@@ -7,7 +7,7 @@ import copy
 from typing import Any
 
 import pytest
-from contract_support import ROOT, is_valid, load_json
+from contract_support import ROOT, is_valid, load_json, parse_json
 
 
 def example(name: str, stem: str) -> Any:
@@ -731,3 +731,23 @@ def test_a_cost_value_is_a_number_whatever_its_unit(value: Any) -> None:
 @pytest.mark.parametrize("unit", ["EGP", "EGP/year", "EGP/month", "EGP/day"])
 def test_a_cost_in_a_canonical_amount_unit_passes(unit: str) -> None:
     assert is_valid("evidence-record", evidence(kind="cost", unit=unit))
+
+
+# --------------------------------------------------------------- finite numbers (gate round 1)
+
+
+@pytest.mark.parametrize(
+    "text", ["1e9999", "-1e9999", "[1, 2e999]", '{"value": 1E+400}', "1e400"]
+)
+def test_strict_json_refuses_a_number_that_overflows_to_infinity(text: str) -> None:
+    """JSON Schema `number` accepts infinity, so the loader must refuse it (round 1, T-A1-013)."""
+    with pytest.raises(ValueError, match="finite"):
+        parse_json(text)
+
+
+@pytest.mark.parametrize(
+    "text", ["1e308", "-1e308", "0.1", "1e-9999", "123456789012345678901234567890"]
+)
+def test_strict_json_still_reads_large_small_and_long_numbers(text: str) -> None:
+    value = parse_json(text)
+    assert value == value and abs(value) != float("inf")
