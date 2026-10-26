@@ -251,6 +251,12 @@ EXPECTED: dict[str, Expect] = {
     "evidence-record/cost_labelled_simulation": ({"enum"}, "label", "SIMULATION"),
     "evidence-record/extra_field": (ADDITIONAL, "", "confidence_pct"),
     "evidence-record/insufficient_evidence_with_value": ({"type"}, "value", ""),
+    "evidence-record/insufficient_evidence_with_estimates": (
+        {"not"},
+        "uncertainty",
+        "",
+    ),
+    "evidence-record/currency_in_a_simulation_unit": ({"pattern"}, "unit", ""),
     "evidence-record/insufficient_evidence_without_reason": (
         {"required"},
         "",
@@ -321,6 +327,19 @@ EXPECTED: dict[str, Expect] = {
         {"enum"},
         "payload/stream_source",
         "REPLAYED",
+    ),
+    "telemetry-reading/money_in_a_sensor_reading": ({"pattern"}, "unit", ""),
+    "telemetry-reading/currency_in_a_product_unit": ({"pattern"}, "unit", ""),
+    "telemetry-reading/unit_that_is_not_physical": ({"pattern"}, "unit", ""),
+    "stream-envelope/money_in_a_stream_reading": (
+        {"pattern"},
+        "payload/readings/0/unit",
+        "",
+    ),
+    "stream-envelope/currency_in_a_stream_unit": (
+        {"pattern"},
+        "payload/readings/0/unit",
+        "",
     ),
     "telemetry-reading/fault_tag_in_telemetry": (ADDITIONAL, "", "fault_tag_hidden"),
     "telemetry-reading/label_simulation_not_allowed": ({"enum"}, "label", "SIMULATION"),
@@ -404,6 +423,16 @@ ONEOF_CAUSE: dict[str, tuple[set[str], str]] = {
 }
 
 
+# Records labelled as simulator output with a currency unit break two rules at once: the one named
+# after the file, and the physical-unit rule (a currency is not a physical unit).
+ALSO_NOT_A_PHYSICAL_UNIT = {
+    "evidence-record/annual_amount_labelled_simulation",
+    "evidence-record/cost_labelled_simulation",
+    "evidence-record/money_labelled_model",
+    "evidence-record/unit_with_lookalike_letters",
+}
+
+
 def error_path(error: ValidationError) -> str:
     return "/".join(str(part) for part in error.absolute_path)
 
@@ -420,6 +449,12 @@ def test_invalid_file_is_rejected_for_the_reason_it_is_named_after(path: Path) -
     assert errors, "the file is not rejected"
     key = f"{schema_of(path)}/{path.stem}"
     for error in errors:
+        if (
+            key in ALSO_NOT_A_PHYSICAL_UNIT
+            and error.validator == "pattern"
+            and error_path(error) == "unit"
+        ):
+            continue  # a simulator-labelled record must also carry a physical unit (round 1)
         assert error.validator in keywords, (error.validator, error.message)
         assert error_path(error) == where, (error_path(error), error.message)
         assert text in error.message, (text, error.message)

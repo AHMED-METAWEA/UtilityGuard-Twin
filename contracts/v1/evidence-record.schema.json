@@ -139,6 +139,9 @@
         "properties": {
           "value": {
             "type": "null"
+          },
+          "uncertainty": {
+            "not": {}
           }
         },
         "required": [

@@ -46,7 +46,7 @@
           ]
         },
         "unit": {
-          "$ref": "common.schema.json#/$defs/unit"
+          "$ref": "common.schema.json#/$defs/physical_unit"
         },
         "label": {
           "$ref": "common.schema.json#/$defs/telemetry_label"

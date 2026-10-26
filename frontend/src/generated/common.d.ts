@@ -87,6 +87,13 @@ export type EvidenceLabelWithValue =
  */
 export type Unit = string;
 /**
+ * The unit of a sensor reading: one ASCII token built only from known physical units (metres, litres, seconds, pascals, watts, ...), optionally with a metric prefix, an exponent, and / * . between factors. A currency, however it is spelled, is not a physical unit, so money cannot be labelled as sensor output. The list of units is ug_core.grammar.PHYSICAL_UNIT_ATOMS; a test keeps this pattern equal to it.
+ *
+ * This interface was referenced by `CommonDefinitionsContractsV1`'s JSON-Schema
+ * via the `definition` "physical_unit".
+ */
+export type PhysicalUnit = Unit;
+/**
  * This interface was referenced by `CommonDefinitionsContractsV1`'s JSON-Schema
  * via the `definition` "nullable_unit".
  */
@@ -113,7 +120,7 @@ export type DetectorKey = string;
  */
 export type ModelVersion = string;
 /**
- * Rules for an object with unit, label and value (an evidence record or one of its inputs). A unit that looks like a currency must be spelled exactly EGP or EGP/<m3|kWh|MWh|kW|h|day|month|year>. Money, whether an amount or a price, is never simulator, model, sensor or geometry output (pitfall P-14): it is CALCULATED, an ASSUMPTION, OBSERVED or BENCHMARK. A money value is a JSON number, never formatted text. The currency recogniser is a list of common codes and words: a currency it does not list is caught by the evidence kernel in code.
+ * Rules for an object with unit, label and value (an evidence record or one of its inputs). A unit that looks like a currency must be spelled exactly EGP or EGP/<m3|kWh|MWh|kW|h|day|month|year>. Money, whether an amount or a price, is never simulator, model, sensor or geometry output (pitfall P-14): it is CALCULATED, an ASSUMPTION, OBSERVED or BENCHMARK. A money value is a JSON number, never formatted text. The currency recogniser is a list of common codes and words: a currency it does not list is caught by the evidence kernel in code. A value labelled SIMULATION, MODEL, SENSOR_SIM or PUBLIC_GEOMETRY carries a physical unit (physical_unit), so a currency in a spelling nobody listed cannot be labelled as simulator, model, sensor or geometry output either.
  *
  * This interface was referenced by `CommonDefinitionsContractsV1`'s JSON-Schema
  * via the `definition` "money_consistency".
