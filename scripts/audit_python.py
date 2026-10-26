@@ -9,8 +9,9 @@ Usage:
     python scripts/audit_python.py [--lock FILE]... [--installed] [--ignore FILE]
 
     --lock FILE    every `name==version` line of a pip requirements file (for example the
-                   hash-pinned runtime lock of the container). A line that is not an exact pin
-                   is an error: a lock must say exactly what is installed.
+                   hash-pinned runtime lock of the container). A line that is not an exact pin,
+                   or an option line other than `--hash=` (an include, a constraint, an
+                   editable, an index), is an error: a lock must say exactly what is installed.
     --installed    every distribution installed in this interpreter's environment, except local
                    installs (editable or `file://`, such as this repository's own packages), which
                    are listed as skipped.
@@ -101,8 +102,14 @@ def read_lock(path: Path) -> list[Package]:
         raise AuditError(f"cannot read the lock {path}: {exc}") from exc
     for number, raw in enumerate(text.splitlines(), start=1):
         line = raw.strip()
-        if not line or line.startswith("#") or line.startswith("--"):
+        if not line or line.startswith("#") or line.startswith("--hash="):
             continue
+        if line.startswith("-"):
+            # An include, a constraint, an editable or an index option would hide or change what
+            # is installed: a lock lists exact pins and their hashes, nothing else.
+            raise AuditError(
+                f"{path}:{number}: option lines are not supported in a lock: {line!r}"
+            )
         match = _PIN.match(line)
         if match is None:
             raise AuditError(

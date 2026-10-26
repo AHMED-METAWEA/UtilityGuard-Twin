@@ -89,10 +89,23 @@ def test_a_hash_pinned_lock_is_read_with_normalized_names(tmp_path: Path) -> Non
 
 
 @pytest.mark.parametrize(
-    "line", ["fastapi>=0.143", "fastapi", "-r other.txt", "-e .", "fastapi~=0.143.0"]
+    "line",
+    [
+        "fastapi>=0.143",
+        "fastapi",
+        "-r other.txt",
+        "-e .",
+        "fastapi~=0.143.0",
+        # Review of T-B1-002: long options must not be skipped silently either.
+        "--requirement other.txt",
+        "--constraint constraints.txt",
+        "--editable .",
+        "--index-url https://example.invalid/simple",
+        "-c constraints.txt",
+    ],
 )
 def test_a_line_that_is_not_an_exact_pin_is_an_error(tmp_path: Path, line: str) -> None:
-    with pytest.raises(A.AuditError, match="not an exact pin"):
+    with pytest.raises(A.AuditError, match="not an exact pin|not supported in a lock"):
         A.read_lock(lock(tmp_path, f"uvicorn==0.54.0\n{line}\n"))
 
 
@@ -383,3 +396,10 @@ def test_the_shipped_ignore_file_is_well_formed() -> None:
     active, notes = A.read_ignores(path, date(2026, 10, 26))
     assert notes == []
     assert all(reason for reason in active.values())
+
+
+def test_hash_lines_are_the_only_option_lines_a_lock_may_carry(tmp_path: Path) -> None:
+    path = lock(
+        tmp_path, "uvicorn==0.54.0 \\\n    --hash=sha256:aa \\\n    --hash=sha256:bb\n"
+    )
+    assert [p.name for p in A.read_lock(path)] == ["uvicorn"]
