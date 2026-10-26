@@ -61,7 +61,6 @@ def f1(**changes: Any) -> NetworkProvenance:
     labels = {
         **F0_LABELS,
         "coordinates": "PUBLIC_GEOMETRY",
-        "topology": "PUBLIC_GEOMETRY",
     }
     fields: dict[str, Any] = {
         "provider": "osm",
