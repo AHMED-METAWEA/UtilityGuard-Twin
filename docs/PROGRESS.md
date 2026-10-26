@@ -1,6 +1,39 @@
 # PROGRESS
-Current phase: **A1 is closed (2026-10-26, tag `phase-A1` on `daf6634`). Phase B1 (Spec M1) is at the plan stage: the geometry feasibility test is done and the B1 plan waits for the owner's approval; nothing of B1 is implemented.** The first two small B1 tasks: the container CI job is merged (#36); the Python dependency audit is PR #37 (the owner merges it).
+Current phase: **B1 (Spec M1), Wave 1 not finished: stopped at the owner's request in the middle of T-B1-010 (round-1 fixes committed locally, not pushed, round 2 not run).** A1 is closed (tag `phase-A1` on `daf6634`). Wave 1 merged by the lead: #41 (T-B1-015 WNTR manifest), #42 (network model), #43 (T-B1-011 procedural F0 network). Waiting for the owner: #40 (T-B1-004), #39 (T-B1-005). #45 (T-B1-010) is still in its review rounds.
 Last session: 2026-10-26 (lead agent Claude Code)
+
+## Phase B1, Wave 1 (2026-10-26)
+Owner decisions applied: G1 to G3, D1 to D3 (D-023 in PR #39); the owner merged #37 and #38 and added card T-B1-005. Work split from now on (owner, 2026-10-26): Codex takes every card that needs no lead judgment (run store, API, stream and replay plumbing, frontend screens from the design plan, tests, CI, docs, tooling), up to two lanes, medium effort unless Tier 2; the lead keeps physics and fault injection, solver integration, detection, cost and decision, evidence, contracts and UI direction.
+
+| PR | Card | Author | State | Review log |
+|---|---|---|---|---|
+| #40 | T-B1-004 dev and CI environments install what the container ships | Codex | open, the owner merges (dependency handling) | `docs/reviews/T-B1-004.md` |
+| #39 | T-B1-005 F1 badge and notice for the hybrid geometry | Claude | open, the owner merges (Tier 2, Master Spec text) | `docs/reviews/T-B1-005.md` (2 rounds) |
+| #41 | T-B1-015 WNTR manifest for B1 (81 symbols) and AST guard | Codex | merged by the lead (`2f5cf0f`) | `docs/reviews/T-B1-015.md` |
+| #42 | network model (prerequisite of T-B1-011 and T-B1-013) | Claude | merged by the lead (`ee1d5b5`) | `docs/reviews/B1-network-model.md` |
+| #43 | T-B1-011 procedural F0 network | Codex | merged by the lead (`cbcfbf6`) | `docs/reviews/T-B1-011.md` |
+| #45 | T-B1-010 `ug fetch-geometry` and the coverage report | Claude | open, **in review**; round 1 found 4 S1 and 2 S2, all fixed in local commit `7dc05fc` (not pushed, so the PR still shows `8ce72cd`); round 2 not run; the owner merges (Tier 2) | `docs/reviews/T-B1-010.md` (round 1, in commit `7dc05fc`) |
+
+After every lead merge: a fresh clone of `dev` passed `make ci` and hosted CI on `dev` (jobs `ci`, `container`, `audit`) was green.
+
+**Codex usage (tokens, from the `codex exec` logs):**
+
+| Run | Tokens |
+|---|---|
+| T-B1-004 implementation | 42,260 |
+| T-B1-015 implementation | 49,705 |
+| T-B1-011 implementation | 60,513 |
+| **Wave 1 implementation total** | **152,478** |
+
+Review runs go through the Codex plugin, which does not report tokens. This wave ran 4: T-B1-005 rounds 1 and 2, the network model (T1), T-B1-010 round 1 (`review-mvp83i3y-9y29f9`, finished, 2 min 26 s). **No Codex job is running** at the stop.
+
+**T-B1-010 at the stop (branch `claude/b1-fetch-geometry`, worktree `~/Desktop/UG-wt/claude-b1-fetch-geometry`):**
+- Fixed in `7dc05fc` (local; lint, format, mypy and `make test-unit` green, 1,290 unit tests; 97 geometry tests; 37 of 38 mutations of the new checks caught, the survivor is equivalent): (1) S1 the cache must be git-ignored or outside any repository, symbolic links resolved, the default is `data/geometry` at the repository top; (2) S1 the area file holds no OSM-derived geometry: a Wikidata anchor (Q19588497, CC0), a search half-width, a margin, landmark names; the study box is placed at fetch time from the landmarks and stored only in the cache; (3) S1 empty or partial answers are failures; (4) S1 `verify_extract` checks the whole provenance, the saved queries against the current templates, the boxes, timestamps, endpoint and extract hash; (5) S2 a same-snapshot folder is repaired when corrupt or foreign; (6) S2 every mapped-feature field has its own label, `km` is `CALCULATED`.
+- Not done: the fresh-clone `make ci` of `7dc05fc`; the push to #45; the live numbers for the new study box (a live fetch was running at the stop, into the git-ignored cache only; its result is not recorded); Codex round 2; the PR description update. Not yet decided: whether the merged feasibility report, which still states the old box as a record of the test, should be left as it is (no code reads it).
+
+**Findings worth keeping:** the first live geometry fetch (old box) reproduced the feasibility numbers exactly; the procedural F0 demand densities are far below urban values (T-B1-012 and T-B1-014 must set the scale); setuptools 84.0.0 pins the build backend until 84.1.0 is 14 days old (2026-11-02); an outside account opened issue #44 on this public repository ("Question about Codex instruction checks in external worktrees"), untouched, left to the owner.
+
+**Exact next step (when the owner says continue):** in `~/Desktop/UG-wt/claude-b1-fetch-geometry`, (1) run `make fetch-geometry-live` again, or read `data/geometry/capital/*/report.md` if the stopped run finished, and add the numbers for the new box to the PR description and the review log, explaining the change from the feasibility numbers (a different box); (2) a fresh clone of `dev` plus the branch passes `make install install-dev && make ci`; (3) push to #45 and wait for hosted CI; (4) Codex adversarial review round 2 (the last round for Tier 2), fix test-first, log it in `docs/reviews/T-B1-010.md`, put fixes after round 2 on the D-016 list; (5) finish this records PR (Tier 0, merge under D-018 plus the safety net), print the Wave 1 usage check and pause. Then the owner merges #39, #40 and #45 and Wave 2 opens: Codex lanes T-B1-020 (run store, Tier 2) and T-B1-012 (demand model, Tier 2), the lead T-B1-013 (OSM provider) and T-B1-016 (hydraulics).
 
 ## Phase B1 (Spec M1): plan stage, 2026-10-26
 - **Small tasks first** (owner's order): T-B1-001, a CI job `container` that builds the image and checks the running container (hardening and smoke), merged as #36 (`bf6c32f`) after a Codex T1 review and eight container mutations; it ran the image on Linux x86_64 for the first time. T-B1-002, the Python dependency audit (PR #37, waiting for the owner because it changes dependency handling): a standard-library script reads PyPI's advisory data; its first run found 12 advisories in the development environment (pip 23.2.1, setuptools 65.5.0 from Python 3.11's venv) and 8 in the image (pip 24.0, setuptools 79.0.1 from the base image); the PR fixes them (pip 26.2.1 in `make install`, setuptools removed, no packaging tools in the image) and the audit is clean afterwards. Every chosen dependency was already clean.
