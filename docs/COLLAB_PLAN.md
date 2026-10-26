@@ -195,6 +195,139 @@ Status: **closed 2026-10-26** (two Codex rounds, `docs/reviews/T-A1-013.md`; #31
 
 ---
 
+## 4b. Phase B1 cards: Twin core (Spec M1). PROPOSED 2026-10-26, waiting for the owner's approval
+
+Nothing below is built until the owner approves this plan (approval: merging the plan PR, or a message). Source: Adoption Plan Phase B1, Master Spec 21 (M1), 5.1 to 5.5, 4.6, 4.8, 10.4, 11.2. The geometry feasibility test came first, as Prompt 5 requires: `docs/audit/B1_GEOMETRY_FEASIBILITY.md`.
+
+**M1 acceptance (Spec 21) and B1 exit gate (Adoption Plan):** normal week runs cleanly; same seed gives identical hashes; a leak lowers pressure near its location; chunk-size convergence report written; geometry provenance report; identical hashes for identical manifests. Plus the A1 carry-over (D-022): the fixes after review round 2 without a third review (D-016, D-021) and the code only the lead reviewed (#25, #26).
+
+**Rules for every card:** Tier 2 cards get at most two Codex review rounds; fixes after round 2 go on the D-016 list and are reviewed at the B1 gate. Handoff notes are one file per task (D-020). Tests run offline (`make ci`); anything that needs the network is a separate target. No OSM data or anything derived from it is committed unless the owner decides otherwise (decision G2). Every WNTR call is declared in the WNTR API manifest and verified by `ug doctor`. The lead merges only Tier 0 and 1 PRs that touch no contracts, assumptions, dependencies or deletions (D-018); everything else is the owner's.
+
+### Decisions the owner takes before Wave 1
+
+| # | Decision | Lead's recommendation |
+|---|---|---|
+| G1 | Geometry source: hybrid (OSM streets plus a hand-made district overlay), pure OSM, or procedural only | Hybrid (feasibility report, sections 3 and 4) |
+| G2 | Licence: OSM extracts and derived networks stay in a git-ignored local cache filled by `ug fetch-geometry`; only aggregate numbers are committed; the UI shows "© OpenStreetMap contributors". Alternative: publish derived networks under the ODbL | The cache rule |
+| G3 | Label of the hand-drawn district boundaries: `ASSUMPTION` (only OSM geometry is `PUBLIC_GEOMETRY`) | `ASSUMPTION` |
+| D1 | New dependencies for the run store (Spec 4.7, Parquet plus DuckDB), stated before installation: **`pyarrow==26.0.0`** (Apache-2.0, released 2026-10-09, wheels for Python 3.11 on 7 platforms) and **`duckdb==1.5.6`** (MIT, released 2026-09-28; 2.0.0 of 2026-10-21 is too new for the 14-day rule) | Approve (needed by T-B1-020, Wave 2) |
+| D2 | `networkx` as a direct dependency for the pipe-inference graph work (BSD-3, already installed by WNTR: 3.6.1), or the lead writes the few graph routines needed (connected components, shortest paths, spanning tree) on numpy | Approve `networkx==3.6.1` (exact pin) |
+| D3 | PR #37 (Python dependency audit and the pip and setuptools fix) | Merge it (it is green) |
+
+### Wave 0 (done or waiting)
+
+### T-B1-001: Container CI job
+Status: **merged (PR #36)**, review log `docs/reviews/T-B1-001.md`   Owner: claude   Reviewer: codex   Tier: T1
+
+### T-B1-002: Python dependency audit job
+Status: **PR #37, waiting for the owner** (it changes dependency handling), review log `docs/reviews/T-B1-002.md`   Owner: claude   Reviewer: codex   Tier: T1
+
+### T-B1-003: Geometry feasibility test
+Status: **delivered** (`docs/audit/B1_GEOMETRY_FEASIBILITY.md`); decisions G1 to G3 open   Owner: claude   Reviewer: owner   Tier: T1
+
+### Wave 1 (after G1 to G3; parallel)
+
+### T-B1-004: The development and CI environments install what the container ships
+Owner: codex   Reviewer: claude   Tier: T1 (the owner merges: dependency handling)   Branch: `codex/b1-dev-constraints`
+**Why:** the audit found that `make install` resolves `fastapi` to 0.143.5 (8 days old) while the container's lock pins 0.143.0, and that package builds fetch the newest `setuptools>=68`. **Allowed:** `Makefile` (the `install` recipe only), `requirements-dev.txt`, a new `constraints/` folder, `mk/audit.mk`, tests in `platform/tests/unit/test_environment.py`. **Behaviour:** `make install` uses `deploy/requirements-api.lock` as a pip constraints file and a pinned build-backend constraint. **Acceptance:** in a fresh clone, `make install install-dev`, then `.venv/bin/python -c "import fastapi; assert fastapi.__version__ == '0.143.0'"`; `pip check` clean; `make audit-python` exit 0; `make ci` exit 0.
+
+### T-B1-010: `ug fetch-geometry` and the coverage report
+Owner: claude   Reviewer: codex   Tier: T2 (provenance and labels)   Branch: `claude/b1-fetch-geometry`   Spec refs: 1.4, 5.1
+**Allowed:** `platform/ug_core/src/ug_core/geometry/**` (new, domain-agnostic: fetch, cache, provenance, report), `platform/ug_cli/src/ug_cli/main.py` and a new `fetch_geometry.py`, `platform/tests/unit/test_geometry_*.py`, `.gitignore` (`data/geometry/`), `docs/`. **Forbidden:** committing any OSM extract.
+**Behaviour:** `ug fetch-geometry --area capital [--refresh] [--report]`. The area (study box, query text) comes from a versioned file; requests carry the project User-Agent, back off exponentially on 429 and 502, and stop with a clear error after the last attempt; the extract and a `provenance.json` (source, licence ODbL 1.0, retrieved at, `timestamp_osm_base`, query SHA-256, extract SHA-256) are written to `data/geometry/<area>/<osm_base>/`; with a cached extract it runs offline; `--report` writes the coverage report of the feasibility test (streets, junctions, components, grid, districts, land use, buildings, names, freshness) as JSON and Markdown.
+**Acceptance:** offline unit tests with a synthetic Overpass answer built by the test (no OSM data): cache hit and miss, backoff (no real sleep), 404/429/502/timeout paths, provenance fields, report numbers on a hand-checkable graph; the report of a cached extract is byte-identical across two runs; a test fails if anything under `data/geometry/` is tracked by git; `make ci` exit 0. Network check, outside CI: `make fetch-geometry-live` reproduces the feasibility report's junction and component numbers within 2% on a new `timestamp_osm_base`, or explains the difference.
+
+### T-B1-011: `ProceduralCapitalProvider` (F0 fallback and test fixture)
+Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/b1-procedural-network`   Spec refs: 5.1 steps 1 to 5
+**Allowed:** `domains/water/src/ug_water/network/` (`model.py`, `procedural.py`), `domains/water/tests/test_procedural_*.py`, `assumptions/network_f0_v1.yaml` (new; the owner merges assumption files), `docs/progress/codex/T-B1-011.md`. Reuse candidate `freebuff/backend/app/network/builder.py`, `zones.py`: ADAPT only after the Adoption Plan section 6 review, logged in `DECISIONS.md` with golden tests.
+**Behaviour:** seeded districts, street grids, transmission ring and radial mains, synthetic terrain, tanks at high points, diameters by hierarchy, roughness by age class, demands by land use times area times per-capita (`ASSUMPTION`), three sensor sets `S_base`, `S_dense`, `S_sparse`. Targets: about 260 junctions, 340 pipes, 3 pump stations (2 duty plus 1 standby), 3 tanks, about 30 isolation valves and 2 PRVs, about 48 pressure, 10 flow and 3 level sensors.
+**Acceptance:** same seed gives a byte-identical network (hash); different seeds differ; counts within the targets; every parameter traces to the assumption file (a test changes a value and sees the network change); the Fidelity badge text for this provider is `Fidelity F0: Generic synthetic`; `make ci` exit 0.
+
+### T-B1-015: WNTR API manifest for everything B1 calls
+Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/b1-wntr-manifest`
+**Allowed:** `domains/water/src/ug_water/wntr_api.py`, `wntr_api_manifest.json`, `scripts/gen_wntr_manifest.py`, `domains/water/tests/test_wntr_api_*.py`.
+**Behaviour:** the manifest declares, by introspection of WNTR 1.5.0, every symbol B1 uses (see "External APIs" below); a test parses the water package with `ast` and fails if code calls a WNTR attribute that the manifest does not declare.
+**Acceptance:** `ug doctor` verifies the new symbols; renaming one in a copy of the manifest makes `ug doctor` exit 1 and name it; the AST test fails on a planted undeclared call.
+
+### Wave 2
+
+### T-B1-013: `OsmCapitalProvider`, scale tiers, pipe inference, district overlay
+Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/b1-osm-provider`   Needs: T-B1-010, G1 to G3, D2
+**Allowed:** `domains/water/src/ug_water/network/` (`osm.py`, `inference.py`, `overlay.py`), `domains/water/data/overlays/capital_districts_v1.geojson` (hand-made, no OSM data), `domains/water/tests/test_osm_*.py`, `docs/`.
+**Behaviour:** read the cached extract; project to local Cartesian metres (equirectangular about a reference point, error bound computed and documented); merge degree-2 nodes; choose a tier (`lite` about 250, `standard` about 800, `full` 2,000 or more junctions); transmission mains from the trunk, primary and secondary classes, distribution on the rest (seeded, documented rule); diameters by hierarchy and demands per zone are `ASSUMPTION`; junctions are assigned to the overlay's zones; roads under construction are a separate, opt-in layer. Labels: junction coordinates taken from OSM nodes are `PUBLIC_GEOMETRY` with provenance; pipes, diameters and demands are `ASSUMPTION`; the network reports F1 only when its geometry provenance is `PUBLIC_GEOMETRY`.
+**Acceptance:** with a synthetic street-graph fixture: the same extract and seed give an identical network hash; each tier is within 10% of its junction target; the network is connected; every pipe lies on a street segment (distance under 1 m); a zone without overlay coverage is an error, not a silent default; the Fidelity badge shows the F1 text for this provider and never for F0. Locally, outside CI: `standard` from the real cached extract builds and validates.
+
+### T-B1-012: Demand model
+Owner: codex   Reviewer: claude   Tier: T2 (assumptions and determinism)   Branch: `codex/b1-demand`   Spec refs: 5.2
+**Allowed:** `domains/water/src/ug_water/demand/**`, `assumptions/demand_v1.yaml` (new; the owner merges it), `domains/water/tests/test_demand_*.py`.
+**Behaviour:** base demand per junction from land use; multipliers for the diurnal pattern per land use, the week (Friday and Saturday weekend), holidays, Ramadan (evening peak at Iftar), the season, heatwave, special events and fire flow; AR(1) correlated noise per zone; a separate forecast-error process (its own random stream) for the expectation model of M3. Every parameter comes from the assumption file and carries `ASSUMPTION`.
+**Acceptance:** property tests (every multiplier finite and positive; deterministic per seed; independent random streams per zone and for the forecast); the Ramadan peak moves to the Iftar window; a holiday lowers the government zone's demand and not the others'; the forecast differs from the truth by the configured error statistics (within sampling tolerance); golden hashes for one week.
+
+### T-B1-016: Hydraulic engine (WNTR, pressure-driven demand)
+Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/b1-hydraulics`   Needs: T-B1-011, T-B1-015
+**Allowed:** `domains/water/src/ug_water/solver/**`, `domains/water/tests/test_solver_*.py`, `docs/approximations.md`.
+**Behaviour:** WNTR with pressure-driven demand (PDD options verified in the installed version); 5-minute hydraulic step; pump head and efficiency curves; energy in kWh per pump and per run; results as `TruthSeries` (`SIMULATION`); a non-finite result raises, never becomes zero.
+**Acceptance:** 48 hours on the `lite` network (about 250 nodes) in under 60 s on this laptop (Spec 4.8; measured and reported); PDD reduces delivered demand when pressure falls below the required pressure (a test with a throttled source); a planted NaN in the results raises; energy agrees with an independent calculation from head, flow and efficiency within 1%.
+
+### T-B1-020: Run store, manifest and hashes
+Owner: codex   Reviewer: claude   Tier: T2 (determinism, truth separation)   Branch: `codex/b1-run-store`   Needs: D1
+**Allowed:** `platform/ug_core/src/ug_core/store/**`, `platform/tests/unit/test_store_*.py`, `pyproject` dependency lines approved in D1.
+**Behaviour:** `data/runs/{run_id}/manifest.json` and `truth.parquet` per Spec 11.2 (`fault_tag_hidden` only in the truth bundle); output hashes over canonical content; DuckDB reads.
+**Acceptance:** two runs of the same manifest give identical output hashes, also in two separate processes; a row order change in an input does not change the hash where order is declared unordered; `fault_tag_hidden` is absent from every non-truth file (the honesty suite gains this check); a missing or tampered file makes the store refuse the run.
+
+### Wave 3
+
+### T-B1-014: Network validation
+Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/b1-validation`   Spec refs: 5.1 step 6
+**Behaviour:** connectivity, no isolated junction, minimum pressure at peak demand (15 m, `ASSUMPTION`), no tank overflow or starvation over a 7-day normal run, velocity limits; re-seed or fail loudly, never adjust silently.
+**Acceptance:** each check fails on a fixture built to break it; the procedural network passes; the `standard` OSM network passes locally.
+
+### T-B1-017: Fault catalog and injectors
+Owner: claude (physics)   Tests: codex (author is not the tester)   Reviewer: codex   Tier: T2   Branch: `claude/b1-faults`   Spec refs: 5.4
+**Behaviour:** the 17 fault types of Spec 5.4 with their truth effects (sensor faults' measurement effects arrive with the measurement model in B2, their types and parameters now); a canonical fault order; every onset lands on its configured tick (the reference was one tick late, `PITFALLS.md`); leaks through the verified WNTR leak API. Reuse candidate `split_pipe_for_leak`: ADAPT after review, with a golden test.
+**Acceptance:** a leak at tick t changes truth from tick t, not t+1; permuting the fault list gives the same hashes; the orifice law of the leak is checked against a hand calculation; a pump outage drops downstream pressure; a valve closure redistributes flow.
+
+### T-B1-018: Piecewise gradual faults and the chunk-size convergence report
+Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/b1-chunking`   Spec refs: 5.3
+**Behaviour:** gradual faults updated per chunk (default 30 minutes), tank levels and pump states handed over between chunks; a convergence study over chunk sizes.
+**Acceptance:** `docs/approximations.md` reports the error for 60, 30, 15 and 5 minute chunks against the finest run, and the default meets a stated tolerance; the handoff is exact at a chunk boundary without a fault (identical to an unchunked run within numerical tolerance).
+
+### T-B1-019: Scenario presets, stage 1 (10 of 28)
+Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/b1-presets`   Spec refs: 5.5
+**Behaviour:** `normal_week`, `holiday`, `heatwave`, `ramadan_peak`, `friday_weekend_pattern`, `fire_flow_event`, `leak_gradual_medium`, `leak_sudden`, `burst_main`, `pump_outage_standby`, each a scenario configuration that validates against `contracts/v1/scenario-config.schema.json`. The sensor-fault presets follow in B2 with the measurement model.
+**Acceptance:** every preset validates; every preset runs on the `lite` network without a validation failure; `normal_week`, `holiday` and `heatwave` show no fault in truth.
+
+### T-B1-021: `ug run`
+Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/b1-ug-run`
+**Behaviour:** `ug run <scenario> [--network procedural|osm] [--tier lite|standard|full] [--seed N]` replaces the stub, writes the run store, prints the run id and the manifest hash; exit codes 0 ok, 1 validation failure, 2 usage error.
+**Acceptance:** `ug run normal_week --network procedural --seed 1` twice gives the same manifest hash; a bad scenario exits 1 with the contract error.
+
+### Wave 4
+
+### T-B1-022: M1 acceptance runs
+Owner: claude   Tests: codex   Reviewer: codex   Tier: T2
+**Acceptance:** `normal_week` on the procedural network and on the OSM `standard` network (locally) runs 7 days without a validation failure and without a non-finite value; the same seed gives identical hashes in two processes and on hosted CI (procedural network); a leak lowers pressure most at the junctions nearest to it (rank correlation of pressure drop with network distance, reported); the convergence report and the geometry provenance report exist; performance against Spec 4.8 is reported.
+
+### T-B1-030: B1 exit gate
+Owner: codex (review) and claude (review of Codex PRs)   Reviewer: human   Tier: T2
+**Command:** `adversarial-review --base phase-A1` with the focus: truth reaching telemetry or decisions, labels (`PUBLIC_GEOMETRY` versus `ASSUMPTION`), the licence rule, determinism, NaN to zero, the WNTR API, onset ticks, the D-016 list and the A1 carry-over. **Acceptance:** findings logged in `docs/reviews/T-B1-030.md`; no S0 or S1 open; the M1 acceptance checks pass from a fresh clone; the owner approves; the owner merges `dev` into `main` and tags `phase-B1`.
+
+### External APIs verified in B1 (by documentation, by introspection into the WNTR manifest, and by a small executed probe)
+- **OpenStreetMap Overpass API** (`overpass-api.de/api/interpreter`, version 0.7.62.11): Overpass QL bounding-box filters, `out geom`, `out count`, `make stat` with `count()` and `sum(length())`, `newer:`; usage policy (fewer than 10,000 queries and 1 GB per day, identifying User-Agent); `502 at capacity` behaviour (seen in the feasibility test). Verified for the feasibility test; T-B1-010 adds recorded checks.
+- **Nominatim**: used once in the feasibility test to locate the capital (a point, no boundary); not used by the product.
+- **WNTR 1.5.0**: `WaterNetworkModel` builders (`add_junction`, `add_tank`, `add_reservoir`, `add_pipe`, `add_pump`, `add_valve`, `add_pattern`, `add_curve`), hydraulic options (`demand_model = "PDD"`, `required_pressure`, `minimum_pressure`, `pressure_exponent`, time steps), `WNTRSimulator` and `EpanetSimulator`, the leak API (`Junction.add_leak` and its simulator support), `wntr.morph.split_pipe`, controls, result frames (`node["pressure"]`, `link["flowrate"]`), pump energy and power. Recorded in the manifest by T-B1-015 before any card uses them.
+- **pyarrow and duckdb** (after D1): `pyarrow.parquet.write_table` and `read_table`, `duckdb.connect` and `read_parquet`.
+
+### Order of the waves
+| Wave | Cards | Claude | Codex | Gate before the next wave |
+|---|---|---|---|---|
+| 0 | T-B1-001, 002, 003 | 001 (merged), 002 (PR #37), 003 (report) | reviews | owner decisions G1 to G3, D1 to D3 |
+| 1 | T-B1-004, 010, 011, 015 | 010 | 004, 011, 015 | usage check, pause |
+| 2 | T-B1-013, 012, 016, 020 | 013, 016 | 012, 020 | usage check, pause |
+| 3 | T-B1-014, 017, 018, 019, 021 | 014, 017, 018 | 019, 021, tests of 017 | usage check, pause |
+| 4 | T-B1-022, 030 | 022, review of Codex PRs | gate review, tests of 022 | owner approval of the B1 gate |
+
+
 ## 5. Pilot and metrics (COLLABORATION section 11)
 
 | Pilot | Cards | Result or what is compared |
