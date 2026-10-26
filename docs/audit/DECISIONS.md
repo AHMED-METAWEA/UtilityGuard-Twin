@@ -101,6 +101,12 @@ Every change of stance, every reuse from `freebuff/`, and every proposed deletio
 ### D-020: One handoff file per task (2026-10-26, owner approved the proposal)
 - Handoff notes go in `docs/progress/<agent>/<task-id>.md`, one new file per task, in the PR that does the task. The shared `docs/progress/codex.md` conflicted after almost every merge in Wave 3 (three rebases); a new file per task cannot conflict. `docs/progress/codex.md` and its old sections stay as history; `docs/progress/claude-code.md` stays the lead's session log (only one author, no conflicts). Written into `AGENTS.md` (Working agreement) and `COLLABORATION.md` (step 4, the ownership table, the working rules, Appendix D). Tier 0, merged by the lead under D-018.
 
+### D-021: A1 exit gate results and pending decisions (2026-10-26)
+- Two Codex rounds (four runs) found 8 defects, all reproduced and fixed test-first: see `docs/reviews/T-A1-013.md`. Merged by the lead under D-018: #30 (doctor reference walk, finite JSON). **Waiting for the owner: #31**, a contract change (a sensor reading and any simulator-labelled evidence record carry a physical unit; `INSUFFICIENT_EVIDENCE` carries no estimate). It tightens `v1` in place, an exception to the contracts README rule "a change that old payloads would not survive is a new version", justified because no `v1` payload exists outside the examples. If the owner prefers, the lead creates `v2/` instead (copies of the schemas, types and tests).
+- Added to the D-016 list (fixes after round 2, no third review): the transitive reference walk (#30), the evidence-record physical-unit rule and the `FNU`/`FTU` atoms (#31).
+- The A1 gate is **not** closed: it needs #31 (no S1 open) and the owner's approval; the owner then merges `dev` into `main` and pushes `phase-A1` (D-018 forbids the lead from doing either).
+- Lesson: after fixing one instance of a class (money in a reading), search for every sibling before asking for the next review: the same unit hole existed in three schemas, and the third was found by the lead only after Codex's round 1 had named one.
+
 ## Reuse log (REUSE and ADAPT only)
 
 No reuse has been decided yet. Candidates and likely verdicts are in `ADOPTION_PLAN.md` section 8. A line is added here, in the same PR that brings the code in, with: date, source file and lines in `freebuff/`, what was reused, verdict (REUSE or ADAPT), target path, tests added (including golden tests for the reused behavior), reviewer, and why it is better than writing it new.
