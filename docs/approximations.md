@@ -8,7 +8,7 @@ What the simulation simplifies, and how large the effect is where it has been me
 
 **Pressure-driven demand.** A junction receives its full demand at or above the required pressure (20 m), nothing at or below the minimum pressure (0 m), and `((p - p_min) / (p_req - p_min)) ** 0.5` of it in between (WNTR smooths the two ends over a small pressure band). The three values are placeholders (`solver/data/hydraulics_v1.json`, `ASSUMPTION`), not design criteria of any utility. A test checks the delivered share against the formula at 3, 5 and 12 m within 0.1%.
 
-**Time.** One hydraulic, pattern and report step of 5 minutes; demand is constant within a step (WNTR reads pattern value k at time k x step). Tank levels, pump states and valve states change only at step boundaries; events inside a step are seen at the next one.
+**Time.** One hydraulic and pattern step of 5 minutes; demand is constant within a step (WNTR reads pattern value k at time k x step). When something changes inside a step (a tank reaches a level limit, a control acts), WNTR solves an extra hydraulic step at that moment; `WNTRSimulator` reports every solved time (`report_timestep = "ALL"`), the truth is sampled at the ticks, and energy uses every solved time (below). Every result table must carry the same time axis, which must hold every tick, or the run is an error.
 
 **Demand.** Each junction gets its own pattern: base demand = the mean of its series, multipliers = series / mean. The demand series comes from the demand model (T-B1-012).
 
@@ -16,7 +16,7 @@ What the simulation simplifies, and how large the effect is where it has been me
 
 **Tanks.** `WNTRSimulator` lets a filling tank pass its maximum level by what flows in during the step in which it fills (0.13 mm on the test loop) and then closes the inlet; EPANET clips at the maximum exactly. A test bounds the overshoot at 1 mm.
 
-**Pump power and energy.** Power is `rho g Q (H_out - H_in) / efficiency` from the flow through the pump and the heads at its ends (rho 1000 kg/m3, g 9.81 m/s2), zero without flow. The energy of a run holds the power at each report time over the step that follows it, as EPANET does; the last report time starts no step. Checked against WNTR's own `pump_power` (within 1%) and a hand calculation (to rounding).
+**Pump power and energy.** Power is `rho g Q (H_out - H_in) / efficiency` from the flow through the pump and the heads at its ends (rho 1000 kg/m3, g 9.81 m/s2), zero without flow. The energy of a run integrates the power over every interval between two solved times, holding the power at the start of each interval to its end, as EPANET does for its own steps; the last solved time starts no interval. Holding the power of a tick over the whole 5-minute step instead overstated the energy by 38% when a small tank filled 3 s into a step (review round 1); the engine now agrees with the same network solved at a 1 s step within 1%, and with WNTR's own `pump_power` over the solved times within 1%. `EpanetSimulator` cannot report the extra steps, so it returns no energy (`None`), never a number that may be wrong. A pump that carries flow while losing head (it runs past the flow where its curve reaches zero head; WNTR only warns) is an error, not negative consumption.
 
 **Failures.** Non-convergence, a non-finite result, a results axis that is not the demand series' axis, and reverse flow through a pump beyond 1e-9 m3/s are errors; nothing is replaced by zero.
 
