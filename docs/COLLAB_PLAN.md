@@ -189,7 +189,7 @@ Status: **merged (PR #11)**   Owner: claude   Reviewer: codex   Tier: T1   Branc
 **Budget:** 1 session.
 
 ### T-A1-013: A1 exit-gate review
-Status: **gate report delivered 2026-10-26, waiting for the owner**; two Codex rounds done, `docs/reviews/T-A1-013.md`; PR #31 (S1 fix, contract change) is open   Owner: codex (review) and claude (review of Codex PRs)   Reviewer: human   Tier: T2
+Status: **closed 2026-10-26** (two Codex rounds, `docs/reviews/T-A1-013.md`; #31 merged `7d06056`; `dev` merged into `main` as `daf6634`, tag `phase-A1`; D-022)   Owner: codex (review) and claude (review of Codex PRs)   Reviewer: human   Tier: T2
 **Command:** `/codex:adversarial-review --base phase-A0 --background truth or hidden fault tags reaching telemetry, the stream, detectors or decisions; nondeterminism; numbers displayed without an evidence label; invented probabilities; double counting in cost lines; contract drift; NaN converted to zero`
 **Acceptance:** findings logged in `docs/reviews/T-A1-013.md` (severity, evidence, decision, fixing commit); no S0 or S1 open; from a fresh clone `make install && make ci` is green, `make up` serves the shell with badge and banner, `ug doctor` exits 0, `make test-honesty` and `scripts/mutation_check.sh` pass; the human approves, then `dev` merges to `main` with tag `phase-A1`.
 

@@ -107,6 +107,13 @@ Every change of stance, every reuse from `freebuff/`, and every proposed deletio
 - The A1 gate is **not** closed: it needs #31 (no S1 open) and the owner's approval; the owner then merges `dev` into `main` and pushes `phase-A1` (D-018 forbids the lead from doing either).
 - Lesson: after fixing one instance of a class (money in a reading), search for every sibling before asking for the next review: the same unit hole existed in three schemas, and the third was found by the lead only after Codex's round 1 had named one.
 
+### D-022: Phase A1 closed (2026-10-26, one-time authorization by the owner)
+- **Phase A1 (Spec M0) is closed.** `dev` was merged into `main` with a **merge commit** `daf6634` (PR #34; parents `debfd51`, the baseline import, and `eb817f9`, the head of `dev`), and the annotated tag **`phase-A1`** was created on `daf6634` and pushed. This also brings Phase A0 into `main` (`main` held only the baseline import; the tag `phase-A0` is on a `dev` commit).
+- **Authority:** the owner's explicit, one-time authorization of 2026-10-26, limited to: squash-merging #31 (`7d06056`) and approving the in-place tightening of contracts `v1` instead of creating `v2`; opening and merging the dev-to-main PR with a merge commit once hosted CI was green and the gate report showed no S0 or S1 open; creating and pushing `phase-A1`; recording it (this PR). **D-018 is unchanged**: the lead still may not merge Tier 2 PRs, merge into `main` or push tags without a new explicit authorization.
+- **Verification**: the gate conditions held (no S0 or S1 open; hosted CI green on #34 at `eb817f9`); afterwards a fresh clone of `main` at `daf6634` passed `make install install-dev` and `make ci` and hosted CI on `main` was green.
+- **Carried into B1** (the B1 gate must cover them): the fixes after review round 2 that had no third review (D-016, D-021: #30 reference walk, #31 evidence-record unit rule and `FNU`/`FTU`), the code only the lead reviewed (#25, #26), and the M0 items not delivered in A1: the UI design plan and the mock stream (B2), the shell importing the generated types (B2).
+- `dev` is one merge commit behind `main` (no content difference); the next gate merge handles it. The owner's decision on #31 and the gate approval also close the question left open in D-019 about the fail-closed unit vocabulary: it stays.
+
 ## Reuse log (REUSE and ADAPT only)
 
 No reuse has been decided yet. Candidates and likely verdicts are in `ADOPTION_PLAN.md` section 8. A line is added here, in the same PR that brings the code in, with: date, source file and lines in `freebuff/`, what was reused, verdict (REUSE or ADAPT), target path, tests added (including golden tests for the reused behavior), reviewer, and why it is better than writing it new.
