@@ -19,10 +19,18 @@ const PROVENANCE = {
   coverage_report: "coverage.json",
 };
 
+const DISTRICTS = {
+  label: "ASSUMPTION" as const,
+  method: "hand-drawn" as const,
+  source: "manual overlay capital_districts_v1",
+  drawn: "2026-10-26",
+};
+
 const F1_NETWORK: LoadedNetwork = {
   network_version: "capital_f1_v1",
   fidelity: "F1",
   geometry_provenance: PROVENANCE,
+  district_boundaries: DISTRICTS,
 };
 
 const envelope = (source: string) => ({ type: "tick", payload: { stream_source: source } });
@@ -141,3 +149,34 @@ describe("the shell", () => {
     window.location.hash = "";
   });
 });
+
+describe("the geometry line of an F1 network (decisions G1 to G3)", () => {
+  it("adds the attribution and keeps it visible when the notice is collapsed", () => {
+    render(<App state={{ ...INITIAL_STATE, network: F1_NETWORK }} path="/" />);
+    const notice = screen.getByRole("region", { name: STRINGS.honesty.regionLabel });
+    expect(within(notice).getByText(STRINGS.fidelity.f1Notice)).toBeTruthy();
+    fireEvent.click(within(notice).getByRole("button", { name: STRINGS.honesty.collapse }));
+    expect(within(notice).getByText(STRINGS.honesty.chip)).toBeTruthy();
+    expect(within(notice).getByText(STRINGS.fidelity.f1Notice)).toBeTruthy();
+  });
+
+  it("shows no geometry line without an F1 network", () => {
+    const noDistricts = { ...F1_NETWORK, district_boundaries: null };
+    for (const network of [null, { ...F1_NETWORK, fidelity: "F0" as const }, noDistricts]) {
+      cleanup();
+      render(<App state={{ ...INITIAL_STATE, network }} path="/" />);
+      expect(document.body.textContent).not.toContain("OpenStreetMap");
+      expect(document.body.textContent).toContain(STRINGS.honesty.statement);
+    }
+  });
+
+  it("keeps the notice when reading the network for the line fails", () => {
+    const state = { ...INITIAL_STATE };
+    Object.defineProperty(state, "network", { get() { throw new Error("network exploded"); } });
+    render(<App state={state} path="/" />);
+    const notice = screen.getByRole("region", { name: STRINGS.honesty.regionLabel });
+    expect(notice.textContent).toContain(STRINGS.honesty.statement);
+    expect(document.body.textContent).not.toContain("OpenStreetMap");
+  });
+});
+

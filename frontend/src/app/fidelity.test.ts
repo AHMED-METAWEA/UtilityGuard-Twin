@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { fidelityBadge, hasPublicGeometryProvenance } from "./fidelity";
+import {
+  fidelityBadge,
+  geometryNotice,
+  hasHandDrawnDistrictBoundaries,
+  hasPublicGeometryProvenance,
+} from "./fidelity";
 import type { LoadedNetwork } from "./fidelity";
 import { STRINGS } from "./strings";
 
@@ -12,6 +17,13 @@ const PROVENANCE = {
   coverage_report: "coverage.json",
 };
 
+const DISTRICTS = {
+  label: "ASSUMPTION" as const,
+  method: "hand-drawn" as const,
+  source: "manual overlay capital_districts_v1",
+  drawn: "2026-10-26",
+};
+
 function omit<T extends object>(value: T, key: keyof T): Partial<T> {
   const copy = { ...value };
   delete copy[key];
@@ -19,7 +31,13 @@ function omit<T extends object>(value: T, key: keyof T): Partial<T> {
 }
 
 function network(overrides: Partial<LoadedNetwork>): LoadedNetwork {
-  return { network_version: "n1", fidelity: "F1", geometry_provenance: PROVENANCE, ...overrides };
+  return {
+    network_version: "n1",
+    fidelity: "F1",
+    geometry_provenance: PROVENANCE,
+    district_boundaries: DISTRICTS,
+    ...overrides,
+  };
 }
 
 describe("fidelity badge", () => {
@@ -44,7 +62,7 @@ describe("fidelity badge", () => {
     const view = fidelityBadge(network({}));
     expect(view).toMatchObject({ level: "F1", downgraded: false });
     expect(view.text).toBe(
-      "Fidelity F1: Public capital layout, inferred pipes, synthetic hydraulics",
+      "Fidelity F1: Real OSM streets, hand-drawn districts, inferred pipes, synthetic hydraulics",
     );
   });
 
@@ -92,3 +110,42 @@ describe("fidelity badge", () => {
     expect(hasPublicGeometryProvenance(null)).toBe(false);
   });
 });
+
+describe("the hybrid F1 network (owner decisions G1 to G3)", () => {
+  it("shows F1 only when the streets are PUBLIC_GEOMETRY and the districts are declared hand-drawn", () => {
+    expect(fidelityBadge(network({})).level).toBe("F1");
+    expect(fidelityBadge(network({})).text).toBe(
+      "Fidelity F1: Real OSM streets, hand-drawn districts, inferred pipes, synthetic hydraulics",
+    );
+  });
+
+  it.each([
+    ["missing", undefined],
+    ["null", null],
+    ["labelled PUBLIC_GEOMETRY", { ...DISTRICTS, label: "PUBLIC_GEOMETRY" }],
+    ["drawn some other way", { ...DISTRICTS, method: "traced" }],
+    ["without a source", { ...DISTRICTS, source: " " }],
+    ["without a date", { ...DISTRICTS, drawn: "" }],
+    ["a string", "hand-drawn"],
+  ])("shows the lowest level when the district boundaries are %s", (_name, districts) => {
+    const view = fidelityBadge(network({ district_boundaries: districts as never }));
+    expect(view).toEqual({ level: "F0", text: STRINGS.fidelity.f0, downgraded: true });
+    expect(geometryNotice(network({ district_boundaries: districts as never }))).toBeNull();
+    expect(hasHandDrawnDistrictBoundaries(districts)).toBe(false);
+  });
+
+  it("adds the attribution and approximation line for F1 only", () => {
+    expect(geometryNotice(network({}))).toBe(STRINGS.fidelity.f1Notice);
+    expect(STRINGS.fidelity.f1Notice).toContain("© OpenStreetMap contributors (ODbL)");
+    expect(STRINGS.fidelity.f1Notice).toContain("hand-drawn approximations");
+    for (const other of [null, undefined, network({ fidelity: "F0", geometry_provenance: null })]) {
+      expect(geometryNotice(other)).toBeNull();
+    }
+  });
+
+  it("never throws and never adds the line for unreadable data", () => {
+    const exploding = new Proxy({}, { get() { throw new Error("network exploded"); } });
+    expect(geometryNotice(exploding as never)).toBeNull();
+  });
+});
+

@@ -86,7 +86,8 @@ describe("only inert data is accepted", () => {
 
   it("accepts the data a JSON parser produces, nested and plain", () => {
     expect(streamSourceFromEnvelope(JSON.parse('{"schema_version":"1","payload":{"stream_source":"LIVE","readings":[]}}'))).toBe("LIVE");
-    const network = JSON.parse(JSON.stringify({ network_version: "n", fidelity: "F1", geometry_provenance: PROVENANCE }));
+    const districts = { label: "ASSUMPTION", method: "hand-drawn", source: "manual overlay", drawn: "2026-10-26" };
+    const network = JSON.parse(JSON.stringify({ network_version: "n", fidelity: "F1", geometry_provenance: PROVENANCE, district_boundaries: districts }));
     expect(fidelityBadge(network).level).toBe("F1");
   });
 

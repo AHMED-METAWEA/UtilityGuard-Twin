@@ -4,6 +4,7 @@ import { Boundary } from "../ui/Boundary";
 import { FidelityBadge } from "../ui/FidelityBadge";
 import { HonestyStrip } from "../ui/HonestyStrip";
 import { StreamSourcePill } from "../ui/StreamSourcePill";
+import { geometryNotice } from "./fidelity";
 import { ROUTES, findRoute, pathFromHash } from "./routes";
 import { INITIAL_STATE } from "./state";
 import type { ShellState } from "./state";
@@ -86,6 +87,12 @@ function BadgeFromState({ state }: { state: ShellState }) {
   return <FidelityBadge network={state.network} />;
 }
 
+// The notice reads the network only to add the F1 geometry line. If that read fails, the
+// fallback is the plain notice: the statement itself never depends on the data.
+function HonestyFromState({ state }: { state: ShellState }) {
+  return <HonestyStrip geometryNotice={geometryNotice(state.network)} />;
+}
+
 function PillFromState({ state }: { state: ShellState }) {
   return <StreamSourcePill envelope={state.lastEnvelope} />;
 }
@@ -132,7 +139,9 @@ function Shell({ state = INITIAL_STATE, path }: { state?: ShellState; path?: str
           <PillFromState state={state} />
         </Boundary>
       </header>
-      <HonestyStrip />
+      <Boundary fallback={<HonestyStrip />}>
+        <HonestyFromState state={state} />
+      </Boundary>
       <div className="ug-body">
         <nav aria-label={STRINGS.nav.label}>
           <ul>
