@@ -274,3 +274,21 @@ def test_48_hours_on_the_procedural_network_within_the_budget() -> None:
     )
     assert seconds < 60
     assert len(result.truth.timebase) == ticks
+
+
+def test_a_tank_level_is_its_head_above_the_bottom_and_stays_within_its_limits() -> (
+    None
+):
+    net = pumped_loop()
+    result = simulate(net, demand(net, 73))
+    tank = net.tanks[0]
+    level = np.array(result.truth.channels[f"level:{tank.id}"])
+    head = np.array(result.truth.channels[f"head:{tank.id}"])
+    assert level == pytest.approx(head - tank.elevation, abs=1e-12)
+    assert level[0] == pytest.approx(tank.init_level, abs=1e-6)
+    # WNTRSimulator lets a filling tank pass its maximum by what flows in during the step in
+    # which it fills (0.13 mm here) before it closes the inlet; EPANET clips exactly
+    # (docs/approximations.md). The bound allows that, and no more than a millimetre.
+    assert (level >= tank.min_level - 1e-6).all()
+    assert (level <= tank.max_level + 1e-3).all()
+    assert result.truth.channels["flowrate:p4"][-1] == 0.0  # full: nothing flows in
