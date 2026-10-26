@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 import shutil
 import subprocess
@@ -12,6 +13,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
 
 from jsonschema import Draft202012Validator  # type: ignore[import-untyped]
+from jsonschema.exceptions import SchemaError  # type: ignore[import-untyped]
 from referencing import Registry, Resource
 from referencing.jsonschema import DRAFT202012
 from ug_core.adapter import HasHealthChecks
@@ -78,6 +80,14 @@ def _no_constant(value: str) -> Any:
     raise ValueError(f"{value} is not valid JSON")
 
 
+def _finite_float(text: str) -> float:
+    """A number such as 1e9999 overflows to infinity: JSON Schema accepts that, a contract must not."""
+    value = float(text)
+    if not math.isfinite(value):
+        raise ValueError(f"{text} is not a finite number")
+    return value
+
+
 def _unique_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for key, value in pairs:
@@ -87,22 +97,48 @@ def _unique_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
-def _check_refs(resource: Resource[Any], resolver: Resolver[Any]) -> None:
-    """Walk schema locations, preserving nested IDs without following reference cycles."""
+def _check_refs(
+    resource: Resource[Any], resolver: Resolver[Any], seen: set[int] | None = None
+) -> None:
+    """Walk schema locations, preserving nested IDs; follow every reference once.
+
+    A reference target must be a schema, and the references inside that target are checked in turn
+    (a pointer into a `default` can lead to a second pointer into `examples`). `seen` holds the
+    identity of each target already walked, so reference cycles terminate.
+    """
+    seen = set() if seen is None else seen
     schema = resource.contents
     if isinstance(schema, dict):
         for keyword in ("$ref", "$dynamicRef"):
             if keyword in schema:
                 ref = schema[keyword]
                 try:
-                    resolver.lookup(ref)
+                    resolved = resolver.lookup(ref)
                 except Exception as exc:
                     raise ValueError(f"unresolvable {keyword} {ref!r}: {exc}") from exc
+                # The target must itself be a schema: a pointer into arbitrary data (a `default`,
+                # an `examples` entry) resolves, but would crash the validator later.
+                try:
+                    Draft202012Validator.check_schema(resolved.contents)
+                except SchemaError as exc:
+                    raise ValueError(
+                        f"{keyword} {ref!r} does not point at a valid schema: {exc.message}"
+                    ) from exc
+                target = resolved.contents
+                if isinstance(target, dict) and id(target) not in seen:
+                    seen.add(id(target))
+                    _check_refs(
+                        Resource.from_contents(
+                            target, default_specification=DRAFT202012
+                        ),
+                        resolved.resolver,
+                        seen,
+                    )
     for child in sorted(
         resource.subresources(),
         key=lambda child: json.dumps(child.contents, sort_keys=True),
     ):
-        _check_refs(child, resolver.in_subresource(child))
+        _check_refs(child, resolver.in_subresource(child), seen)
 
 
 def check_contracts(root: Path | None) -> list[Result]:
@@ -129,6 +165,7 @@ def check_contracts(root: Path | None) -> list[Result]:
             schema = json.loads(
                 path.read_text(encoding="utf-8"),
                 parse_constant=_no_constant,
+                parse_float=_finite_float,
                 object_pairs_hook=_unique_keys,
             )
             Draft202012Validator.check_schema(schema)
