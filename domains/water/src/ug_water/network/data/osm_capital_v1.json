@@ -1,0 +1,42 @@
+{
+  "version": "1",
+  "label": "ASSUMPTION",
+  "note": "Parameters of the F1 network built on the OpenStreetMap street graph. Every value is a synthetic placeholder, not ACUD data: terrain, pipe sizes, roughness, demand densities, the source and the tanks are chosen, not observed. Only the street geometry is public.",
+  "terrain": {
+    "base_m": 300.0,
+    "gradient_m_per_km": [-1.5, 0.8],
+    "noise_m": 4.0,
+    "wavelength_km": 6.0
+  },
+  "diameters_m": {"transmission": 0.6, "submain": 0.3, "distribution": 0.15},
+  "roughness": {"transmission": 130.0, "submain": 120.0, "distribution": 110.0},
+  "demand_l_s_per_ha": {
+    "residential": 0.45,
+    "government": 0.25,
+    "business": 0.35,
+    "commercial": 0.35,
+    "culture": 0.2,
+    "green": 0.15,
+    "sports": 0.2,
+    "industrial": 0.3,
+    "transport": 0.1,
+    "medical": 0.4,
+    "education": 0.3,
+    "diplomatic": 0.3
+  },
+  "source": {
+    "side": "west",
+    "head_above_site_m": 5.0,
+    "offset_m": [-150.0, 0.0]
+  },
+  "pumps": {"duty": 2, "standby": 1, "design_head_m": 45.0, "efficiency": 0.78, "peak_factor": 1.8},
+  "tanks": {
+    "count": 3,
+    "height_above_site_m": 20.0,
+    "init_level_m": 4.0,
+    "min_level_m": 0.5,
+    "max_level_m": 8.0,
+    "diameter_m": 30.0,
+    "offset_m": [60.0, 60.0]
+  }
+}
