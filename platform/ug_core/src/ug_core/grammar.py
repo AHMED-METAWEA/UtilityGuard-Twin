@@ -104,7 +104,7 @@ PHYSICAL_UNIT_ATOMS = frozenset({
     # electrical and thermal
     "V", "A", "Hz", "ohm", "S", "K", "degC", "degF",
     # concentration, turbidity, ratios and counts
-    "ppm", "ppb", "NTU", "pH", "pct", "percent", "fraction", "rpm", "count",
+    "ppm", "ppb", "NTU", "FNU", "FTU", "pH", "pct", "percent", "fraction", "rpm", "count",
 })  # fmt: skip
 _PHYSICAL_PREFIXES = (
     "da", "y", "z", "a", "f", "p", "n", "u", "m", "c", "d", "h", "k", "M", "G", "T", "P", "E",

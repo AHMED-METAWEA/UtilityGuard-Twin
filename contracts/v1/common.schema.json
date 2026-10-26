@@ -132,7 +132,7 @@
         },
         {
           "type": "string",
-          "pattern": "^(?:(?:da|y|z|a|f|p|n|u|m|c|d|h|k|M|G|T|P|E)?(?:fraction|percent|count|month|tonne|degC|degF|mmHg|week|year|NTU|atm|bar|cal|day|min|ohm|pct|ppb|ppm|psi|rpm|var|Hz|Pa|VA|Wh|ha|pH|A|J|K|L|N|S|V|W|g|h|l|m|s|t)(?:\\^?-?[0-9]+)?|%|1)(?:[/*.](?:(?:da|y|z|a|f|p|n|u|m|c|d|h|k|M|G|T|P|E)?(?:fraction|percent|count|month|tonne|degC|degF|mmHg|week|year|NTU|atm|bar|cal|day|min|ohm|pct|ppb|ppm|psi|rpm|var|Hz|Pa|VA|Wh|ha|pH|A|J|K|L|N|S|V|W|g|h|l|m|s|t)(?:\\^?-?[0-9]+)?|%|1))*$"
+          "pattern": "^(?:(?:da|y|z|a|f|p|n|u|m|c|d|h|k|M|G|T|P|E)?(?:fraction|percent|count|month|tonne|degC|degF|mmHg|week|year|FNU|FTU|NTU|atm|bar|cal|day|min|ohm|pct|ppb|ppm|psi|rpm|var|Hz|Pa|VA|Wh|ha|pH|A|J|K|L|N|S|V|W|g|h|l|m|s|t)(?:\\^?-?[0-9]+)?|%|1)(?:[/*.](?:(?:da|y|z|a|f|p|n|u|m|c|d|h|k|M|G|T|P|E)?(?:fraction|percent|count|month|tonne|degC|degF|mmHg|week|year|FNU|FTU|NTU|atm|bar|cal|day|min|ohm|pct|ppb|ppm|psi|rpm|var|Hz|Pa|VA|Wh|ha|pH|A|J|K|L|N|S|V|W|g|h|l|m|s|t)(?:\\^?-?[0-9]+)?|%|1))*$"
         }
       ],
       "description": "The unit of a sensor reading: one ASCII token built only from known physical units (metres, litres, seconds, pascals, watts, ...), optionally with a metric prefix, an exponent, and / * . between factors. A currency, however it is spelled, is not a physical unit, so money cannot be labelled as sensor output. The list of units is ug_core.grammar.PHYSICAL_UNIT_ATOMS; a test keeps this pattern equal to it."

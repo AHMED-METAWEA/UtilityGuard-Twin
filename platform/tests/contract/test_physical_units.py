@@ -27,7 +27,7 @@ GOOD_UNITS = [
     "m", "m2", "m3", "cm2", "m3/s", "m3/h", "L/s", "L/min", "bar", "mbar", "kPa", "MPa", "Pa",
     "psi", "mg/L", "ug/L", "NTU", "pH", "degC", "%", "pct", "ppm", "kW", "kWh", "MWh", "kWh/m3",
     "kVA", "kvar", "V", "A", "Hz", "uS/cm", "h", "min", "s", "day", "kg", "t", "ha", "m/s",
-    "kg/m3", "1/s", "m^3", "m^-3", "m-1", "N.m", "kg.m2", "rpm", "count", "%/h", "mm/h", "percent", "fraction",
+    "kg/m3", "1/s", "m^3", "m^-3", "m-1", "N.m", "kg.m2", "rpm", "count", "%/h", "mm/h", "percent", "fraction", "FNU", "FTU", "mV", "mS/m",
 ]  # fmt: skip
 BAD_UNITS = [
     "EGP", "EGP/m3", "USD", "CAD", "CAD.m^-3", "AUD.kWh^-1", "C.A.D.m^-3", "E-G-P/m3", "kLE/m3",
