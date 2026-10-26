@@ -1,7 +1,9 @@
 """Store hash v1: SHA-256 of the following bytes, without separators or a BOM.
 
 First is ASCII canonical_json of {"columns": [[name, str(Arrow type), nullable],
-...], "key": [key names], "label": evidence label, "hash": "store-v1"}.
+...], "key": [key names], "label": evidence label, "hash": "store-v1", "rows": row
+count}. With the schema and the row count fixed, the byte stream below parses in only
+one way, so no string value can imitate a column boundary (lead review).
 Columns retain schema order. Rows are sorted ascending by the declared unique,
 non-null key using Arrow sort_indices and take (string ordering is UTF-8).
 
@@ -11,8 +13,8 @@ float64 is numpy.rint(value * 1e6) cast to signed little-endian int64 (negative
 zero becomes zero). Non-finite floats and magnitudes above 9e12 are refused.
 A string is its UTF-8 byte length as unsigned little-endian 4 bytes followed by
 those bytes; null is exactly FF FF FF FF, distinct from an empty string. Lengths
-must be below 0xFFFFFFFF. A boolean is one byte, 00 or 01. No column or row count
-is appended. Only int64, float64, string and boolean columns are supported;
+must be below 0xFFFFFFFF. A boolean is one byte, 00 or 01. Nothing else is
+appended. Only int64, float64, string and boolean columns are supported;
 nulls in fixed-width columns and all other Arrow types are refused. Schema
 nullability is still hashed, even when a column has no nulls. Metadata is only
 the evidence label. Changing this encoding requires a new hash version.
@@ -87,6 +89,7 @@ def table_hash(table: pa.Table, key: tuple[str, ...]) -> str:
         "key": list(key),
         "label": metadata[b"label"].decode("ascii"),
         "hash": "store-v1",
+        "rows": ordered.num_rows,
     }
     digest = hashlib.sha256(canonical_json(header).encode("ascii"))
     for f, column in zip(ordered.schema, ordered.columns, strict=True):

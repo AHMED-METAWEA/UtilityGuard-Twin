@@ -253,7 +253,8 @@ def test_store_v1_refuses_nested_types(tmp_path):
 
 
 def test_store_v1_golden_all_scalar_types():
-    # Change this digest ONLY when introducing a new hash version.
+    # Change this digest ONLY when introducing a new hash version. (Re-pinned once in the
+    # lead review, before any bundle existed, when the row count joined the header.)
     table = prepare(
         "detector_x",
         pa.table(
@@ -267,7 +268,7 @@ def test_store_v1_golden_all_scalar_types():
     )
     assert (
         table_hash(table, ("tick",))
-        == "e6ef31a0f1b169edee33674787cf1ea8a828d40a9c67a17148722a50175a6f53"
+        == "ec39b2c45d63c5b7e065eb96201babfe4a2579da616767edd09ffa4d0bec0816"
     )
 
 
