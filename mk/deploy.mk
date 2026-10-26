@@ -1,5 +1,5 @@
 # T-A1-011: same-origin shell/API deployment.
-.PHONY: deploy-config up down logs smoke
+.PHONY: deploy-config up up-wait down logs smoke container-check
 
 CI_TARGETS += deploy-config
 
@@ -22,3 +22,11 @@ logs:
 
 smoke:
 	bash deploy/smoke.sh
+
+# Waits until the container reports healthy (Compose v2 `--wait`), for scripts and CI.
+up-wait:
+	docker compose -f deploy/docker-compose.yml up -d --wait --wait-timeout 120
+
+# Checks the hardening of the running container (T-B1-001).
+container-check:
+	bash deploy/check_container.sh

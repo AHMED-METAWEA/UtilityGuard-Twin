@@ -8,7 +8,7 @@ on host loopback; it is not exposed on other host interfaces. The shell and
 Run `make smoke` after the container becomes healthy. This requires curl,
 python3 and Node on the host and uses the repository's offline gate without
 changing it. An alternate base URL can be passed to `bash deploy/smoke.sh URL`.
-Use `make logs` to follow logs and `make down` to stop and remove the container.
+Use `make logs` to follow logs and `make down` to stop and remove the container. `make up-wait` waits until the container reports healthy, and `make container-check` checks its hardening (uid 10001, read-only root, capabilities dropped and none added back, not privileged, no privilege gain, port on host loopback only); hosted CI runs `make up`, `make up-wait`, `make container-check` and `make smoke` on every pull request (job `container`).
 `make deploy-config` validates Compose without building or starting anything.
 Docker Compose v2 is required; builds need access to the image and package
 registries. The two base images (`node:22-slim`, `python:3.11-slim`) are pinned
