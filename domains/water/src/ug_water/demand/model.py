@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -77,12 +77,41 @@ class DemandSeries:
                     "timebase": self.timebase.to_dict(),
                     "junction_ids": self.junction_ids,
                     "unit": "m3/s",
-                    "values": [[round_for_hash(v) for v in row] for row in self.values],
+                    "values": np.asarray(
+                        np.frompyfunc(round_for_hash, 1, 1)(self.values)
+                    ).tolist(),
                     "label": self.label.value,
                     "assumption_set_hash": self.assumption_set_hash,
                 }
             )
         )
+
+
+@dataclass(frozen=True)
+class _LocalAxis:
+    """Shared local calendar arrays, computed once per public evaluation."""
+
+    seconds: NDArray[np.int64]
+    microsecond: int
+    hours: NDArray[np.float64]
+    months: NDArray[np.int64]
+    weekend: NDArray[np.bool_]
+    ramadan: NDArray[np.bool_]
+    holidays: NDArray[np.bool_]
+    heatwave: NDArray[np.bool_]
+
+    def active(self, start: datetime, end: datetime) -> NDArray[np.bool_]:
+        # Ceil each boundary relative to the axis' fixed fractional second. This
+        # preserves subsecond half-open windows without floating epoch rounding.
+        epoch = datetime(1970, 1, 1)
+        first, last = start - epoch, end - epoch
+        lower = (
+            first.days * 86400 + first.seconds + (first.microseconds > self.microsecond)
+        )
+        upper = (
+            last.days * 86400 + last.seconds + (last.microseconds > self.microsecond)
+        )
+        return (self.seconds >= lower) & (self.seconds < upper)
 
 
 @dataclass(frozen=True)
@@ -132,13 +161,38 @@ class DemandModel:
         values.flags.writeable = False
         return values
 
-    def _times(self, timebase: Timebase) -> tuple[datetime, ...]:
+    def _axis(self, timebase: Timebase, calendar: DemandCalendar) -> _LocalAxis:
         offset = self.parameter("utc_offset_hours", "h")
         if not -24 < offset < 24:
             raise ValueError("utc_offset_hours must be between -24 and 24")
         shift = timedelta(hours=offset)
-        return tuple(
-            timebase.time_at(i).replace(tzinfo=None) + shift for i in timebase.ticks()
+        seconds = (
+            int(timebase.start.timestamp())
+            + np.arange(timebase.n_ticks, dtype=np.int64) * timebase.step_seconds
+            + shift.days * 86400
+            + shift.seconds
+        )
+        days = seconds // 86400
+        within_day = seconds % 86400
+        # Algebraically within_day / 3600, but keep the original float operation
+        # order: direct division changes bits (e.g. local 01:35) and demand values.
+        hours = (
+            within_day // 3600
+            + (within_day // 60 % 60) / 60
+            + (within_day % 60) / 3600
+            + shift.microseconds / 3.6e9
+        )
+        months = days.astype("datetime64[D]").astype("datetime64[M]").astype(np.int64)
+        epoch_day = date(1970, 1, 1).toordinal()
+        return _LocalAxis(
+            seconds,
+            shift.microseconds,
+            hours,
+            months % 12,
+            np.isin((days + 3) % 7, (4, 5)),  # Unix epoch was Thursday (weekday 3).
+            np.isin(days, [day.toordinal() - epoch_day for day in calendar.ramadan]),
+            np.isin(days, [day.toordinal() - epoch_day for day in calendar.holidays]),
+            np.isin(days, [day.toordinal() - epoch_day for day in calendar.heatwave]),
         )
 
     def _validate_calendar(self, network: Network, calendar: DemandCalendar) -> None:
@@ -159,41 +213,31 @@ class DemandModel:
         self, land_use: str, timebase: Timebase, calendar: DemandCalendar
     ) -> NDArray[np.float64]:
         """Deterministic common expectation factors; no events, fires or random draws."""
+        return self._multipliers(land_use, self._axis(timebase, calendar))
+
+    def _multipliers(self, land_use: str, axis: _LocalAxis) -> NDArray[np.float64]:
         normal = self.pattern(land_use)
         ramadan = self.pattern(land_use, ramadan=True)
         weekend = self._positive(f"demand_weekend_{land_use}")
         holiday = self._positive(f"demand_holiday_{land_use}")
         heatwave = self._positive(f"demand_heatwave_{land_use}")
-        seasons = [self._positive(f"demand_season_m{m:02d}") for m in range(1, 13)]
+        seasons = np.array(
+            [self._positive(f"demand_season_m{m:02d}") for m in range(1, 13)]
+        )
         iftar = self.parameter("iftar_hour_local", "h")
         if not 0 <= iftar < 24:
             raise ValueError("iftar_hour_local must be in [0, 24)")
-        result = np.empty(timebase.n_ticks)
-        for i, local in enumerate(self._times(timebase)):
-            day = local.date()
-            hour = (
-                local.hour
-                + local.minute / 60
-                + local.second / 3600
-                + local.microsecond / 3.6e9
-            )
-            profile = normal
-            if day in calendar.ramadan:
-                hour = (hour - iftar) % 24
-                profile = ramadan
-            lower = math.floor(hour)
-            fraction = hour - lower
-            factor = (
-                profile[lower] * (1 - fraction) + profile[(lower + 1) % 24] * fraction
-            )
-            factor *= seasons[local.month - 1]
-            if local.weekday() in (4, 5):
-                factor *= weekend
-            if day in calendar.holidays:
-                factor *= holiday
-            if day in calendar.heatwave:
-                factor *= heatwave
-            result[i] = factor
+        hour = np.where(axis.ramadan, (axis.hours - iftar) % 24, axis.hours)
+        lower = np.floor(hour).astype(np.int64)
+        fraction = hour - lower
+        upper = (lower + 1) % 24
+        low = np.where(axis.ramadan, ramadan[lower], normal[lower])
+        high = np.where(axis.ramadan, ramadan[upper], normal[upper])
+        result = low * (1 - fraction) + high * fraction
+        result *= seasons[axis.months]
+        result[axis.weekend] *= weekend
+        result[axis.holidays] *= holiday
+        result[axis.heatwave] *= heatwave
         if not np.all(np.isfinite(result)) or np.any(result <= 0):
             raise ValueError(
                 f"{land_use}: demand multipliers must be finite and positive"
@@ -201,12 +245,12 @@ class DemandModel:
         return result
 
     def _expectation(
-        self, network: Network, timebase: Timebase, calendar: DemandCalendar
+        self, network: Network, calendar: DemandCalendar, axis: _LocalAxis
     ) -> NDArray[np.float64]:
         self._validate_calendar(network, calendar)
         land_uses = {zone.id: zone.land_use for zone in network.zones}
         profiles = {
-            land: self.multipliers(land, timebase, calendar)
+            land: self._multipliers(land, axis)
             for land in sorted(set(land_uses.values()))
         }
         return np.column_stack(
@@ -251,8 +295,8 @@ class DemandModel:
     def truth(
         self, network: Network, timebase: Timebase, seed: int, calendar: DemandCalendar
     ) -> DemandSeries:
-        values = self._expectation(network, timebase, calendar)
-        times = self._times(timebase)
+        axis = self._axis(timebase, calendar)
+        values = self._expectation(network, calendar, axis)
         for zone in network.zones:
             columns = [
                 i
@@ -262,9 +306,7 @@ class DemandModel:
             factor = 1 + self._truth_noise(seed, zone.id, timebase.n_ticks)
             for event in calendar.events:
                 if event.zone_id == zone.id:
-                    active = np.array(
-                        [event.start <= local < event.end for local in times]
-                    )
+                    active = axis.active(event.start, event.end)
                     factor[active] *= event.multiplier
             values[:, columns] *= factor[:, None]
         for fire in calendar.fire_flows:
@@ -273,14 +315,14 @@ class DemandModel:
                 for i, junction in enumerate(network.junctions)
                 if junction.id == fire.junction_id
             )
-            active = np.array([fire.start <= local < fire.end for local in times])
+            active = axis.active(fire.start, fire.end)
             values[active, column] += fire.flow_m3s
         return self._series(network, timebase, values, EvidenceLabel.SIMULATION)
 
     def forecast(
         self, network: Network, timebase: Timebase, seed: int, calendar: DemandCalendar
     ) -> DemandSeries:
-        values = self._expectation(network, timebase, calendar)
+        values = self._expectation(network, calendar, self._axis(timebase, calendar))
         for zone in network.zones:
             columns = [
                 i

@@ -13,6 +13,7 @@ from test_demand_helpers import (
     GOLDEN_CALENDAR,
     GOLDEN_TIMEBASE,
     ROOT,
+    assert_same_series,
     model,
     network,
 )
@@ -36,11 +37,9 @@ def test_golden_hashes(path: str) -> None:
 @pytest.mark.parametrize("path", ["truth", "forecast"])
 def test_repeated_calls_seeds_and_separate_process(path: str, tmp_path: Path) -> None:
     generate = getattr(model(), path)
-    expected = generate(network(), GOLDEN_TIMEBASE, 7, GOLDEN_CALENDAR).content_hash()
-    assert (
-        generate(network(), GOLDEN_TIMEBASE, 7, GOLDEN_CALENDAR).content_hash()
-        == expected
-    )
+    first = generate(network(), GOLDEN_TIMEBASE, 7, GOLDEN_CALENDAR)
+    expected = first.content_hash()
+    assert_same_series(generate(network(), GOLDEN_TIMEBASE, 7, GOLDEN_CALENDAR), first)
     assert (
         generate(network(), GOLDEN_TIMEBASE, 8, GOLDEN_CALENDAR).content_hash()
         != expected

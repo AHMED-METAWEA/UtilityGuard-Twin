@@ -7,7 +7,13 @@ from datetime import UTC, date, datetime, timedelta
 
 import numpy as np
 import pytest
-from test_demand_helpers import GOLDEN_TIMEBASE, START, model, network
+from test_demand_helpers import (
+    GOLDEN_TIMEBASE,
+    START,
+    assert_same_series,
+    model,
+    network,
+)
 from ug_core.timebase import Timebase
 from ug_water.demand import DemandCalendar, FireFlow, SpecialEvent
 
@@ -145,9 +151,9 @@ def test_fire_adds_exact_flow_and_forecast_is_unaffected() -> None:
     )
     np.testing.assert_array_equal(changed.values[:120], normal.values[:120])
     np.testing.assert_array_equal(changed.values[144:], normal.values[144:])
-    assert (
-        demand.forecast(net, GOLDEN_TIMEBASE, 7, cal).content_hash()
-        == demand.forecast(net, GOLDEN_TIMEBASE, 7, DemandCalendar()).content_hash()
+    assert_same_series(
+        demand.forecast(net, GOLDEN_TIMEBASE, 7, cal),
+        demand.forecast(net, GOLDEN_TIMEBASE, 7, DemandCalendar()),
     )
 
 

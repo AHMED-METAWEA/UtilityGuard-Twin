@@ -13,6 +13,7 @@ import pytest
 from test_demand_helpers import (
     GOLDEN_CALENDAR,
     GOLDEN_TIMEBASE,
+    assert_same_series,
     expectation,
     model,
     network,
@@ -73,7 +74,7 @@ def test_forecast_order_and_truth_noise_access_are_independent() -> None:
     args = (network(), GOLDEN_TIMEBASE, 7, GOLDEN_CALENDAR)
     first = demand.forecast(*args)
     demand.truth(*args)
-    assert demand.forecast(*args).content_hash() == first.content_hash()
+    assert_same_series(demand.forecast(*args), first)
     with (
         patch.object(
             DemandModel, "truth", side_effect=AssertionError("truth accessed")
@@ -84,7 +85,7 @@ def test_forecast_order_and_truth_noise_access_are_independent() -> None:
             side_effect=AssertionError("truth noise accessed"),
         ),
     ):
-        assert demand.forecast(*args).content_hash() == first.content_hash()
+        assert_same_series(demand.forecast(*args), first)
 
 
 def test_forecast_call_graph_does_not_reach_truth_noise_and_imports_are_clean() -> None:

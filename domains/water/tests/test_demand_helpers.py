@@ -8,9 +8,9 @@ from pathlib import Path
 
 import numpy as np
 from numpy.typing import NDArray
-from ug_core.assumptions import load_assumptions, parse_assumptions
+from ug_core.assumptions import parse_assumptions
 from ug_core.timebase import Timebase
-from ug_water.demand import DemandCalendar, DemandModel
+from ug_water.demand import DemandCalendar, DemandModel, DemandSeries
 from ug_water.network.model import Network
 from ug_water.network.procedural import ProceduralCapitalProvider
 
@@ -29,10 +29,17 @@ def network() -> Network:
     return ProceduralCapitalProvider().build(1)
 
 
+@lru_cache(maxsize=1)
+def _default_model() -> DemandModel:
+    # Immutable baseline only; changed scenarios still parse detached input copies.
+    return DemandModel.from_file(ASSUMPTIONS)
+
+
 def model(**modes: float) -> DemandModel:
+    baseline = _default_model()
     if not modes:
-        return DemandModel.from_file(ASSUMPTIONS)
-    data = load_assumptions(ASSUMPTIONS).to_dict()
+        return baseline
+    data = baseline.assumptions.to_dict()
     for name, value in modes.items():
         data["assumptions"][name]["distribution"] = {
             "type": "triangular",
@@ -41,6 +48,15 @@ def model(**modes: float) -> DemandModel:
             "max": value,
         }
     return DemandModel(parse_assumptions(data))
+
+
+def assert_same_series(actual: DemandSeries, expected: DemandSeries) -> None:
+    """Stronger than equal rounded hashes, without repeatedly serializing arrays."""
+    assert actual.timebase == expected.timebase
+    assert actual.junction_ids == expected.junction_ids
+    assert actual.label is expected.label
+    assert actual.assumption_set_hash == expected.assumption_set_hash
+    np.testing.assert_array_equal(actual.values, expected.values)
 
 
 def expectation(
