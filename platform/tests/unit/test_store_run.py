@@ -6,6 +6,7 @@ import subprocess
 import sys
 from datetime import UTC, datetime
 
+import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
@@ -179,8 +180,8 @@ def test_reader_rechecks_after_open(tmp_path):
     store = RunStore(tmp_path)
     identifier = store.write(draft(store))
     reader = store.open(identifier)
-    (tmp_path / identifier / "truth.parquet").unlink()
-    with pytest.raises(StoreError):
+    (tmp_path / identifier / "expectation.parquet").unlink()
+    with pytest.raises(StoreError, match="run changed after open"):
         reader.read_table("expectation")
 
 
@@ -243,3 +244,66 @@ def test_symlink_output_is_refused(tmp_path):
     path.symlink_to(saved)
     with pytest.raises(StoreError, match="unsafe output"):
         store.open(identifier)
+
+
+@pytest.mark.parametrize("changed_content", [False, True])
+def test_reader_refuses_rewritten_file_after_open(tmp_path, changed_content):
+    store = RunStore(tmp_path)
+    identifier = store.write(draft(store))
+    reader = store.open(identifier)
+    path = tmp_path / identifier / "expectation.parquet"
+    before = path.stat()
+    table = pq.read_table(path)
+    if changed_content:
+        data = table.to_pydict()
+        data["expected_value"][0] += 1
+        table = pa.table(data, schema=table.schema)
+    pq.write_table(table, path)
+    os.utime(path, ns=(before.st_atime_ns, before.st_mtime_ns + 1_000_000))
+    with pytest.raises(StoreError, match="^run changed after open$"):
+        reader.read_table("expectation", ticks=(0, 1))
+
+
+def test_hash_once_per_write_and_no_hash_per_read(tmp_path, monkeypatch):
+    import ug_core.store.run as module
+
+    original = module.table_hash
+    calls = []
+
+    def track(table, key):
+        calls.append(key)
+        return original(table, key)
+
+    monkeypatch.setattr(module, "table_hash", track)
+    store = RunStore(tmp_path)
+    run = draft(store)
+    assert len(calls) == 2
+    identifier = store.write(run)
+    assert len(calls) == 2
+    reader = store.open(identifier)
+    assert len(calls) == 4
+    for _ in range(3):
+        reader.read_table("expectation", ticks=(0, 1))
+    assert len(calls) == 4
+
+    # Cached content must own its buffers; callers can mutate numpy-backed Arrow.
+    run = store.new(manifest())
+    write_truth(run, series())
+    source = np.array([1.0])
+    store.write_table(run, "detector_x", pa.table({"tick": [0], "value": source}))
+    source[0] = 99.0
+    assert run._tables["detector_x"]["value"].to_pylist() == [1.0]
+
+
+def test_reader_hashes_manifest_bytes_even_with_same_stat(tmp_path):
+    store = RunStore(tmp_path)
+    identifier = store.write(draft(store))
+    reader = store.open(identifier)
+    path = tmp_path / identifier / "manifest.json"
+    before = path.stat()
+    data = path.read_bytes()
+    path.write_bytes(data.replace(b'"seed":7', b'"seed":8'))
+    os.utime(path, ns=(before.st_atime_ns, before.st_mtime_ns))
+    assert path.stat().st_size == before.st_size
+    with pytest.raises(StoreError, match="^run changed after open$"):
+        reader.read_table("expectation")

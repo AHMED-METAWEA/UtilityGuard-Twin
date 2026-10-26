@@ -10,11 +10,9 @@ carries SIMULATION as its evidence label. These rows never enter RunReader.
 
 from __future__ import annotations
 
-from typing import Any
-
+import numpy as np
 import pyarrow as pa  # type: ignore[import-untyped]
 
-from ug_core.numeric import finite
 from ug_core.store.layout import StoreError, run_path
 from ug_core.store.run import RunDraft, RunStore
 from ug_core.store.tables import read_parquet
@@ -23,30 +21,39 @@ from ug_core.truth import TruthSeries
 
 def write_truth(run: RunDraft, series: TruthSeries) -> None:
     """Attach the simulation table to a draft; publication is RunStore.write()."""
-    data: dict[str, list[Any]] = {
-        "tick": [],
-        "element_id": [],
-        "quantity": [],
-        "value": [],
-        "fault_tag_hidden": [],
-    }
+    ticks = np.arange(series.timebase.n_ticks, dtype=np.int64)
+    parts = []
+    values_by_channel = []
+    tags_by_channel = []
     for channel, values in series.channels.items():
         quantity, separator, element = channel.partition(":")
         if not separator or not quantity or not element:
             raise StoreError(f"channel must be quantity:element_id: {channel!r}")
-        events = [event for event in series.events if event.target == element]
-        for tick, value in enumerate(values):
-            active = sorted(
-                event.kind
-                for event in events
-                if event.start_tick <= tick
-                and (event.end_tick is None or tick < event.end_tick)
+        parts.append((element, quantity))
+        values_by_channel.append(values)
+        tags = np.full(len(ticks), "", dtype=object)
+        for event in sorted(series.events, key=lambda event: event.kind):
+            if event.target != element:
+                continue
+            mask = (ticks >= event.start_tick) & (
+                ticks < (event.end_tick if event.end_tick is not None else len(ticks))
             )
-            data["tick"].append(tick)
-            data["element_id"].append(element)
-            data["quantity"].append(quantity)
-            data["value"].append(finite(value, channel))
-            data["fault_tag_hidden"].append("+".join(active) if active else None)
+            tags[mask] = np.where(
+                tags[mask] == "", event.kind, tags[mask] + "+" + event.kind
+            )
+        tags[tags == ""] = None
+        tags_by_channel.append(tags)
+    data = {
+        "tick": np.tile(ticks, len(parts)),
+        "element_id": np.repeat(
+            np.asarray([part[0] for part in parts], dtype=object), len(ticks)
+        ),
+        "quantity": np.repeat(
+            np.asarray([part[1] for part in parts], dtype=object), len(ticks)
+        ),
+        "value": np.asarray(values_by_channel, dtype=np.float64).reshape(-1),
+        "fault_tag_hidden": np.asarray(tags_by_channel, dtype=object).reshape(-1),
+    }
     schema = pa.schema(
         [
             ("tick", "int64", False),

@@ -9,6 +9,7 @@ is a verified no-op, including when two processes publish concurrently.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import shutil
@@ -17,6 +18,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pyarrow as pa  # type: ignore[import-untyped]
 
 from ug_core.canonical import canonical_json
@@ -33,41 +35,75 @@ class RunDraft:
     manifest: Manifest
     _tables: dict[str, pa.Table] = field(default_factory=dict, init=False, repr=False)
 
+    _validated: dict[str, tuple[pa.Table, str]] = field(
+        default_factory=dict, init=False, repr=False
+    )
+
     def _add(self, name: str, table: pa.Table) -> None:
         if name in self._tables:
             raise StoreError(f"duplicate output: {name}")
         prepared = prepare(name, table, internal=True)
-        table_hash(prepared, table_key(name, internal=True))
+        # Arrow can wrap a caller's mutable numpy buffers. Own the validated snapshot
+        # so caching its hash cannot publish later mutations of that input buffer.
+        prepared = prepared.take(np.arange(prepared.num_rows, dtype=np.int64))
+        digest = table_hash(prepared, table_key(name, internal=True))
         self._tables[name] = prepared
+        self._validated[name] = (prepared, digest)
 
 
 @dataclass(frozen=True)
 class RunReader:
-    """Verified manifest and non-privileged rows; every read re-verifies the files."""
+    """Verified snapshot; reads check manifest bytes and the requested file identity."""
 
     _store: RunStore = field(repr=False)
     _identifier: str
     manifest: Manifest
+    _records: dict[str, tuple[int, int, int]] = field(repr=False)
+    _manifest_hash: str = field(repr=False)
 
     def read_table(
         self, name: str, ticks: tuple[int, int] | None = None
     ) -> list[dict[str, Any]]:
         table_key(name)  # Refuse restricted names before looking at any file.
-        current = self._store.verify(self._identifier)
-        if current != self.manifest:
-            raise StoreError("run changed after open")
-        if name not in current.output_hashes:
+        if name not in self.manifest.output_hashes:
             raise StoreError(f"missing output: {name}")
+        directory = run_path(self._store.root, self._identifier)
+        path = directory / f"{name}.parquet"
+        manifest_path = directory / "manifest.json"
         try:
-            return query_rows(
-                run_path(self._store.root, self._identifier) / f"{name}.parquet",
-                name,
-                ticks,
-            )
+            if (
+                directory.is_symlink()
+                or _file_record(manifest_path) != self._records["manifest.json"]
+                or hashlib.sha256(manifest_path.read_bytes()).hexdigest()
+                != self._manifest_hash
+                or _file_record(path) != self._records[path.name]
+            ):
+                raise StoreError("run changed after open")
+        except (OSError, StoreError) as exc:
+            raise StoreError("run changed after open") from exc
+        try:
+            return query_rows(path, name, ticks)
         except StoreError:
             raise
         except Exception as exc:
             raise StoreError(f"cannot read {name}: {exc}") from exc
+
+
+def _file_record(path: Path) -> tuple[int, int, int]:
+    if path.is_symlink() or not path.is_file():
+        raise StoreError("run changed after open")
+    stat = path.stat()
+    return stat.st_size, stat.st_mtime_ns, stat.st_ino
+
+
+def _snapshot(directory: Path) -> tuple[dict[str, tuple[int, int, int]], str]:
+    records = {}
+    for path in directory.iterdir():
+        if path.is_symlink():
+            raise StoreError(f"unsafe output or manifest: {path.name}")
+        records[path.name] = _file_record(path)
+    digest = hashlib.sha256((directory / "manifest.json").read_bytes()).hexdigest()
+    return records, digest
 
 
 class RunStore:
@@ -97,8 +133,10 @@ class RunStore:
                 raise StoreError("missing required bundle")
             outputs = {}
             for name, table in run._tables.items():
-                prepare(name, table, internal=True)
-                outputs[name] = table_hash(table, table_key(name, internal=True))
+                validated, digest = run._validated[name]
+                if table is not validated:
+                    raise StoreError("draft changed after validation")
+                outputs[name] = digest
             manifest = run.manifest.with_output_hashes(outputs)
         except StoreError:
             raise
@@ -187,4 +225,15 @@ class RunStore:
             raise StoreError(f"cannot verify {identifier}: {exc}") from exc
 
     def open(self, identifier: str) -> RunReader:
-        return RunReader(self, identifier, self.verify(identifier))
+        directory = run_path(self.root, identifier)
+        try:
+            before = _snapshot(directory)
+            manifest = self.verify(identifier)
+            records, digest = _snapshot(directory)
+            if (records, digest) != before:
+                raise StoreError("run changed during open")
+            return RunReader(self, identifier, manifest, records, digest)
+        except StoreError:
+            raise
+        except OSError as exc:
+            raise StoreError(f"cannot open {identifier}: {exc}") from exc

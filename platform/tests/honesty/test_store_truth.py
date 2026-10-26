@@ -74,3 +74,44 @@ def test_platform_has_no_domain_or_reference_imports():
                 node.lineno,
                 target,
             )
+
+
+def test_consumer_writer_refuses_schema_truth_smuggling(tmp_path):
+    for carrier in ("schema", "field", "nested", "case", "nested_metadata"):
+        store = RunStore(tmp_path / "runs")
+        run = store.new(Manifest(config={}, seed=7, versions={"test": "1"}))
+        table = pa.table({"tick": [0], "sensor_id": ["a"]})
+        if carrier == "schema":
+            table = table.replace_schema_metadata({b"hidden": b"truth"})
+        elif carrier == "field":
+            table = pa.table(
+                {"tick": [0], "sensor_id": ["a"]},
+                schema=pa.schema(
+                    [
+                        pa.field("tick", pa.int64(), metadata={b"note": b"truth"}),
+                        pa.field("sensor_id", pa.string()),
+                    ]
+                ),
+            )
+        else:
+            child = pa.field(
+                "value" if carrier == "nested_metadata" else "Fault_Tag_Hidden",
+                pa.float64(),
+                metadata={b"note": b"truth"} if carrier == "nested_metadata" else None,
+            )
+            if carrier == "case":
+                table = pa.table(
+                    {"tick": [0], "sensor_id": ["a"], "Fault_Tag_Hidden": [None]}
+                )
+            else:
+                schema = pa.schema(
+                    list(table.schema)
+                    + [pa.field("support", pa.list_(pa.struct([child])))]
+                )
+                table = pa.table(
+                    {"tick": [0], "sensor_id": ["a"], "support": [None]}, schema=schema
+                )
+        with pytest.raises(StoreError):
+            store.write_table(run, "expectation", table)
+        assert not run._tables
+        assert not store.root.exists()

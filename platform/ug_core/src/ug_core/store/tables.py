@@ -12,6 +12,7 @@ from typing import Any
 
 import duckdb
 import pyarrow as pa  # type: ignore[import-untyped]
+import pyarrow.compute as pc  # type: ignore[import-untyped]
 import pyarrow.parquet as pq  # type: ignore[import-untyped]
 
 from ug_core.evidence import EvidenceLabel
@@ -41,17 +42,6 @@ def forbidden_column(name: str) -> bool:
     )
 
 
-def _check_nested(value: Any) -> None:
-    if isinstance(value, dict):
-        for name, item in value.items():
-            if forbidden_column(name):
-                raise StoreError(f"restricted column: {name!r}")
-            _check_nested(item)
-    elif isinstance(value, list):
-        for item in value:
-            _check_nested(item)
-
-
 def prepare(name: str, table: pa.Table, *, internal: bool = False) -> pa.Table:
     """Attach the evidence label, rejecting ambiguous or privileged schemas."""
     key = table_key(name, internal=internal)
@@ -71,7 +61,6 @@ def prepare(name: str, table: pa.Table, *, internal: bool = False) -> pa.Table:
         raise StoreError("invalid evidence label") from exc
     if name in {"truth", "expectation"} and label.decode() != DEFAULT_LABELS[name]:
         raise StoreError(f"{name} requires label {DEFAULT_LABELS[name]}")
-    data = table.to_pydict()
     if name != "truth":
         for column in names:
             if forbidden_column(column):
@@ -79,8 +68,6 @@ def prepare(name: str, table: pa.Table, *, internal: bool = False) -> pa.Table:
         # Inspect nested Arrow schemas too, including all-null/empty structs.
         for field in table.schema:
             _check_field(field)
-        for values in data.values():
-            _check_nested(values)
     else:
         expected = [
             ("tick", "int64"),
@@ -92,16 +79,16 @@ def prepare(name: str, table: pa.Table, *, internal: bool = False) -> pa.Table:
         if list(fields.items()) != expected:
             raise StoreError("invalid bundle schema")
         for column in names[:-1]:
-            if any(value is None for value in data[column]):
+            if table[column].null_count:
                 raise StoreError(f"null bundle value: {column}")
-    if any(type(tick) is not int or tick < 0 for tick in data["tick"]):
+    if table["tick"].null_count or pc.any(pc.less(table["tick"], 0)).as_py():
         raise StoreError("tick must be a non-negative integer")
-    return pa.table(
-        data, schema=pa.schema(list(table.schema), metadata={b"label": label})
-    )
+    return table.replace_schema_metadata({b"label": label})
 
 
 def _check_field(field: Any) -> None:
+    if field.metadata:
+        raise StoreError("only the evidence label schema metadata is supported")
     if forbidden_column(field.name):
         raise StoreError(f"restricted column: {field.name!r}")
     # Arrow DataType.num_fields/field are introspected in the API evidence probe.

@@ -1,12 +1,10 @@
 """Schema, content hashing, windows and privileged bundle rules."""
 
-import hashlib
 from datetime import UTC, datetime
 
 import pyarrow as pa
 import pytest
 from test_store_run import draft, manifest, series
-from ug_core.canonical import canonical_json
 from ug_core.store import RunStore, StoreError
 from ug_core.store.hashing import table_hash
 from ug_core.store.tables import prepare
@@ -22,14 +20,7 @@ def test_hash_is_canonical_content_not_file_bytes():
             {"tick": [1, 0], "sensor_id": ["b", "a"], "value": [1.23456789, -0.0]}
         ),
     )
-    payload = {
-        "columns": [[f.name, str(f.type), f.nullable] for f in table.schema],
-        "key": ["tick", "sensor_id"],
-        "label": "MODEL",
-        "rows": [[0, "a", 0], [1, "b", 1.234568]],
-    }
     digest = table_hash(table, ("tick", "sensor_id"))
-    assert digest == hashlib.sha256(canonical_json(payload).encode()).hexdigest()
     reordered = prepare(
         "expectation",
         pa.table({"tick": [0, 1], "sensor_id": ["a", "b"], "value": [0.0, 1.234568]}),
@@ -213,13 +204,13 @@ def test_nonfinite_values_never_written_or_replaced(tmp_path, value):
         )
     assert not run._tables
     assert not store.root.exists()
-    # Recheck at publication even if a caller tampers with the private draft.
+    # Refuse replacement of a privately cached, already validated table.
     write_truth(run, series())
     table = run._tables["truth"]
     data = table.to_pydict()
     data["value"][0] = value
     run._tables["truth"] = pa.table(data, schema=table.schema)
-    with pytest.raises(StoreError, match="finite"):
+    with pytest.raises(StoreError, match="draft changed after validation"):
         store.write(run)
     assert not store.root.exists()
 
@@ -251,16 +242,56 @@ def test_complete_draft_required_and_duplicate_outputs_rejected(tmp_path):
         write_truth(run, series())
 
 
-def test_numeric_detector_id_and_nested_float_hashing(tmp_path):
+def test_store_v1_refuses_nested_types(tmp_path):
     store = RunStore(tmp_path)
-    run = draft(store)
-    store.write_table(
-        run, "detector_1-v1", pa.table({"tick": [0], "residuals": [[1.23456789]]})
+    with pytest.raises(StoreError, match="unsupported store-v1 type"):
+        store.write_table(
+            store.new(manifest()),
+            "detector_1-v1",
+            pa.table({"tick": [0], "residuals": [[1.23456789]]}),
+        )
+
+
+def test_store_v1_golden_all_scalar_types():
+    # Change this digest ONLY when introducing a new hash version.
+    table = prepare(
+        "detector_x",
+        pa.table(
+            {
+                "tick": [2, 0, 1],
+                "text": [None, "é", ""],
+                "value": [1.23456789, -0.0, -2.5],
+                "flag": [True, False, True],
+            }
+        ),
     )
-    identifier = store.write(run)
-    assert store.open(identifier).read_table("detector_1-v1") == [
-        {"tick": 0, "residuals": [1.23456789]}
-    ]
-    left = prepare("detector_x", pa.table({"tick": [0], "residuals": [[1.23456789]]}))
-    right = prepare("detector_x", pa.table({"tick": [0], "residuals": [[1.234568]]}))
-    assert table_hash(left, ("tick",)) == table_hash(right, ("tick",))
+    assert (
+        table_hash(table, ("tick",))
+        == "e6ef31a0f1b169edee33674787cf1ea8a828d40a9c67a17148722a50175a6f53"
+    )
+
+
+@pytest.mark.parametrize("value", [9e12 + 1, -9e12 - 1])
+def test_store_v1_refuses_float_overflow(tmp_path, value):
+    with pytest.raises(StoreError, match="9e12"):
+        RunStore(tmp_path).write_table(
+            RunStore(tmp_path).new(manifest()),
+            "detector_x",
+            pa.table({"tick": [0], "value": [value]}),
+        )
+
+
+def test_store_v1_is_columnar(monkeypatch):
+    # Old row canonicalisation calls canonical_json once per row plus a header.
+    import ug_core.store.hashing as hashing
+
+    original = hashing.canonical_json
+    calls = []
+
+    def track(value):
+        calls.append(value)
+        return original(value)
+
+    monkeypatch.setattr(hashing, "canonical_json", track)
+    table_hash(prepare("detector_x", pa.table({"tick": [2, 0, 1]})), ("tick",))
+    assert len(calls) == 1
