@@ -22,6 +22,8 @@ from ug_core.timebase import Timebase
 from ug_water.demand import DemandCalendar, DemandModel
 from ug_water.network.model import Zone
 
+START_FOUR_WEEKS = GOLDEN_TIMEBASE.start
+
 
 @pytest.mark.parametrize(
     "parameter,path,other",
@@ -204,3 +206,30 @@ def test_exact_named_stream_first_draw_and_shared_noise_within_zone() -> None:
     # Moving the time axis does not consume any prior realization.
     shifted = replace(tb, start=tb.start + timedelta(days=1))
     assert demand.forecast(net, shifted, 7, DemandCalendar()).timebase == shifted
+
+
+def test_forecast_error_is_uncorrelated_with_the_truth_noise() -> None:
+    """P-08, by behaviour: the forecast error is not a rescaled truth noise (lead review).
+
+    Over four weeks the effective sample of two AR(1) series with phi 0.75 and 0.85 is about
+    1,800, so the sample correlation of independent series has a standard deviation of about
+    0.024; a forecast drawn from the truth's stream would give 1.
+    """
+    demand = model()
+    tb = Timebase(START_FOUR_WEEKS, 300, 4 * 7 * 24 * 12)
+    calendar = DemandCalendar()
+    net = network()
+    expected = expectation(demand, tb, calendar)
+    with np.errstate(
+        invalid="ignore"
+    ):  # zero-demand junctions give 0/0; not used below
+        truth = demand.truth(net, tb, 7, calendar).values / expected - 1
+        forecast = demand.forecast(net, tb, 7, calendar).values / expected - 1
+    for zone in net.zones:
+        column = next(
+            i
+            for i, j in enumerate(net.junctions)
+            if j.zone == zone.id and j.base_demand
+        )
+        r = np.corrcoef(truth[:, column], forecast[:, column])[0, 1]
+        assert abs(r) < 0.1, f"zone {zone.id}: truth noise and forecast error r={r:.3f}"

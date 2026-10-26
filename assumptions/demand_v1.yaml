@@ -3,6 +3,8 @@
 # Linear interpolation wraps between h23 and h00; sigma is stationary AR(1) SD,
 # phi is lag-one correlation per hydraulic tick (not per hour).
 # Calendar event multipliers and fire flows are explicit scenario ASSUMPTION inputs.
+# utc_offset_hours is ONE fixed offset for the whole run: summer time is not modelled
+# (Egypt has used UTC+3 in summer since 2023); use mode 3 for a summer scenario.
 set_id: demand_v1
 parent: null
 note: "Synthetic placeholder demand factors, not ACUD data. Provider base demands remain unchanged; all inputs are unverified."
