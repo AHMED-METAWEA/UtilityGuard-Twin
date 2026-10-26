@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import subprocess
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -54,3 +55,27 @@ def test_a_failed_fetch_exits_1(
     assert main(["fetch-geometry", "--refresh", "--cache", str(tmp_path)]) == 1
     assert "HTTP 502" in capsys.readouterr().err
     assert not (tmp_path / "capital").exists()
+
+
+def test_the_default_cache_is_at_the_top_of_the_repository(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo = tmp_path / "repo"
+    (repo / "platform").mkdir(parents=True)
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    (repo / ".gitignore").write_text("/data/\n")
+    monkeypatch.chdir(repo / "platform")
+    assert main(["fetch-geometry", "--offline"]) == 1
+    assert f"in {repo.resolve() / 'data' / 'geometry'};" in capsys.readouterr().err
+
+
+def test_a_cache_git_could_commit_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    monkeypatch.setattr(F.Overpass, "query", FakeOverpass().query)
+    assert main(["fetch-geometry", "--refresh", "--cache", str(repo / "cache")]) == 1
+    assert "does not ignore it" in capsys.readouterr().err
+    assert not (repo / "cache").exists()

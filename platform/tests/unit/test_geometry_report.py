@@ -8,7 +8,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-from geometry_fixtures import LAT0, LON0, STEP, FakeOverpass
+from geometry_fixtures import (
+    LAT0,
+    LON0,
+    STEP,
+    STUDY_BOX,
+    FakeOverpass,
+    stat,
+    stats_answer,
+)
 from ug_core.geometry import fetch as F
 from ug_core.geometry import report as R
 
@@ -84,7 +92,11 @@ def test_landmarks_grid_and_mapped_features(extract: Path) -> None:
     }
     assert marks["Green River"] == {"found": False}
     grid = report["grid"]
-    assert grid["cells"] > 300 and grid["cells_with_any_road"] == 2
+    # The study box spans 0.11 degree of latitude (12.2 cells of 1 km at 111.32 km a degree)
+    # and 0.14 degree of longitude (13.5 cells at 29.975 N): 13 x 14 cells. The street grid
+    # straddles the boundary of rows 8 and 9 (at 30.00085 N) and of columns 3 and 4 (at
+    # 31.70148 E), so it lies in four cells; the road under construction lies in a fifth.
+    assert grid["cells"] == 13 * 14 and grid["cells_with_any_road"] == 5
     assert report["mapped_features"]["highway"]["residential"] == {"km": 0.6, "ways": 6}
     assert report["mapped_features"]["buildings"]["all"] == {"relations": 1, "ways": 12}
     assert report["mapped_features"]["water_infrastructure"] == {
@@ -103,8 +115,22 @@ def test_the_report_names_its_source_labels_and_formulas(extract: Path) -> None:
         "counts": "OBSERVED",
         "derived": "CALCULATED",
         "study_area": "ASSUMPTION",
+        "mapped_features": {
+            "ways": "OBSERVED",
+            "relations": "OBSERVED",
+            "n": "OBSERVED",
+            "km": "CALCULATED",
+        },
     }
     assert report["area"]["label"] == "ASSUMPTION" and "junction" in report["formulas"]
+    assert "sum(length())" in report["formulas"]["mapped_km"]
+    assert report["area"]["anchor"]["source"].startswith("Wikidata")
+    south, west, north, east = STUDY_BOX
+    assert report["study_box"]["bbox"] == {
+        "south": south, "west": west, "north": north, "east": east
+    }  # fmt: skip
+    assert report["study_box"]["label"] == "ASSUMPTION"
+    assert "Green River" not in report["study_box"]["landmarks_found"]
 
 
 def test_the_report_is_identical_byte_for_byte(extract: Path) -> None:
@@ -115,6 +141,19 @@ def test_the_report_is_identical_byte_for_byte(extract: Path) -> None:
     assert json.loads(first[0])["schema_version"] == "1"
     markdown = first[1].decode()
     assert "© OpenStreetMap contributors" in markdown and "ODbL-1.0" in markdown
+    assert "residential km=0.6 (CALCULATED) ways=6 (OBSERVED)" in markdown
+    assert "Study box (ASSUMPTION): south 29.92, west 31.66, north 30.03" in markdown
+    assert "km is CALCULATED, computed by Overpass" in markdown
+
+
+def test_a_statistic_the_report_does_not_know_is_refused(tmp_path: Path) -> None:
+    answer = stats_answer()
+    answer["elements"].append(stat("highway", "track", ways=1, metres=5))
+    extract = F.fetch_area(
+        F.load_area("capital"), tmp_path, FakeOverpass({"stats_v1": answer}), NOW
+    )  # type: ignore[arg-type]
+    with pytest.raises(F.FetchError, match="unknown field 'metres'"):
+        R.coverage_report(extract, F.load_area("capital"))
 
 
 def test_a_tampered_extract_gives_no_report(extract: Path) -> None:

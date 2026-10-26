@@ -7,7 +7,10 @@ gives the same report, byte for byte.
 
 Labels: counts of mapped features are `OBSERVED` (what OpenStreetMap contributors have mapped,
 not the ground); lengths, junctions, components and shares computed from them are
-`CALCULATED` (the formulas are written into the report); the study area is an `ASSUMPTION`.
+`CALCULATED` (the formulas are written into the report), and so are the kilometres Overpass
+sums per highway class; the study box is an `ASSUMPTION` placed at fetch time and read from the
+extract's provenance. Every statistic of `mapped_features` has its own label; a statistic the
+report does not know is refused, not guessed.
 
 Street-graph rules: road segments are the consecutive node pairs of each way; a junction is a
 node with three or more distinct neighbours; a dead end has one; components are connected sets
@@ -25,7 +28,16 @@ from pathlib import Path
 from typing import Any
 
 from ug_core.canonical import canonical_json
-from ug_core.geometry.fetch import Area, FetchError, verify_extract
+from ug_core.geometry.fetch import (
+    KM_PER_DEG_LAT,
+    LANDMARKS,
+    ROADS,
+    STATS,
+    Area,
+    FetchError,
+    landmark_positions,
+    verify_extract,
+)
 
 REPORT_SCHEMA_VERSION = "1"
 EARTH_RADIUS_KM = 6371.0088
@@ -44,6 +56,14 @@ FORMULAS = {
     "component": "connected set of segments (union-find)",
     "grid": "segments assigned to square cells by their midpoint",
     "landmark_road_km": "length of segments whose midpoint lies within the radius",
+    "landmark_position": "the feature of that name nearest the anchor",
+    "mapped_km": "computed by Overpass: sum(length()) / 1000 over the ways of the class",
+}
+STAT_LABELS = {
+    "ways": "OBSERVED",
+    "relations": "OBSERVED",
+    "n": "OBSERVED",
+    "km": "CALCULATED",
 }
 
 
@@ -139,6 +159,10 @@ def _stats(data: dict[str, Any]) -> dict[str, dict[str, dict[str, Any]]]:
             continue
         numbers: dict[str, Any] = {}
         for key, raw in sorted(tags.items()):
+            if key not in STAT_LABELS:
+                raise FetchError(
+                    f"statistic {group}/{value} has an unknown field {key!r}"
+                )
             number = float(raw)
             numbers[key] = round(number, 1) if key == "km" else int(round(number))
         groups[group][value or "(none)"] = numbers
@@ -150,7 +174,7 @@ def _stats(data: dict[str, Any]) -> dict[str, dict[str, dict[str, Any]]]:
 def coverage_report(extract: Path, area: Area) -> dict[str, Any]:
     """Compute the report of a verified extract. Raises `FetchError` if the extract is not intact."""
     provenance = verify_extract(extract, area)
-    roads = _ways(_load(extract, "roads_v1"))
+    roads = _ways(_load(extract, ROADS))
     built = [w for w in roads if (w.get("tags") or {}).get("highway") != "construction"]
     main = [w for w in roads if (w.get("tags") or {}).get("highway") in MAIN_STREETS]
     all_segs, built_segs, main_segs = segments(roads), segments(built), segments(main)
@@ -158,10 +182,13 @@ def coverage_report(extract: Path, area: Area) -> dict[str, Any]:
     total_km = math.fsum(km for _, _, km, _ in all_segs)
     construction_km = total_km - math.fsum(km for _, _, km, _ in built_segs)
 
-    south, west, north, east = area.bbox
-    cell_lat = area.grid_cell_m / 1000 / 111.0
+    study = provenance["study_box"]
+    south, west, north, east = (float(v) for v in study["bbox"])
+    cell_lat = area.grid_cell_m / 1000 / KM_PER_DEG_LAT
     cell_lon = (
-        area.grid_cell_m / 1000 / (111.32 * math.cos(math.radians((south + north) / 2)))
+        area.grid_cell_m
+        / 1000
+        / (KM_PER_DEG_LAT * math.cos(math.radians((south + north) / 2)))
     )
     rows, cols = (
         math.ceil((north - south) / cell_lat),
@@ -177,15 +204,11 @@ def coverage_report(extract: Path, area: Area) -> dict[str, Any]:
                 )
             ] += km
 
-    marks = _load(extract, "landmarks_v1")["elements"]
+    positions = landmark_positions(_load(extract, LANDMARKS), area)
     landmarks: dict[str, Any] = {}
     radius_km = area.landmark_radius_m / 1000
     for name in area.landmarks:
-        found = sorted(
-            (e for e in marks if (e.get("tags") or {}).get("name:en") == name),
-            key=lambda e: (str(e.get("type")), int(e.get("id", 0))),
-        )
-        position = next((_position(e) for e in found if _position(e) is not None), None)
+        position = positions.get(name)
         if position is None:
             landmarks[name] = {"found": False}
             continue
@@ -201,8 +224,18 @@ def coverage_report(extract: Path, area: Area) -> dict[str, Any]:
             "version": area.version,
             "label": area.label,
             "note": area.note,
-            "bbox": {"south": south, "west": west, "north": north, "east": east},
+            "anchor": {
+                "lat": area.anchor[0],
+                "lon": area.anchor[1],
+                "source": area.anchor_source,
+            },
             "sha256": area.sha256,
+        },
+        "study_box": {
+            "bbox": {"south": south, "west": west, "north": north, "east": east},
+            "label": study["label"],
+            "method": study["method"],
+            "landmarks_found": study["landmarks_found"],
         },
         "source": {
             key: provenance.get(key)
@@ -220,6 +253,7 @@ def coverage_report(extract: Path, area: Area) -> dict[str, Any]:
             "counts": "OBSERVED",
             "derived": "CALCULATED",
             "study_area": "ASSUMPTION",
+            "mapped_features": STAT_LABELS,
         },
         "formulas": FORMULAS,
         "streets": {
@@ -238,23 +272,13 @@ def coverage_report(extract: Path, area: Area) -> dict[str, Any]:
             "cells_with_at_least_10_km": sum(1 for v in cell_km.values() if v >= 10),
         },
         "landmarks": {"radius_m": area.landmark_radius_m, "by_name": landmarks},
-        "mapped_features": _stats(_load(extract, "stats_v1")),
+        "mapped_features": _stats(_load(extract, STATS)),
     }
-
-
-def _position(element: dict[str, Any]) -> tuple[float, float] | None:
-    center = element.get("center") or (
-        {"lat": element["lat"], "lon": element["lon"]}
-        if "lat" in element and "lon" in element
-        else None
-    )
-    if not center:
-        return None
-    return float(center["lat"]), float(center["lon"])
 
 
 def render_markdown(report: dict[str, Any]) -> str:
     src, streets, grid = report["source"], report["streets"], report["grid"]
+    box = report["study_box"]["bbox"]
     lines = [
         f"# Geometry coverage report: {report['area']['name']} (area version {report['area']['version']})",
         "",
@@ -262,6 +286,10 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"{src['osm_base']}, retrieved {src['retrieved']}. Counts are OBSERVED (what OpenStreetMap "
         "holds, not the ground); lengths, junctions and shares are CALCULATED; the study area is an "
         "ASSUMPTION.",
+        "",
+        f"Study box (ASSUMPTION): south {box['south']}, west {box['west']}, north {box['north']}, "
+        f"east {box['east']}; {report['study_box']['method']}; landmarks used: "
+        f"{', '.join(report['study_box']['landmarks_found'])}.",
         "",
         "| Road set | Ways | Length (km) | Junctions | Dead ends | Components | Largest component (length share) |",
         "|---|---|---|---|---|---|---|",
@@ -292,10 +320,16 @@ def render_markdown(report: dict[str, Any]) -> str:
             else "not found in the extract"
         )
         lines.append(f"- {name}: {text}")
-    lines += ["", "Mapped features (OBSERVED):", ""]
+    labels = report["labels"]["mapped_features"]
+    lines += [
+        "",
+        "Mapped features: counts (ways, relations, n) are OBSERVED; km is CALCULATED, "
+        f"{report['formulas']['mapped_km']}.",
+        "",
+    ]
     for group, values in report["mapped_features"].items():
         parts = ", ".join(
-            f"{value} " + " ".join(f"{k}={v}" for k, v in numbers.items())
+            f"{value} " + " ".join(f"{k}={v} ({labels[k]})" for k, v in numbers.items())
             for value, numbers in values.items()
         )
         lines.append(f"- {group}: {parts}")

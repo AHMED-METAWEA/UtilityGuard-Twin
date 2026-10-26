@@ -1,8 +1,9 @@
 """`ug fetch-geometry`: fetch, cache and report the public street geometry of a study area.
 
 OpenStreetMap data is © OpenStreetMap contributors under the ODbL 1.0. It is stored only in the
-local cache (default `data/geometry/`, git-ignored; owner decision G2) and never in the repository.
-Without `--refresh`, a complete cached extract is used and nothing is fetched.
+local cache (default `data/geometry/` at the top of the repository, git-ignored; owner decision
+G2) and never in the repository: a cache that git does not ignore is refused before anything is
+written. Without `--refresh`, a complete cached extract is used and nothing is fetched.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from ug_core.geometry.fetch import (
     ATTRIBUTION,
     FetchError,
     Overpass,
+    default_cache,
     fetch_area,
     latest_extract,
     load_area,
@@ -32,7 +34,13 @@ def add_parser(commands: argparse._SubParsersAction[argparse.ArgumentParser]) ->
     parser.add_argument(
         "--area", default="capital", help="area name (default: capital)"
     )
-    parser.add_argument("--cache", type=Path, default=Path("data/geometry"))
+    parser.add_argument(
+        "--cache",
+        type=Path,
+        default=None,
+        help="cache folder, git-ignored or outside any repository "
+        "(default: data/geometry at the top of the repository)",
+    )
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--refresh", action="store_true", help="fetch a new extract")
     group.add_argument(
@@ -46,17 +54,18 @@ def add_parser(commands: argparse._SubParsersAction[argparse.ArgumentParser]) ->
 def run(args: argparse.Namespace) -> int:
     try:
         area = load_area(args.area)
-        extract = None if args.refresh else latest_extract(area, args.cache)
+        cache = args.cache if args.cache is not None else default_cache()
+        extract = None if args.refresh else latest_extract(area, cache)
         if extract is None:
             if args.offline:
                 print(
-                    f"ug fetch-geometry: no complete cached extract of {area.name} in {args.cache}; "
+                    f"ug fetch-geometry: no complete cached extract of {area.name} in {cache}; "
                     "run without --offline to fetch one",
                     file=sys.stderr,
                 )
                 return 1
             extract = fetch_area(
-                area, args.cache, Overpass(area.endpoint), datetime.now(UTC)
+                area, cache, Overpass(area.endpoint), datetime.now(UTC)
             )
         record = verify_extract(extract, area)
     except FetchError as exc:

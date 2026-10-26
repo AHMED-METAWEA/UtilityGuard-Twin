@@ -8,8 +8,21 @@ import json
 from typing import Any
 
 BASE = "2026-10-26T10:24:21Z"
-# A 3 x 3 grid of nodes 0.001 degrees apart inside the capital study box.
+# A 3 x 3 grid of nodes 0.001 degrees apart near the anchor of the capital area file.
 LAT0, LON0, STEP = 30.0, 31.70, 0.001
+# Six of the nine landmarks (the area asks for at least six); "Green River" and two more are
+# missing. The study box is their bounding box (29.95..30.001 N, 31.70..31.76 E) plus 3 km,
+# rounded outward to 0.01 degree: 3 km is 0.02695 degree of latitude and, at 29.975 N,
+# 0.03111 degree of longitude.
+LANDMARKS = {
+    "Central Business District": (LAT0 + STEP, LON0 + STEP),  # the centre of the grid
+    "Governmental District": (29.95, 31.76),
+    "Arts and Culture City": (29.98, 31.72),
+    "The Iconic Tower": (29.99, 31.74),
+    "Capital Presidential Palace": (29.96, 31.70),
+    "Egypt International Olympic City": (29.97, 31.75),
+}
+STUDY_BOX = (29.92, 31.66, 30.03, 31.80)
 
 
 def node_id(row: int, col: int) -> int:
@@ -68,10 +81,25 @@ def stats_answer() -> dict[str, Any]:
         "elements": [
             stat("highway", "residential", ways=6, km=0.6489),
             stat("highway", "service", ways=1, km=0.111),
-            stat("buildings", "all", ways=12, relations=1),
             stat("landuse", "residential", ways=2),
+            stat("buildings", "all", ways=12, relations=1),
+            stat("buildings", "with_levels", ways=0),
+            stat("names", "named_highways", ways=3),
+            stat("freshness", "highways_edited_last_year", ways=5),
+            stat("freshness", "highways_edited_last_two_years", ways=8),
+            stat("amenity", "office_government", n=0),
             stat("water_infrastructure", "water_tower", n=1),
         ],
+    }
+
+
+def landmark(element_id: int, name: str, lat: float, lon: float) -> dict[str, Any]:
+    return {
+        "type": "node",
+        "id": element_id,
+        "lat": lat,
+        "lon": lon,
+        "tags": {"name:en": name},
     }
 
 
@@ -80,13 +108,8 @@ def landmarks_answer() -> dict[str, Any]:
         "version": 0.6,
         "osm3s": {"timestamp_osm_base": BASE},
         "elements": [
-            {
-                "type": "node",
-                "id": 7,
-                "lat": LAT0 + STEP,
-                "lon": LON0 + STEP,
-                "tags": {"name:en": "Central Business District"},
-            },
+            landmark(7 + i, name, lat, lon)
+            for i, (name, (lat, lon)) in enumerate(LANDMARKS.items())
         ],
     }
 

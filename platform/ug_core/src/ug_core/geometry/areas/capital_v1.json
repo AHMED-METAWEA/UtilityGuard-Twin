@@ -3,8 +3,15 @@
   "version": "1",
   "name": "New Administrative Capital, study box",
   "label": "ASSUMPTION",
-  "note": "OpenStreetMap holds no boundary for the capital (feasibility test T-B1-003). This box is drawn around the OSM features that name the capital or its masterplan districts. It probably takes in some ground next to the capital and leaves out the far east of the masterplan. Only the box and the landmark names are stored here; landmark positions are read from the cached extract.",
-  "bbox": {"south": 29.87, "west": 31.61, "north": 30.07, "east": 31.8},
+  "note": "OpenStreetMap holds no boundary for the capital (feasibility test T-B1-003), and no OSM-derived geometry is stored in git (decision G2). This file holds only an anchor point from Wikidata (CC0), a search half-width, a margin and the names of masterplan landmarks. At fetch time the landmarks are searched within the half-width of the anchor, and the study box is their bounding box plus the margin; that box is stored only in the git-ignored cache. The landmark names are spelled as their name:en tags in OpenStreetMap so that the query matches them; no position is stored. The box is an approximation: it may take in ground next to the capital and leave out parts of the masterplan that no landmark marks.",
+  "anchor": {
+    "lat": 30.033694,
+    "lon": 31.755056,
+    "source": "Wikidata Q19588497 (The New Capital), property P625, CC0; read 2026-10-26, entity modified 2026-10-10"
+  },
+  "search_half_width_deg": 0.2,
+  "study_margin_km": 3,
+  "min_landmarks": 6,
   "landmarks": [
     "Central Business District",
     "Governmental District",
@@ -18,6 +25,5 @@
   ],
   "landmark_radius_m": 1500,
   "grid_cell_m": 1000,
-  "queries": ["roads_v1", "stats_v1", "landmarks_v1"],
   "endpoint": "https://overpass-api.de/api/interpreter"
 }
