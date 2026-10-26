@@ -1,0 +1,63 @@
+{
+  "version": "procedural_capital_v1",
+  "label": "ASSUMPTION",
+  "note": "Every value is a synthetic placeholder for the F0 fallback, not ACUD or surveyed city data. SI units unless named otherwise.",
+  "targets": {"junctions": 260, "pipes": 340},
+  "districts": [
+    {"id": "government", "name": "Government cluster", "land_use": "government", "center_m": [0, 3800], "area_ha": 320, "aspect": 1.4, "planned": true},
+    {"id": "business", "name": "Central business district", "land_use": "business", "center_m": [3200, 2900], "area_ha": 280, "aspect": 0.9, "planned": true},
+    {"id": "diplomatic", "name": "Diplomatic area", "land_use": "diplomatic", "center_m": [4900, 700], "area_ha": 220, "aspect": 1.2, "planned": true},
+    {"id": "residential_inner", "name": "Inner residential ring", "land_use": "residential", "center_m": [4300, -2200], "area_ha": 400, "aspect": 1.1, "planned": false},
+    {"id": "residential_outer", "name": "Outer residential ring", "land_use": "residential", "center_m": [1600, -3800], "area_ha": 480, "aspect": 1.5, "planned": false},
+    {"id": "green", "name": "Green corridor", "land_use": "green", "center_m": [-2000, -3600], "area_ha": 180, "aspect": 2.0, "planned": false},
+    {"id": "medical", "name": "Medical cluster", "land_use": "medical", "center_m": [-4400, -1400], "area_ha": 150, "aspect": 1.0, "planned": true},
+    {"id": "education", "name": "Education cluster", "land_use": "education", "center_m": [-4700, 1400], "area_ha": 240, "aspect": 1.3, "planned": true},
+    {"id": "sports", "name": "Sports cluster", "land_use": "sports", "center_m": [-2900, 3500], "area_ha": 260, "aspect": 1.1, "planned": true}
+  ],
+  "layout": {"center_jitter_m": 75},
+  "streets": {"irregularity_fraction": 0.06, "valve_pipe_fraction": 0.99},
+  "topology": {
+    "ring": ["government", "business", "diplomatic", "residential_inner", "residential_outer", "green", "medical", "education", "sports"],
+    "radials": [
+      {"zone": "government", "station": "station_north"},
+      {"zone": "business", "station": "station_north"},
+      {"zone": "diplomatic", "station": "station_east"},
+      {"zone": "residential_inner", "station": "station_east"},
+      {"zone": "residential_outer", "station": "station_east"},
+      {"zone": "green", "station": "station_west"},
+      {"zone": "medical", "station": "station_west"},
+      {"zone": "education", "station": "station_west"},
+      {"zone": "sports", "station": "station_north"}
+    ]
+  },
+  "terrain": {"base_m": 110, "slope_x": 0.0008, "slope_y": 0.0012, "amplitude_m": 3, "wavelength_m": 8000},
+  "diameters_m": {"transmission": [0.6, 0.7, 0.8], "submain": [0.25, 0.3, 0.35], "distribution": [0.1, 0.15, 0.2]},
+  "roughness_c": {"new": 140, "middle": 125, "old": 110},
+  "pipe_minor_loss": 0,
+  "demands": {
+    "m3_s_per_ha": {"government": 0.000015, "business": 0.000025, "diplomatic": 0.000012, "residential": 0.00003, "green": 0.000006, "medical": 0.000035, "education": 0.00002, "sports": 0.00001},
+    "junction_weight_range": [0.8, 1.2]
+  },
+  "equipment": {
+    "source": {"offset_m": [-100, 100], "head_above_terrain_m": 40},
+    "stations": [
+      {"id": "station_north", "offset_m": [0, 60], "zone": "government"},
+      {"id": "station_east", "offset_m": [60, 0], "zone": "diplomatic"},
+      {"id": "station_west", "offset_m": [-60, 0], "zone": "education"}
+    ],
+    "pump": {"duty": 2, "standby": 1, "curve": [[0, 45], [0.04, 36], [0.08, 15]], "efficiency": 0.78},
+    "tanks": [
+      {"id": "tank_north", "zones": ["government", "business", "sports"], "elevated": true},
+      {"id": "tank_east", "zones": ["diplomatic", "residential_inner", "residential_outer"], "elevated": false},
+      {"id": "tank_west", "zones": ["green", "medical", "education"], "elevated": false}
+    ],
+    "tank": {"offset_m": [20, 20], "elevated_height_m": 18, "init_level_m": 4, "min_level_m": 0.5, "max_level_m": 8, "diameter_m": 20},
+    "valves": {"isolation": 30, "prv": 2, "prv_setting_m": 25, "isolation_setting": 0}
+  },
+  "sensors": {
+    "coverage_hops": 3,
+    "S_sparse": {"pressure": 24, "flow": 5, "level": 2},
+    "S_base": {"pressure": 48, "flow": 10, "level": 3},
+    "S_dense": {"pressure": 72, "flow": 12, "level": 3}
+  }
+}
