@@ -33,3 +33,22 @@ jobs:
       # The browser test (make test-browser) needs Chromium and its system libraries.
       - run: make frontend-install && cd frontend && npx playwright install --with-deps chromium
       - run: make ci
+
+  # T-B1-001: build the image and run it as `make up` does, then check the running container:
+  # its hardening (deploy/check_container.sh) and what it serves (deploy/smoke.sh).
+  container:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+      - run: make up
+      - run: make up-wait
+      - run: make container-check
+      - run: make smoke
+      - if: failure()
+        run: docker compose -f deploy/docker-compose.yml logs --no-color
+      - if: always()
+        run: make down
