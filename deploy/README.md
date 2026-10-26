@@ -35,7 +35,7 @@ and MIME sniffing. Documentation/OpenAPI routes are disabled.
 The container serves local files and health only. It makes no outbound network
 requests at run time and has no write path to equipment. It runs with a read-only
 root filesystem, temporary `/tmp`, dropped capabilities and no privilege gain.
-It has no application volumes, secrets or external networks. These settings do
+It has no application volumes, secrets or external networks. The image keeps no packaging tools: `pip`, `setuptools` and `wheel` are removed after the install (they carried known vulnerabilities and are not needed at run time; `make audit-image` audits what is left). These settings do
 not enforce an outbound firewall; offline behavior is checked by the smoke gate
 and the shell CSP. Everything is advisory only: a human approves every action.
 This virtual twin is not ACUD data or a survey of any real network and is not

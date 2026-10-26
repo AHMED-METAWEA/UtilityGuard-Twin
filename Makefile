@@ -15,8 +15,16 @@ help:
 	@echo "make install       create $(VENV) with $(PYTHON) and install every package in editable mode"
 	@echo "make check-layout  verify the repository layout against Master Spec section 14"
 
+# The interpreter's bundled pip and setuptools carry known vulnerabilities (task T-B1-002, found by
+# `make audit-python`): pip is upgraded to a fixed release that is at least 14 days old, and
+# setuptools, which nothing here needs at run or test time (package builds use an isolated build
+# environment), is removed.
+PIP_VERSION := 26.2.1
+
 $(VPY):
 	$(PYTHON) -m venv $(VENV)
+	$(VPY) -m pip install --disable-pip-version-check --quiet "pip==$(PIP_VERSION)"
+	$(VPY) -m pip uninstall --disable-pip-version-check --quiet --yes setuptools
 
 install: $(VPY)
 	$(VPY) -m pip install --disable-pip-version-check --quiet $(addprefix -e ,$(PACKAGES))
