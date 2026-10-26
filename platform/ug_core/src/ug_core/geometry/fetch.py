@@ -63,6 +63,37 @@ REQUIRED_STATS = frozenset(
         ("amenity", "office_government"),
     }
 )
+# The fields each statistic of `stats_v1` carries, by (group, value); `None` stands for every
+# value of the group. A statistic without its fields, or one not listed, is refused.
+STAT_FIELDS: dict[tuple[str, str | None], frozenset[str]] = {
+    ("highway", None): frozenset({"ways", "km"}),
+    ("landuse", None): frozenset({"ways"}),
+    ("buildings", "all"): frozenset({"ways", "relations"}),
+    ("buildings", "with_levels"): frozenset({"ways"}),
+    ("names", "named_highways"): frozenset({"ways"}),
+    ("freshness", "highways_edited_last_year"): frozenset({"ways"}),
+    ("freshness", "highways_edited_last_two_years"): frozenset({"ways"}),
+    ("amenity", None): frozenset({"n"}),
+    ("leisure", None): frozenset({"n"}),
+    ("water_infrastructure", None): frozenset({"n"}),
+}
+COUNT_FIELDS = frozenset({"ways", "relations", "n"})
+# The road classes `roads_v1` asks for (a test keeps the template and this set equal).
+ROAD_CLASSES = frozenset(
+    {
+        "motorway", "trunk", "primary", "secondary", "tertiary", "unclassified",
+        "residential", "service", "living_street", "motorway_link", "trunk_link",
+        "primary_link", "secondary_link", "tertiary_link", "construction",
+    }
+)  # fmt: skip
+ELEMENT_TYPES = {
+    LANDMARKS: frozenset({"node", "way", "relation"}),
+    ROADS: frozenset({"way"}),
+    STATS: frozenset({"stat"}),
+}
+# Overpass's data timestamp may pass the retrieval start while the queries run (the live run
+# saw 104 s); a timestamp further ahead than this is refused.
+TIMESTAMP_TOLERANCE = timedelta(hours=1)
 KM_PER_DEG_LAT = 111.32
 
 Box = tuple[float, float, float, float]  # south, west, north, east (degrees)
@@ -206,6 +237,8 @@ def landmark_positions(
         position = element_position(element)
         if name not in area.landmarks or position is None:
             continue
+        if not _in_box(position, area.search_box()):
+            continue  # cannot be this landmark: it lies outside the box it was searched in
         d_lat = position[0] - area.anchor[0]
         d_lon = (position[1] - area.anchor[1]) * cos_lat
         key = (
@@ -217,6 +250,24 @@ def landmark_positions(
         if name not in best or key < best[name]:
             best[name] = key
     return {name: best[name][3] for name in sorted(best)}
+
+
+def _in_box(point: tuple[float, float], box: Box) -> bool:
+    south, west, north, east = box
+    return south <= point[0] <= north and west <= point[1] <= east
+
+
+def _point(raw: object, what: str) -> tuple[float, float]:
+    """A finite position on the globe, or `FetchError`."""
+    try:
+        lat, lon = float(raw["lat"]), float(raw["lon"])  # type: ignore[index]
+    except (KeyError, TypeError, ValueError) as exc:
+        raise FetchError(f"{what} has no position") from exc
+    if not (math.isfinite(lat) and math.isfinite(lon)) or not (
+        -90 <= lat <= 90 and -180 <= lon <= 180
+    ):
+        raise FetchError(f"{what} has a position off the globe: {lat}, {lon}")
+    return lat, lon
 
 
 def element_position(element: dict[str, Any]) -> tuple[float, float] | None:
@@ -333,16 +384,36 @@ def parse_answer(raw: bytes) -> dict[str, Any]:
             f"Overpass reported a problem, the answer is incomplete: {data['remark']}"
         )
     base = (data.get("osm3s") or {}).get("timestamp_osm_base")
-    if not isinstance(base, str) or not re.fullmatch(
-        r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ", base
-    ):
-        raise FetchError("the Overpass answer carries no valid OSM data timestamp")
+    try:
+        if not isinstance(base, str):
+            raise ValueError(base)
+        parse_iso(base)
+    except ValueError as exc:
+        raise FetchError(
+            "the Overpass answer carries no valid OSM data timestamp"
+        ) from exc
     return data
 
 
-def check_answer(name: str, data: dict[str, Any], area: Area) -> None:
-    """The checks of one query: an empty or partial answer is not coverage, it is a failure."""
+def check_timestamp(data: dict[str, Any], retrieved: datetime) -> None:
+    """The OSM data of an answer cannot be newer than its retrieval (plus the tolerance)."""
+    base = parse_iso(data["osm3s"]["timestamp_osm_base"])
+    if base > retrieved + TIMESTAMP_TOLERANCE:
+        raise FetchError(
+            f"the answer's OSM timestamp {iso(base)} lies after its retrieval {iso(retrieved)}"
+        )
+
+
+def check_answer(name: str, data: dict[str, Any], area: Area, box: Box) -> None:
+    """The checks of one query: an empty, partial or foreign answer is not coverage, it is a
+    failure. `box` is the box the query was run in."""
     elements = data["elements"]
+    for element in elements:
+        if (
+            not isinstance(element, dict)
+            or element.get("type") not in ELEMENT_TYPES[name]
+        ):
+            raise FetchError(f"the {name} answer holds an element of another kind")
     if name == ROADS:
         ways = [e for e in elements if e.get("type") == "way"]
         if not ways:
@@ -353,18 +424,54 @@ def check_answer(name: str, data: dict[str, Any], area: Area) -> None:
             nodes, geometry = way.get("nodes") or [], way.get("geometry") or []
             if len(nodes) < 2 or len(nodes) != len(geometry):
                 raise FetchError(f"road way {way.get('id')} has no usable geometry")
-            if not (way.get("tags") or {}).get("highway"):
+            highway = (way.get("tags") or {}).get("highway")
+            if not highway:
                 raise FetchError(f"road way {way.get('id')} has no highway tag")
+            if highway not in ROAD_CLASSES:
+                raise FetchError(
+                    f"road way {way.get('id')}: class {highway!r} was not asked for"
+                )
+            points = [_point(g, f"road way {way.get('id')}") for g in geometry]
+            lats, lons = [p[0] for p in points], [p[1] for p in points]
+            south, west, north, east = box
+            if (
+                max(lats) < south
+                or min(lats) > north
+                or max(lons) < west
+                or min(lons) > east
+            ):
+                raise FetchError(
+                    f"road way {way.get('id')} lies outside the queried box"
+                )
     elif name == STATS:
-        present = {
-            (
-                str((e.get("tags") or {}).get("group")),
-                str((e.get("tags") or {}).get("value")),
-            )
-            for e in elements
-            if e.get("type") == "stat"
-        }
-        missing = sorted(REQUIRED_STATS - present)
+        seen: set[tuple[str, str]] = set()
+        for element in elements:
+            tags = dict(element.get("tags") or {})
+            group, value = str(tags.pop("group", "")), str(tags.pop("value", ""))
+            if (group, value) in seen:
+                raise FetchError(f"the statistic {group}/{value} appears twice")
+            seen.add((group, value))
+            fields = STAT_FIELDS.get((group, value), STAT_FIELDS.get((group, None)))
+            if fields is None:
+                raise FetchError(f"the statistic {group}/{value} was not asked for")
+            if set(tags) != fields:
+                raise FetchError(
+                    f"the statistic {group}/{value} has the fields {sorted(tags)}, "
+                    f"expected {sorted(fields)}"
+                )
+            for key, raw in tags.items():
+                if key in COUNT_FIELDS:
+                    ok = isinstance(raw, str) and raw.isdigit()
+                else:
+                    try:
+                        number = float(raw)
+                    except (TypeError, ValueError):
+                        ok = False
+                    else:
+                        ok = math.isfinite(number) and number >= 0
+                if not ok:
+                    raise FetchError(f"the statistic {group}/{value} has {key}={raw!r}")
+        missing = sorted(REQUIRED_STATS - seen)
         if missing:
             raise FetchError(f"the statistics answer is incomplete; missing {missing}")
     elif name == LANDMARKS:
@@ -375,6 +482,8 @@ def check_answer(name: str, data: dict[str, Any], area: Area) -> None:
                 raise FetchError(
                     "the landmarks answer holds a feature that was not asked for"
                 )
+            center = element.get("center") or element
+            _point(center, f"landmark {element.get('type')} {element.get('id')}")
 
 
 def _git_toplevel(directory: Path) -> Path | None:
@@ -455,7 +564,8 @@ def fetch_area(area: Area, cache_root: Path, overpass: Overpass, now: datetime) 
 
     text = render_query(LANDMARKS, search, area, now)
     raw, data = overpass.query(text)
-    check_answer(LANDMARKS, data, area)
+    check_answer(LANDMARKS, data, area, search)
+    check_timestamp(data, now)
     answers[LANDMARKS] = (text, raw, data, search)
     positions = landmark_positions(data, area)
     if len(positions) < area.min_landmarks:
@@ -467,7 +577,8 @@ def fetch_area(area: Area, cache_root: Path, overpass: Overpass, now: datetime) 
     for name in (ROADS, STATS):
         text = render_query(name, box, area, now)
         raw, data = overpass.query(text)
-        check_answer(name, data, area)
+        check_answer(name, data, area, box)
+        check_timestamp(data, now)
         answers[name] = (text, raw, data, box)
 
     bases = {
@@ -508,9 +619,13 @@ def fetch_area(area: Area, cache_root: Path, overpass: Overpass, now: datetime) 
         "extract_sha256": _sha(answers[ROADS][1]),
         "coverage_report": "report.json",
     }
-    final = cache / area.name / snapshot.replace(":", "-")
-    final.parent.mkdir(parents=True, exist_ok=True)
-    staging = Path(tempfile.mkdtemp(prefix=".fetch-", dir=final.parent))
+    folder = cache / area.name
+    _no_link(folder)
+    folder.mkdir(parents=True, exist_ok=True)
+    _recover(folder)
+    final = folder / snapshot.replace(":", "-")
+    _no_link(final)
+    staging = Path(tempfile.mkdtemp(prefix=".fetch-", dir=folder))
     try:
         (staging / "queries").mkdir()
         for name, (text, raw, _, _) in answers.items():
@@ -561,16 +676,46 @@ def _sha(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
+def _no_link(path: Path) -> None:
+    """The cache holds no symbolic links: one could lead a write into a tracked folder (G2)."""
+    if path.is_symlink():
+        raise FetchError(
+            f"{path} is a symbolic link; the cache must hold none (decision G2)"
+        )
+
+
+_OLD = re.compile(r"\.old-(.+)-\d+")
+
+
+def _recover(folder: Path) -> None:
+    """Finish a replacement that was interrupted between its two renames: put the old extract
+    back if nothing took its place, otherwise remove it. One fetch at a time per cache."""
+    for path in sorted(folder.iterdir()):
+        match = _OLD.fullmatch(path.name)
+        if match is None:
+            continue
+        _no_link(path)
+        target = folder / match.group(1)
+        if target.exists() or target.is_symlink():
+            shutil.rmtree(path)
+        else:
+            os.replace(path, target)
+
+
 def latest_extract(area: Area, cache_root: Path) -> Path | None:
     """The newest cached extract of the area that passes `verify_extract`, or None."""
     folder = ensure_cache_location(cache_root) / area.name
+    _no_link(folder)
     if not folder.is_dir():
         return None
+    _recover(folder)
     candidates = sorted(
-        (p for p in folder.iterdir() if p.is_dir() and not p.name.startswith(".")),
-        reverse=True,
+        (p for p in folder.iterdir() if not p.name.startswith(".")), reverse=True
     )
     for candidate in candidates:
+        _no_link(candidate)
+        if not candidate.is_dir():
+            continue
         try:
             verify_extract(candidate, area)
         except FetchError:
@@ -587,6 +732,8 @@ def verify_extract(extract: Path, area: Area) -> dict[str, Any]:
     and carry the recorded timestamp; the study box must follow from the landmarks found; the
     snapshot timestamp, endpoint and extract hash must agree. Returns the provenance.
     """
+    for path in (extract, extract / "queries", extract / PROVENANCE_FILE):
+        _no_link(path)
     try:
         record = json.loads((extract / PROVENANCE_FILE).read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
@@ -632,6 +779,8 @@ def verify_extract(extract: Path, area: Area) -> dict[str, Any]:
         box = (south, west, north, east)
         query_path = extract / "queries" / f"{name}.overpassql"
         answer_path = extract / f"{name}.json"
+        _no_link(query_path)
+        _no_link(answer_path)
         if not query_path.is_file() or not answer_path.is_file():
             raise FetchError(f"{extract}: query or answer {name} is missing")
         saved = query_path.read_text(encoding="utf-8")
@@ -645,7 +794,8 @@ def verify_extract(extract: Path, area: Area) -> dict[str, Any]:
         if _sha(raw) != entry.get("answer_sha256"):
             raise FetchError(f"{extract}: answer {name} does not match its hash")
         data = parse_answer(raw)
-        check_answer(name, data, area)
+        check_answer(name, data, area, box)
+        check_timestamp(data, retrieved)
         if data["osm3s"]["timestamp_osm_base"] != entry.get("osm_base"):
             raise FetchError(f"{extract}: answer {name} carries another OSM timestamp")
         parsed[name] = data

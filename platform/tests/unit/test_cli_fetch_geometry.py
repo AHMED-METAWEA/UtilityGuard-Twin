@@ -26,7 +26,7 @@ def test_a_cached_extract_is_used_and_reported_without_any_fetch(
         F.load_area("capital"),
         tmp_path,
         FakeOverpass(),
-        datetime(2026, 10, 26, tzinfo=UTC),
+        datetime(2026, 10, 26, 10, 25, 33, tzinfo=UTC),
     )  # type: ignore[arg-type]
 
     def no_network(*args: object, **kwargs: object) -> None:

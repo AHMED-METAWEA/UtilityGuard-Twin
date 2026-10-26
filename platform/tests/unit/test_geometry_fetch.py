@@ -21,6 +21,7 @@ from geometry_fixtures import (
     landmark,
     landmarks_answer,
     roads_answer,
+    stat,
     stats_answer,
 )
 from ug_core.geometry import fetch as F
@@ -534,7 +535,8 @@ def test_the_newest_intact_extract_is_used(tmp_path: Path) -> None:
     old = fetch(tmp_path)
     stats = stats_answer()
     stats["osm3s"]["timestamp_osm_base"] = "2026-10-27T00:00:00Z"
-    new = fetch(tmp_path, stats_v1=stats)
+    later = datetime(2026, 10, 27, 0, 30, tzinfo=UTC)
+    new = F.fetch_area(area, tmp_path, FakeOverpass({"stats_v1": stats}), later)  # type: ignore[arg-type]
     (tmp_path / "capital" / ".fetch-leftover").mkdir()
     assert F.latest_extract(area, tmp_path) == new
     (new / "stats_v1.json").write_bytes(b"{}")
@@ -684,3 +686,166 @@ def test_the_default_cache_of_this_repository_is_git_ignored() -> None:
     cache = F.default_cache(here)
     assert cache == Path(__file__).resolve().parents[3] / "data" / "geometry"
     assert F.ensure_cache_location(cache) == cache
+
+
+# Round 2 of the review ------------------------------------------------------------------------
+
+
+def test_the_road_classes_match_the_query_template() -> None:
+    template = (Path(F.__file__).parent / "queries" / "roads_v1.overpassql").read_text()
+    classes = template.split('way["highway"~"^(')[1].split(')$"]')[0].split("|")
+    assert set(classes) == F.ROAD_CLASSES and len(classes) == len(F.ROAD_CLASSES)
+
+
+def translated(answer: dict[str, Any], d_lat: float, d_lon: float) -> dict[str, Any]:
+    for element in answer["elements"]:
+        for point in [
+            element,
+            element.get("center") or {},
+            *element.get("geometry", []),
+        ]:
+            if "lat" in point:
+                point["lat"] -= d_lat
+                point["lon"] -= d_lon
+    return answer
+
+
+def with_a_class(highway: str) -> dict[str, Any]:
+    answer = roads_answer()
+    answer["elements"][0]["tags"]["highway"] = highway
+    return answer
+
+
+def with_a_point(lat: float) -> dict[str, Any]:
+    answer = roads_answer()
+    answer["elements"][0]["geometry"][0]["lat"] = lat
+    return answer
+
+
+def with_an_element(kind: str) -> dict[str, Any]:
+    answer = roads_answer()
+    answer["elements"].append({"type": kind, "id": 5})
+    return answer
+
+
+@pytest.mark.parametrize(
+    ("query", "answer", "message"),
+    [
+        (
+            "roads_v1",
+            lambda: translated(roads_answer(), 30, 31),
+            "outside the queried box",
+        ),
+        # One edge at a time: the box's south, north, west and east side.
+        *(
+            (
+                "roads_v1",
+                lambda d=d: translated(roads_answer(), *d),
+                "outside the queried",
+            )
+            for d in ((1, 0), (-1, 0), (0, 1), (0, -1))
+        ),
+        ("landmarks_v1", lambda: translated(landmarks_answer(), 30, 31), "only 0 of"),
+        ("roads_v1", lambda: with_a_class("footway"), "was not asked for"),
+        ("roads_v1", lambda: with_a_point(float("nan")), "off the globe"),
+        ("roads_v1", lambda: with_a_point(95.0), "off the globe"),
+        ("roads_v1", lambda: with_an_element("node"), "another kind"),
+    ],
+)
+def test_foreign_geometry_is_refused(
+    tmp_path: Path, query: str, answer: Callable[[], dict[str, Any]], message: str
+) -> None:
+    with pytest.raises(F.FetchError, match=message):
+        fetch(tmp_path, **{query: answer()})
+
+
+def stats_with(change: Callable[[list[dict[str, Any]]], None]) -> dict[str, Any]:
+    answer = stats_answer()
+    change(answer["elements"])
+    return answer
+
+
+def strip_numbers(elements: list[dict[str, Any]]) -> None:
+    for e in elements:
+        e["tags"] = {"group": e["tags"]["group"], "value": e["tags"]["value"]}
+
+
+def set_field(
+    group: str, key: str, value: str
+) -> Callable[[list[dict[str, Any]]], None]:
+    def change(elements: list[dict[str, Any]]) -> None:
+        next(e for e in elements if e["tags"]["group"] == group)["tags"][key] = value
+
+    return change
+
+
+@pytest.mark.parametrize(
+    ("change", "message"),
+    [
+        (strip_numbers, "has the fields"),
+        (set_field("buildings", "ways", "12.5"), "ways='12.5'"),
+        (set_field("buildings", "ways", "-1"), "ways='-1'"),
+        (set_field("highway", "km", "nan"), "km='nan'"),
+        (lambda e: e.append(dict(e[0])), "appears twice"),
+        (lambda e: e.append(stat("parking", "lots", n=3)), "was not asked for"),
+    ],
+)
+def test_statistics_need_their_numbers(
+    tmp_path: Path, change: Callable[[list[dict[str, Any]]], None], message: str
+) -> None:
+    with pytest.raises(F.FetchError, match=message):
+        fetch(tmp_path, stats_v1=stats_with(change))
+
+
+def test_an_answer_from_the_future_is_refused(tmp_path: Path) -> None:
+    roads = roads_answer()
+    roads["osm3s"]["timestamp_osm_base"] = "2099-01-01T00:00:00Z"
+    with pytest.raises(F.FetchError, match="lies after its retrieval"):
+        fetch(tmp_path, roads_v1=roads)
+    # Within the tolerance (the live run saw the timestamp pass the retrieval by 104 s).
+    roads["osm3s"]["timestamp_osm_base"] = "2026-10-26T11:20:00Z"
+    F.verify_extract(fetch(tmp_path, roads_v1=roads), F.load_area("capital"))
+    # And on a cached extract, with the hashes made to agree.
+    extract = fetch(tmp_path / "b")
+    late = roads_answer()
+    late["osm3s"]["timestamp_osm_base"] = "2099-01-01T00:00:00Z"
+    rewrite_answer(extract, "roads_v1", late)
+    edit_provenance(
+        extract,
+        set_key("queries", "roads_v1", "osm_base", value="2099-01-01T00:00:00Z"),
+    )
+    with pytest.raises(F.FetchError, match="lies after its retrieval"):
+        F.verify_extract(extract, F.load_area("capital"))
+
+
+def test_a_link_inside_the_cache_is_refused(repo: Path) -> None:
+    cache = repo / "data" / "geometry"
+    cache.mkdir(parents=True)
+    (cache / "capital").symlink_to(repo / "platform", target_is_directory=True)
+    with pytest.raises(F.FetchError, match="symbolic link"):
+        fetch(cache)
+    with pytest.raises(F.FetchError, match="symbolic link"):
+        F.latest_extract(F.load_area("capital"), cache)
+    assert list((repo / "platform").iterdir()) == []
+
+
+def test_a_link_inside_an_extract_is_refused(tmp_path: Path) -> None:
+    extract = fetch(tmp_path)
+    outside = tmp_path / "elsewhere.json"
+    (extract / "roads_v1.json").rename(outside)
+    (extract / "roads_v1.json").symlink_to(outside)
+    with pytest.raises(F.FetchError, match="symbolic link"):
+        F.verify_extract(extract, F.load_area("capital"))
+
+
+def test_an_interrupted_replacement_is_recovered(tmp_path: Path) -> None:
+    area = F.load_area("capital")
+    extract = fetch(tmp_path)
+    hidden = extract.with_name(f".old-{extract.name}-999")
+    extract.rename(hidden)  # killed after the first rename, before the second
+    assert F.latest_extract(area, tmp_path) == extract
+    assert not hidden.exists()
+    # Killed after the second rename, before the old folder was removed.
+    (extract.parent / f".old-{extract.name}-998").mkdir()
+    assert F.latest_extract(area, tmp_path) == extract
+    assert sorted(p.name for p in extract.parent.iterdir()) == [extract.name]

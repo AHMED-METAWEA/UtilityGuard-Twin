@@ -22,6 +22,7 @@ from __future__ import annotations
 import itertools
 import json
 import math
+import os
 from collections import defaultdict
 from collections.abc import Iterable
 from pathlib import Path
@@ -35,6 +36,7 @@ from ug_core.geometry.fetch import (
     STATS,
     Area,
     FetchError,
+    ensure_cache_location,
     landmark_positions,
     verify_extract,
 )
@@ -362,8 +364,21 @@ def render_markdown(report: dict[str, Any]) -> str:
 
 
 def write_report(extract: Path, area: Area) -> tuple[Path, Path]:
+    """Write the report into the extract. The extract must sit in a cache git ignores, and the
+    report files are replaced, never written through: a symbolic link planted in their place
+    could otherwise carry OSM-derived content into a tracked file (G2)."""
+    ensure_cache_location(extract.parent.parent)
     report = coverage_report(extract, area)
     json_path, md_path = extract / "report.json", extract / "report.md"
-    json_path.write_text(canonical_json(report) + "\n", encoding="utf-8")
-    md_path.write_text(render_markdown(report), encoding="utf-8")
+    for path, text in (
+        (json_path, canonical_json(report) + "\n"),
+        (md_path, render_markdown(report)),
+    ):
+        if path.is_symlink():
+            raise FetchError(
+                f"{path} is a symbolic link; the cache must hold none (G2)"
+            )
+        staging = path.with_name(f".{path.name}.tmp")
+        staging.write_text(text, encoding="utf-8")
+        os.replace(staging, path)
     return json_path, md_path

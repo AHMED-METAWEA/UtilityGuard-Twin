@@ -185,11 +185,14 @@ def test_a_way_across_the_edge_counts_inside_only_where_its_segments_are(
 def test_a_statistic_the_report_does_not_know_is_refused(tmp_path: Path) -> None:
     answer = stats_answer()
     answer["elements"].append(stat("highway", "track", ways=1, metres=5))
-    extract = F.fetch_area(
-        F.load_area("capital"), tmp_path, FakeOverpass({"stats_v1": answer}), NOW
-    )  # type: ignore[arg-type]
+    with pytest.raises(F.FetchError, match="highway/track has the fields"):
+        F.fetch_area(
+            F.load_area("capital"), tmp_path, FakeOverpass({"stats_v1": answer}), NOW
+        )  # type: ignore[arg-type]
+    # The report keeps its own guard: a field it has no label for is refused there too.
+    data = {"elements": [stat("highway", "track", ways=1, metres=5)]}
     with pytest.raises(F.FetchError, match="unknown field 'metres'"):
-        R.coverage_report(extract, F.load_area("capital"))
+        R._stats(data)
 
 
 def test_a_tampered_extract_gives_no_report(extract: Path) -> None:
@@ -241,3 +244,14 @@ def test_the_landmark_radius_is_respected(tmp_path: Path) -> None:
     ]
     # Within 100 m of the centre node: the four segments that touch it, nothing else.
     assert near == {"found": True, "road_km_within_radius": round(2 * ROW + 2 * COL, 1)}
+
+
+def test_the_report_is_never_written_through_a_link(
+    extract: Path, tmp_path: Path
+) -> None:
+    tracked = tmp_path / "tracked.md"
+    tracked.write_text("a tracked document\n")
+    (extract / "report.md").symlink_to(tracked)
+    with pytest.raises(F.FetchError, match="symbolic link"):
+        R.write_report(extract, F.load_area("capital"))
+    assert tracked.read_text() == "a tracked document\n"
