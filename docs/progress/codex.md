@@ -1,3 +1,5 @@
+> Frozen history (D-020, 2026-10-26). New handoff notes go in their own file, `docs/progress/codex/<task-id>.md`, one per task.
+
 > Note by the lead (2026-10-25): this handoff was written for the original Phase A0 plan. After the reference-baseline decision (`docs/audit/DECISIONS.md` D-001) its deliverable is stored as `docs/audit/codex_inventory_raw.md` (evidence, with local paths replaced by `<worktree>` and `<home>`); the short inventory is `docs/audit/INVENTORY.md`. The lead reproduced the test count (34 passed), the preset list and the WNTR version independently.
 
 ## Handoff: T-A0-002
