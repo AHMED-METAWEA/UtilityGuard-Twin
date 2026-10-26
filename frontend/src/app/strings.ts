@@ -18,7 +18,11 @@ export const STRINGS = {
     none: "No network loaded",
     unknown: "Fidelity could not be determined",
     f0: "Fidelity F0: Generic synthetic",
-    f1: "Fidelity F1: Public capital layout, inferred pipes, synthetic hydraulics",
+    // F1 is the hybrid network of owner decision G1 (2026-10-26): real streets from OpenStreetMap,
+    // district boundaries drawn by hand. The notice line carries the ODbL attribution (G2).
+    f1: "Fidelity F1: Real OSM streets, hand-drawn districts, inferred pipes, synthetic hydraulics",
+    f1Notice:
+      "Street network © OpenStreetMap contributors (ODbL). District boundaries are hand-drawn approximations. Pipes, demands and equipment are synthetic.",
     downgraded:
       "The loaded network declares a higher fidelity than its provenance supports, so the lowest level is shown.",
   },

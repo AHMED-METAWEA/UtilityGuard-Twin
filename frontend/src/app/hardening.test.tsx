@@ -20,27 +20,35 @@ afterEach(() => {
 
 const PROVENANCE = {
   label: "PUBLIC_GEOMETRY",
-  source: "public map data",
-  licence: "ODbL",
+  source: "OpenStreetMap",
+  licence: "ODbL-1.0",
   retrieved: "2026-10-01",
   coverage_report: "coverage.json",
 };
+// Every hostile fixture below is a VALID hybrid F1 network with exactly one defect, so it is
+// rejected by the protection under test and not by a missing declaration (review round 2).
+const DISTRICTS = { label: "ASSUMPTION", method: "hand-drawn", source: "manual overlay", drawn: "2026-10-26" };
+const VALID_F1 = { network_version: "n", fidelity: "F1", geometry_provenance: PROVENANCE, district_boundaries: DISTRICTS };
 
 describe("untrusted data is read as data", () => {
+  it("gives F1 for the valid fixture the hostile cases start from", () => {
+    expect(fidelityBadge(VALID_F1 as never).level).toBe("F1");
+  });
+
   it("does not take F1 from inherited properties", () => {
     const inheritedProvenance = Object.create(PROVENANCE);
-    expect(fidelityBadge({ network_version: "n", fidelity: "F1", geometry_provenance: inheritedProvenance } as never).text).not.toContain("F1");
-    const base = { network_version: "n", fidelity: "F1", geometry_provenance: PROVENANCE };
+    expect(fidelityBadge({ ...VALID_F1, geometry_provenance: inheritedProvenance } as never).text).not.toContain("F1");
+    const base = VALID_F1;
     expect(fidelityBadge(Object.create(base)).text).not.toContain("F1");
     expect(fidelityBadge(Object.create(base)).level).not.toBe("F1");
   });
 
   it("does not take F1 from a proxy, an accessor or an array", () => {
-    const proxy = new Proxy({}, { get: (_t, key) => (key === "fidelity" ? "F1" : key === "geometry_provenance" ? PROVENANCE : undefined) });
+    const proxy = new Proxy({ ...VALID_F1 }, {});
     expect(fidelityBadge(proxy as never).text).not.toContain("F1");
-    const accessor = { network_version: "n", fidelity: "F1", get geometry_provenance() { return PROVENANCE; } };
-    // An accessor serializes like data, so it is read once as data; the proxy above is refused.
-    expect(["F0", "F1"]).toContain(fidelityBadge(accessor as never).level);
+    const accessor = { ...VALID_F1, get geometry_provenance() { return PROVENANCE; } };
+    // An accessor is refused without being called (snapshot.ts), so it never authorises F1.
+    expect(fidelityBadge(accessor as never).level).toBe("F0");
     const throwing = { network_version: "n", get fidelity(): string { throw new Error("boom"); } };
     expect(() => fidelityBadge(throwing as never)).not.toThrow();
     expect(fidelityBadge(throwing as never).text).not.toContain("F1");
