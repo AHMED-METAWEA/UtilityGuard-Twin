@@ -38,19 +38,43 @@ CALLABLES: tuple[str, ...] = (
     "wntr.network.WaterNetworkModel.get_node",
     "wntr.network.WaterNetworkModel.get_link",
     "wntr.network.WaterNetworkModel.get_pattern",
+    "wntr.network.WaterNetworkModel.add_control",
+    "wntr.network.WaterNetworkModel.remove_control",
+    "wntr.network.WaterNetworkModel.reset_initial_values",
+    "wntr.network.WaterNetworkModel.get_curve",
     "wntr.network.elements.Junction.add_leak",
+    "wntr.network.elements.Pump.add_outage",
+    "wntr.network.controls.Control",
+    "wntr.network.controls.ControlAction",
+    "wntr.network.controls.SimTimeCondition",
+    "wntr.sim.WNTRSimulator",
+    "wntr.sim.EpanetSimulator",
     "wntr.sim.WNTRSimulator.run_sim",
+    "wntr.sim.EpanetSimulator.run_sim",
+    "wntr.morph.split_pipe",
+    "wntr.morph.break_pipe",
+    "wntr.metrics.pump_energy",
+    "wntr.metrics.pump_power",
 )
 
 # Attributes that must exist on objects of a small probe network: (root, path). Paths use `.name`
 # and `[index]` only; they are resolved by `_resolve`, never evaluated.
 MEMBERS: tuple[tuple[str, str], ...] = (
     ("wn", "link_name_list"),
+    ("wn", "junction_name_list"),
+    ("wn", "tank_name_list"),
+    ("wn", "reservoir_name_list"),
+    ("wn", "pipe_name_list"),
+    ("wn", "pump_name_list"),
+    ("wn", "valve_name_list"),
+    ("wn", "node_name_list"),
+    ("wn", "options.time.start_clocktime"),
     ("wn", "options.time.duration"),
     ("wn", "options.time.hydraulic_timestep"),
     ("wn", "options.time.report_timestep"),
     ("wn", "options.time.pattern_timestep"),
     ("wn", "options.hydraulic.demand_model"),
+    ("wn", "options.hydraulic.headloss"),
     ("wn", "options.hydraulic.minimum_pressure"),
     ("wn", "options.hydraulic.required_pressure"),
     ("wn", "options.hydraulic.pressure_exponent"),
@@ -58,11 +82,18 @@ MEMBERS: tuple[tuple[str, str], ...] = (
     ("junction", "demand_timeseries_list[0].base_value"),
     ("junction", "coordinates"),
     ("junction", "elevation"),
+    ("tank", "elevation"),
     ("tank", "init_level"),
     ("tank", "min_level"),
     ("tank", "max_level"),
     ("tank", "diameter"),
+    ("reservoir", "base_head"),
     ("pump", "initial_status"),
+    ("pump", "pump_type"),
+    ("pump", "pump_curve_name"),
+    ("pump", "speed_timeseries.base_value"),
+    ("valve", "valve_type"),
+    ("valve", "initial_setting"),
     ("pipe", "start_node_name"),
     ("pipe", "end_node_name"),
     ("pipe", "length"),
@@ -84,6 +115,7 @@ RESULT_KEYS: tuple[tuple[str, str], ...] = (
     ("node", "head"),
     ("link", "flowrate"),
     ("link", "status"),
+    ("link", "velocity"),
 )
 
 _PATH_TOKEN = re.compile(r"\.?([A-Za-z_][A-Za-z0-9_]*)|\[(\d+)\]")
@@ -149,12 +181,15 @@ def _probe_elements() -> dict[str, Any]:
     wn.add_pipe("P1", "R1", "J1", length=100.0, diameter=0.3, roughness=100.0)
     wn.add_curve("C1", "HEAD", [(0.0, 60.0), (0.02, 40.0), (0.04, 10.0)])
     wn.add_pump("PU1", "J1", "J2", pump_type="HEAD", pump_parameter="C1")
+    wn.add_valve("V1", "J2", "T1", valve_type="TCV", initial_setting=0.0)
     wn.add_pattern("PAT1", [1.0, 1.2])
     return {
         "wn": wn,
         "junction": wn.get_node("J1"),
         "tank": wn.get_node("T1"),
+        "reservoir": wn.get_node("R1"),
         "pump": wn.get_link("PU1"),
+        "valve": wn.get_link("V1"),
         "pipe": wn.get_link("P1"),
         "pattern": wn.get_pattern("PAT1"),
         "link_status": wntr.network.base.LinkStatus,
@@ -314,6 +349,10 @@ def verify(manifest: object) -> list[str]:
             problems.append(
                 f"callable {path}: signature changed\n  recorded {recorded}\n  actual   {actual}"
             )
+
+    # Probes call the declared builders; do not run them against an incompatible API.
+    if problems:
+        return problems
 
     probes: dict[str, Any] | None = None
     for entry in manifest.get("members", []):

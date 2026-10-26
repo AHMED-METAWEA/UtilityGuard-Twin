@@ -1,5 +1,10 @@
 {
   "callables": {
+    "wntr.metrics.pump_energy": "(flowrate, head, wn)",
+    "wntr.metrics.pump_power": "(flowrate, head, wn)",
+    "wntr.morph.break_pipe": "(wn, pipe_name_to_split, new_pipe_name, new_junction_name_old_pipe, new_junction_name_new_pipe, add_pipe_at_end=True, split_at_point=0.5, return_copy=True)",
+    "wntr.morph.split_pipe": "(wn, pipe_name_to_split, new_pipe_name, new_junction_name, add_pipe_at_end=True, split_at_point=0.5, return_copy=True)",
+    "wntr.network.WaterNetworkModel.add_control": "(self, name, control_object)",
     "wntr.network.WaterNetworkModel.add_curve": "(self, name, curve_type, xy_tuples_list)",
     "wntr.network.WaterNetworkModel.add_junction": "(self, name, base_demand=0.0, demand_pattern=None, elevation=0.0, coordinates=None, demand_category=None)",
     "wntr.network.WaterNetworkModel.add_pattern": "(self, name, pattern=None)",
@@ -8,16 +13,58 @@
     "wntr.network.WaterNetworkModel.add_reservoir": "(self, name, base_head=0.0, head_pattern=None, coordinates=None)",
     "wntr.network.WaterNetworkModel.add_tank": "(self, name, elevation=0.0, init_level=3.048, min_level=0.0, max_level=6.096, diameter=15.24, min_vol=0.0, vol_curve=None, overflow=False, coordinates=None)",
     "wntr.network.WaterNetworkModel.add_valve": "(self, name, start_node_name, end_node_name, diameter=0.3048, valve_type='PRV', minor_loss=0.0, initial_setting=0.0, initial_status='ACTIVE')",
+    "wntr.network.WaterNetworkModel.get_curve": "(self, name)",
     "wntr.network.WaterNetworkModel.get_link": "(self, name)",
     "wntr.network.WaterNetworkModel.get_node": "(self, name)",
     "wntr.network.WaterNetworkModel.get_pattern": "(self, name)",
+    "wntr.network.WaterNetworkModel.remove_control": "(self, name)",
     "wntr.network.WaterNetworkModel.remove_link": "(self, name, with_control=False, force=False)",
+    "wntr.network.WaterNetworkModel.reset_initial_values": "(self)",
+    "wntr.network.controls.Control": "(condition, then_action: wntr.network.controls.BaseControlAction, priority=<ControlPriority.medium: 3>, name=None)",
+    "wntr.network.controls.ControlAction": "(target_obj, attribute, value)",
+    "wntr.network.controls.SimTimeCondition": "(model, relation, threshold, repeat=False, first_time=0)",
     "wntr.network.elements.Junction.add_leak": "(self, wn, area, discharge_coeff=0.75, start_time=None, end_time=None)",
+    "wntr.network.elements.Pump.add_outage": "(self, wn, start_time, end_time=None, priority=6, add_after_outage_rule=False)",
+    "wntr.sim.EpanetSimulator": "(wn, reader=None, result_types=None)",
+    "wntr.sim.EpanetSimulator.run_sim": "(self, file_prefix='temp', save_hyd=False, use_hyd=False, hydfile=None, version=2.2, convergence_error=False)",
+    "wntr.sim.WNTRSimulator": "(wn)",
     "wntr.sim.WNTRSimulator.run_sim": "(self, solver=<class 'wntr.sim.solvers.NewtonSolver'>, backup_solver=None, solver_options=None, backup_solver_options=None, convergence_error=False, HW_approx='default', diagnostics=False)"
   },
   "members": [
     {
       "path": "link_name_list",
+      "root": "wn"
+    },
+    {
+      "path": "junction_name_list",
+      "root": "wn"
+    },
+    {
+      "path": "tank_name_list",
+      "root": "wn"
+    },
+    {
+      "path": "reservoir_name_list",
+      "root": "wn"
+    },
+    {
+      "path": "pipe_name_list",
+      "root": "wn"
+    },
+    {
+      "path": "pump_name_list",
+      "root": "wn"
+    },
+    {
+      "path": "valve_name_list",
+      "root": "wn"
+    },
+    {
+      "path": "node_name_list",
+      "root": "wn"
+    },
+    {
+      "path": "options.time.start_clocktime",
       "root": "wn"
     },
     {
@@ -38,6 +85,10 @@
     },
     {
       "path": "options.hydraulic.demand_model",
+      "root": "wn"
+    },
+    {
+      "path": "options.hydraulic.headloss",
       "root": "wn"
     },
     {
@@ -69,6 +120,10 @@
       "root": "junction"
     },
     {
+      "path": "elevation",
+      "root": "tank"
+    },
+    {
       "path": "init_level",
       "root": "tank"
     },
@@ -85,8 +140,32 @@
       "root": "tank"
     },
     {
+      "path": "base_head",
+      "root": "reservoir"
+    },
+    {
       "path": "initial_status",
       "root": "pump"
+    },
+    {
+      "path": "pump_type",
+      "root": "pump"
+    },
+    {
+      "path": "pump_curve_name",
+      "root": "pump"
+    },
+    {
+      "path": "speed_timeseries.base_value",
+      "root": "pump"
+    },
+    {
+      "path": "valve_type",
+      "root": "valve"
+    },
+    {
+      "path": "initial_setting",
+      "root": "valve"
     },
     {
       "path": "start_node_name",
@@ -156,6 +235,10 @@
     },
     {
       "key": "status",
+      "table": "link"
+    },
+    {
+      "key": "velocity",
       "table": "link"
     }
   ],
