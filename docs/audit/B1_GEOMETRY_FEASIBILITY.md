@@ -81,3 +81,30 @@ A small GeoJSON file, `domains/water/data/overlays/capital_districts_v1.geojson`
 1. Accept the hybrid (OSM streets plus the hand-made district overlay), or pure OSM (zones from OSM only, which today gives too few areas), or procedural only (F0, no public layout).
 2. Accept the licence rule of section 5 (no OSM-derived data in the public repository), or decide to publish derived networks under the ODbL.
 3. Accept the overlay label `ASSUMPTION` for hand-drawn boundaries, with `PUBLIC_GEOMETRY` only for geometry that comes from OSM.
+
+## 7. Addendum (2026-10-26): the study box of `ug fetch-geometry` compared with the box of this test
+
+**Why the box changed.** The box of section 1 was drawn around OSM features, so it is OSM-derived even with the label `ASSUMPTION`; the first review round of T-B1-010 found that committing it breaks decision G2 (`docs/reviews/T-B1-010.md`). `ug fetch-geometry` therefore commits no box: its area file holds an anchor point from Wikidata (Q19588497, CC0), a search half-width, a 3 km margin and the nine landmark names of section 1. At fetch time it searches the landmarks near the anchor and places the study box around those found, plus the margin, rounded outward to 0.01 degree. That box is an `ASSUMPTION` and is stored only in the git-ignored cache. Its coordinates are derived from OSM positions, so they are not given here; its size is.
+
+**The two boxes.** All nine landmarks were found (OSM timestamp 2026-10-26T12:39:20Z).
+
+| | This test (section 1) | Study box of `ug fetch-geometry` | Both boxes |
+|---|---|---|---|
+| Size | 22.2 km north-south x 18.3 km east-west | 23.4 km x 16.4 km | 21.1 km x 16.4 km |
+| Area | 407 km2 | 382 km2 | 346 km2 (85% of the test box, 90% of the new box) |
+
+The new box reaches further south (the 3 km margin around the high-speed rail station and the power plant) and is shorter on the north and narrower east-west (its east and west edges follow the outermost landmarks).
+
+**Road length, built drivable roads** (CALCULATED from the two cached extracts, 30 minutes apart; a segment counts where its midpoint lies):
+
+| | Test box | New box |
+|---|---|---|
+| In the part both boxes share | 2,353.8 km | 2,353.8 km |
+| In the part only this box holds | 219.4 km | 20.1 km |
+| Inside the box | 2,573.2 km | 2,373.8 km |
+| Outside the box, on ways that cross its edge | 314.6 km (10.9% of the total) | 362.3 km (13.2%) |
+| Total of the ways that touch the box (the number section 2 reports) | 2,887.7 km | 2,736.1 km |
+| Junctions (whole ways) | 12,451 | 11,727 |
+| Share of the length in the largest component | 0.977 | 0.996 |
+
+**Reading.** The shared part holds exactly the same length in both extracts, so OpenStreetMap did not change there between the two snapshots and the whole difference comes from the box: the new box holds 199.4 km (7.7%) less road inside it and 5.8% fewer junctions, more than the 2% of the T-B1-010 acceptance, explained by the box and not by the data or the code. The street graph is more connected in the new box (0.996; 5 components instead of 11): 6 of the 10 pieces separate from the main graph in the test box (26.6 km together) lie wholly in the strips the new box leaves out, and the two largest (16.7 and 16.6 km) are part of the main graph in the new extract, which holds ways that the test box did not. Section 2's lengths, and the coverage report's until T-B1-010 changes it, count every way that touches the box over its whole length, so about a tenth of the reported length lies outside the box; the coverage report gains the length inside the box so that the two cannot be confused. The conclusions of sections 2 to 4 stand: the new box holds all nine landmarks and enough streets for the three scale tiers.
