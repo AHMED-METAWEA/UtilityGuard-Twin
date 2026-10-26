@@ -1,0 +1,2651 @@
+# Raw hourly modes are normalized to an arithmetic mean of exactly one on loading.
+# Diurnal hXX is local clock hour; Ramadan hXX is hours AFTER iftar_hour_local.
+# Linear interpolation wraps between h23 and h00; sigma is stationary AR(1) SD,
+# phi is lag-one correlation per hydraulic tick (not per hour).
+# Calendar event multipliers and fire flows are explicit scenario ASSUMPTION inputs.
+# utc_offset_hours is ONE fixed offset for the whole run: summer time is not modelled
+# (Egypt has used UTC+3 in summer since 2023); use mode 3 for a summer scenario.
+set_id: demand_v1
+parent: null
+note: "Synthetic placeholder demand factors, not ACUD data. Provider base demands remain unchanged; all inputs are unverified."
+assumptions:
+  utc_offset_hours:
+    unit: h
+    distribution: {type: triangular, min: 2, mode: 2, max: 3}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  iftar_hour_local:
+    unit: h
+    distribution: {type: triangular, min: 17, mode: 18, max: 19}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  noise_sigma:
+    unit: ratio
+    distribution: {type: triangular, min: 0.01, mode: 0.04, max: 0.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  noise_phi:
+    unit: ratio
+    distribution: {type: triangular, min: 0.4, mode: 0.75, max: 0.9}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  forecast_sigma:
+    unit: ratio
+    distribution: {type: triangular, min: 0.02, mode: 0.06, max: 0.12}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  forecast_phi:
+    unit: ratio
+    distribution: {type: triangular, min: 0.5, mode: 0.85, max: 0.95}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_season_m01:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_season_m02:
+    unit: ratio
+    distribution: {type: triangular, min: 0.736, mode: 0.92, max: 1.104}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_season_m03:
+    unit: ratio
+    distribution: {type: triangular, min: 0.776, mode: 0.97, max: 1.164}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_season_m04:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_season_m05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.848, mode: 1.06, max: 1.272}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_season_m06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.896, mode: 1.12, max: 1.344}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_season_m07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.928, mode: 1.16, max: 1.392}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_season_m08:
+    unit: ratio
+    distribution: {type: triangular, min: 0.92, mode: 1.15, max: 1.38}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_season_m09:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_season_m10:
+    unit: ratio
+    distribution: {type: triangular, min: 0.824, mode: 1.03, max: 1.236}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_season_m11:
+    unit: ratio
+    distribution: {type: triangular, min: 0.768, mode: 0.96, max: 1.152}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_season_m12:
+    unit: ratio
+    distribution: {type: triangular, min: 0.728, mode: 0.91, max: 1.092}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 0.28, mode: 0.35, max: 0.42}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 0.28, mode: 0.35, max: 0.42}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.36, mode: 0.45, max: 0.54}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 1.52, mode: 1.9, max: 2.28}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 1.6, mode: 2, max: 2.4}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 1.52, mode: 1.9, max: 2.28}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 1.36, mode: 1.7, max: 2.04}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 1.2, mode: 1.5, max: 1.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.96, mode: 1.2, max: 1.44}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.68, mode: 0.85, max: 1.02}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 0.4, mode: 0.5, max: 0.6}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 0.36, mode: 0.45, max: 0.54}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 0.32, mode: 0.4, max: 0.48}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 0.32, mode: 0.4, max: 0.48}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_government_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 0.28, mode: 0.35, max: 0.42}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 3.2, mode: 4, max: 4.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 1.04, mode: 1.3, max: 1.56}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 0.68, mode: 0.85, max: 1.02}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_government_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 1.44, mode: 1.8, max: 2.16}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_weekend_government:
+    unit: ratio
+    distribution: {type: triangular, min: 0.4, mode: 0.5, max: 0.6}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_holiday_government:
+    unit: ratio
+    distribution: {type: triangular, min: 0.16, mode: 0.2, max: 0.24}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_heatwave_government:
+    unit: ratio
+    distribution: {type: triangular, min: 0.864, mode: 1.08, max: 1.296}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 0.28, mode: 0.35, max: 0.42}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 0.28, mode: 0.35, max: 0.42}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.36, mode: 0.45, max: 0.54}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 1.52, mode: 1.9, max: 2.28}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 1.6, mode: 2, max: 2.4}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 1.52, mode: 1.9, max: 2.28}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 1.36, mode: 1.7, max: 2.04}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 1.2, mode: 1.5, max: 1.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.96, mode: 1.2, max: 1.44}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.68, mode: 0.85, max: 1.02}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 0.4, mode: 0.5, max: 0.6}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 0.36, mode: 0.45, max: 0.54}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 0.32, mode: 0.4, max: 0.48}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 0.32, mode: 0.4, max: 0.48}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_business_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 0.28, mode: 0.35, max: 0.42}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 3.2, mode: 4, max: 4.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 1.04, mode: 1.3, max: 1.56}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 0.68, mode: 0.85, max: 1.02}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_business_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 1.44, mode: 1.8, max: 2.16}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_weekend_business:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_holiday_business:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_heatwave_business:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 0.28, mode: 0.35, max: 0.42}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 0.28, mode: 0.35, max: 0.42}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.36, mode: 0.45, max: 0.54}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 1.52, mode: 1.9, max: 2.28}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 1.6, mode: 2, max: 2.4}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 1.52, mode: 1.9, max: 2.28}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 1.36, mode: 1.7, max: 2.04}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 1.2, mode: 1.5, max: 1.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.96, mode: 1.2, max: 1.44}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.68, mode: 0.85, max: 1.02}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 0.4, mode: 0.5, max: 0.6}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 0.36, mode: 0.45, max: 0.54}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 0.32, mode: 0.4, max: 0.48}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 0.32, mode: 0.4, max: 0.48}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_diplomatic_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 0.28, mode: 0.35, max: 0.42}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 3.2, mode: 4, max: 4.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 1.04, mode: 1.3, max: 1.56}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 0.68, mode: 0.85, max: 1.02}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_diplomatic_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 1.44, mode: 1.8, max: 2.16}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_weekend_diplomatic:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_holiday_diplomatic:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_heatwave_diplomatic:
+    unit: ratio
+    distribution: {type: triangular, min: 0.896, mode: 1.12, max: 1.344}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 0.36, mode: 0.45, max: 0.54}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 0.32, mode: 0.4, max: 0.48}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 0.32, mode: 0.4, max: 0.48}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 0.36, mode: 0.45, max: 0.54}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 1.04, mode: 1.3, max: 1.56}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 1.52, mode: 1.9, max: 2.28}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 1.2, mode: 1.5, max: 1.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 0.68, mode: 0.85, max: 1.02}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 0.76, mode: 0.95, max: 1.14}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 0.84, mode: 1.05, max: 1.26}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.96, mode: 1.2, max: 1.44}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 1.04, mode: 1.3, max: 1.56}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 1.24, mode: 1.55, max: 1.86}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 1.36, mode: 1.7, max: 2.04}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 0.96, mode: 1.2, max: 1.44}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_residential_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 3.2, mode: 4, max: 4.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 1.04, mode: 1.3, max: 1.56}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 0.68, mode: 0.85, max: 1.02}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_residential_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 1.44, mode: 1.8, max: 2.16}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_weekend_residential:
+    unit: ratio
+    distribution: {type: triangular, min: 0.848, mode: 1.06, max: 1.272}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_holiday_residential:
+    unit: ratio
+    distribution: {type: triangular, min: 0.84, mode: 1.05, max: 1.26}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_heatwave_residential:
+    unit: ratio
+    distribution: {type: triangular, min: 0.96, mode: 1.2, max: 1.44}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 1.44, mode: 1.8, max: 2.16}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 1.6, mode: 2, max: 2.4}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 1.6, mode: 2, max: 2.4}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 1.44, mode: 1.8, max: 2.16}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.96, mode: 1.2, max: 1.44}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 0.4, mode: 0.5, max: 0.6}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 0.4, mode: 0.5, max: 0.6}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 0.4, mode: 0.5, max: 0.6}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 0.4, mode: 0.5, max: 0.6}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 0.4, mode: 0.5, max: 0.6}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 0.4, mode: 0.5, max: 0.6}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 0.4, mode: 0.5, max: 0.6}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 0.4, mode: 0.5, max: 0.6}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.4, mode: 0.5, max: 0.6}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 0.96, mode: 1.2, max: 1.44}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_green_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 1.2, mode: 1.5, max: 1.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 3.2, mode: 4, max: 4.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 1.04, mode: 1.3, max: 1.56}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 0.68, mode: 0.85, max: 1.02}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_green_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 1.44, mode: 1.8, max: 2.16}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_weekend_green:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_holiday_green:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_heatwave_green:
+    unit: ratio
+    distribution: {type: triangular, min: 1.04, mode: 1.3, max: 1.56}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_medical_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 3.2, mode: 4, max: 4.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 1.04, mode: 1.3, max: 1.56}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 0.68, mode: 0.85, max: 1.02}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_medical_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 1.44, mode: 1.8, max: 2.16}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_weekend_medical:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_holiday_medical:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_heatwave_medical:
+    unit: ratio
+    distribution: {type: triangular, min: 0.864, mode: 1.08, max: 1.296}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 0.28, mode: 0.35, max: 0.42}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 0.28, mode: 0.35, max: 0.42}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.36, mode: 0.45, max: 0.54}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 1.52, mode: 1.9, max: 2.28}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 1.6, mode: 2, max: 2.4}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 1.52, mode: 1.9, max: 2.28}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 1.36, mode: 1.7, max: 2.04}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 1.2, mode: 1.5, max: 1.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.96, mode: 1.2, max: 1.44}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.68, mode: 0.85, max: 1.02}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 0.4, mode: 0.5, max: 0.6}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 0.36, mode: 0.45, max: 0.54}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 0.32, mode: 0.4, max: 0.48}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 0.32, mode: 0.4, max: 0.48}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_education_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 0.28, mode: 0.35, max: 0.42}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 3.2, mode: 4, max: 4.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 1.04, mode: 1.3, max: 1.56}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 0.68, mode: 0.85, max: 1.02}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_education_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 1.44, mode: 1.8, max: 2.16}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_weekend_education:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_holiday_education:
+    unit: ratio
+    distribution: {type: triangular, min: 0.2, mode: 0.25, max: 0.3}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_heatwave_education:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 0.36, mode: 0.45, max: 0.54}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 0.32, mode: 0.4, max: 0.48}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 0.32, mode: 0.4, max: 0.48}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 0.36, mode: 0.45, max: 0.54}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 1.04, mode: 1.3, max: 1.56}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 1.52, mode: 1.9, max: 2.28}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 1.2, mode: 1.5, max: 1.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 0.68, mode: 0.85, max: 1.02}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 0.76, mode: 0.95, max: 1.14}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 0.84, mode: 1.05, max: 1.26}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.96, mode: 1.2, max: 1.44}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 1.04, mode: 1.3, max: 1.56}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 1.24, mode: 1.55, max: 1.86}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 1.36, mode: 1.7, max: 2.04}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 0.96, mode: 1.2, max: 1.44}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_sports_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 3.2, mode: 4, max: 4.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 1.04, mode: 1.3, max: 1.56}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 0.68, mode: 0.85, max: 1.02}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_sports_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 1.44, mode: 1.8, max: 2.16}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_weekend_sports:
+    unit: ratio
+    distribution: {type: triangular, min: 0.96, mode: 1.2, max: 1.44}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_holiday_sports:
+    unit: ratio
+    distribution: {type: triangular, min: 0.84, mode: 1.05, max: 1.26}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_heatwave_sports:
+    unit: ratio
+    distribution: {type: triangular, min: 0.96, mode: 1.2, max: 1.44}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 0.28, mode: 0.35, max: 0.42}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 0.28, mode: 0.35, max: 0.42}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.36, mode: 0.45, max: 0.54}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 1.52, mode: 1.9, max: 2.28}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 1.6, mode: 2, max: 2.4}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 1.52, mode: 1.9, max: 2.28}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 1.36, mode: 1.7, max: 2.04}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 1.2, mode: 1.5, max: 1.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.96, mode: 1.2, max: 1.44}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.68, mode: 0.85, max: 1.02}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 0.4, mode: 0.5, max: 0.6}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 0.36, mode: 0.45, max: 0.54}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 0.32, mode: 0.4, max: 0.48}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 0.32, mode: 0.4, max: 0.48}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_commercial_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 0.28, mode: 0.35, max: 0.42}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 3.2, mode: 4, max: 4.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 1.04, mode: 1.3, max: 1.56}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 0.68, mode: 0.85, max: 1.02}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_commercial_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 1.44, mode: 1.8, max: 2.16}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_weekend_commercial:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_holiday_commercial:
+    unit: ratio
+    distribution: {type: triangular, min: 0.816, mode: 1.02, max: 1.224}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_heatwave_commercial:
+    unit: ratio
+    distribution: {type: triangular, min: 0.92, mode: 1.15, max: 1.38}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 0.28, mode: 0.35, max: 0.42}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 0.24, mode: 0.3, max: 0.36}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 0.28, mode: 0.35, max: 0.42}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.36, mode: 0.45, max: 0.54}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 1.52, mode: 1.9, max: 2.28}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 1.6, mode: 2, max: 2.4}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 1.52, mode: 1.9, max: 2.28}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 1.36, mode: 1.7, max: 2.04}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 1.2, mode: 1.5, max: 1.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.96, mode: 1.2, max: 1.44}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.68, mode: 0.85, max: 1.02}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 0.4, mode: 0.5, max: 0.6}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 0.36, mode: 0.45, max: 0.54}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 0.32, mode: 0.4, max: 0.48}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 0.32, mode: 0.4, max: 0.48}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_diurnal_industrial_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 0.28, mode: 0.35, max: 0.42}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h00:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h01:
+    unit: ratio
+    distribution: {type: triangular, min: 3.2, mode: 4, max: 4.8}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h02:
+    unit: ratio
+    distribution: {type: triangular, min: 2.0, mode: 2.5, max: 3.0}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h03:
+    unit: ratio
+    distribution: {type: triangular, min: 1.28, mode: 1.6, max: 1.92}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h04:
+    unit: ratio
+    distribution: {type: triangular, min: 1.04, mode: 1.3, max: 1.56}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h05:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h06:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h07:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h08:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h09:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h10:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h11:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h12:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h13:
+    unit: ratio
+    distribution: {type: triangular, min: 0.44, mode: 0.55, max: 0.66}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h14:
+    unit: ratio
+    distribution: {type: triangular, min: 0.48, mode: 0.6, max: 0.72}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h15:
+    unit: ratio
+    distribution: {type: triangular, min: 0.52, mode: 0.65, max: 0.78}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h16:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h17:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h18:
+    unit: ratio
+    distribution: {type: triangular, min: 0.68, mode: 0.85, max: 1.02}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h19:
+    unit: ratio
+    distribution: {type: triangular, min: 0.72, mode: 0.9, max: 1.08}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h20:
+    unit: ratio
+    distribution: {type: triangular, min: 0.8, mode: 1, max: 1.2}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h21:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h22:
+    unit: ratio
+    distribution: {type: triangular, min: 1.12, mode: 1.4, max: 1.68}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_ramadan_industrial_h23:
+    unit: ratio
+    distribution: {type: triangular, min: 1.44, mode: 1.8, max: 2.16}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_weekend_industrial:
+    unit: ratio
+    distribution: {type: triangular, min: 0.64, mode: 0.8, max: 0.96}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_holiday_industrial:
+    unit: ratio
+    distribution: {type: triangular, min: 0.56, mode: 0.7, max: 0.84}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
+  demand_heatwave_industrial:
+    unit: ratio
+    distribution: {type: triangular, min: 0.88, mode: 1.1, max: 1.32}
+    source_note: "Synthetic value for the F0 and F1 twin, not ACUD data; placeholder until a source exists"
+    verified: false
