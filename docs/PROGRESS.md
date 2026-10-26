@@ -1,6 +1,19 @@
 # PROGRESS
-Current phase: **B1 (Spec M1), Wave 1 not finished: stopped at the owner's request in the middle of T-B1-010 (round-1 fixes committed locally, not pushed, round 2 not run).** A1 is closed (tag `phase-A1` on `daf6634`). Wave 1 merged by the lead: #41 (T-B1-015 WNTR manifest), #42 (network model), #43 (T-B1-011 procedural F0 network). Waiting for the owner: #40 (T-B1-004), #39 (T-B1-005). #45 (T-B1-010) is still in its review rounds.
+Current phase: **B1 (Spec M1), Wave 2 running.** A1 is closed (tag `phase-A1` on `daf6634`). Wave 1 is merged except T-B1-010 (#45, review round 2 next). Wave 2: Codex lanes T-B1-020 (run store) and T-B1-012 (demand model) are running; the lead finishes T-B1-010, then T-B1-016 (hydraulics) and T-B1-013 (OSM provider).
 Last session: 2026-10-26 (lead agent Claude Code)
+
+## Phase B1, Wave 2 (started 2026-10-26)
+The owner merged #39 (T-B1-005) and #40 (T-B1-004) and said continue: the Codex lanes start first and run while the lead works; the lead stops only for Tier 2 merges (batched), `main` or tags, new dependencies, deletions, breaking contracts `v1` or the Honesty Rules, money, or the usage limit. Interfaces fixed before the lanes started: D-024.
+
+| Card | Who | Branch | State |
+|---|---|---|---|
+| T-B1-020 run store | Codex (Tier 2, high effort) | `codex/b1-run-store` | running; the lead's first commit adds the D1 pins (`pyarrow==26.0.0`, `duckdb==1.5.6`) |
+| T-B1-012 demand model | Codex (Tier 2, high effort) | `codex/b1-demand` | running |
+| T-B1-010 `ug fetch-geometry` | lead | `claude/b1-fetch-geometry`, #45 | round 1 fixed; inside-box lengths, `make ci`, round 2 next |
+| T-B1-016 hydraulics | lead | `claude/b1-hydraulics` | next |
+| T-B1-013 OSM provider | lead | `claude/b1-osm-provider` | after T-B1-016 |
+
+**Codex tokens (running tally, from the `codex exec` logs):** Wave 1 implementation 152,478. Wave 2: T-B1-020 and T-B1-012 running (added when they finish). Plugin reviews report no tokens.
 
 ## Phase B1, Wave 1 (2026-10-26)
 Owner decisions applied: G1 to G3, D1 to D3 (D-023 in PR #39); the owner merged #37 and #38 and added card T-B1-005. Work split from now on (owner, 2026-10-26): Codex takes every card that needs no lead judgment (run store, API, stream and replay plumbing, frontend screens from the design plan, tests, CI, docs, tooling), up to two lanes, medium effort unless Tier 2; the lead keeps physics and fault injection, solver integration, detection, cost and decision, evidence, contracts and UI direction.
