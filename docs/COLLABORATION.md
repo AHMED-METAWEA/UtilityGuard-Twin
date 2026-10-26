@@ -227,7 +227,7 @@ Safety net after every merge the lead makes: pull `dev`, run `make ci` in a fres
 1. PLAN      Claude Code writes/updates a task card (Appendix C) in docs/tasks/ and assigns owner + reviewer.
 2. BRANCH    Owner creates <agent>/<phase>-<topic> in its own worktree from latest dev.
 3. BUILD     Owner implements in small commits; runs tests; stays inside "allowed files".
-4. HANDOFF   Owner writes a handoff note (Appendix D) in the PR description and in docs/progress/<agent>.md.
+4. HANDOFF   Owner writes a handoff note (Appendix D) in the PR description and in its own file docs/progress/<agent>/<task-id>.md.
 5. REVIEW    The OTHER agent reviews (Section 8). Findings go into docs/reviews/<task-id>.md or the PR.
 6. FIX       Owner addresses findings (max two review rounds; then escalate, Section 9).
 7. INTEGRATE Claude Code reports the PR as ready (CI green, review logged, Honesty checklist ticked) and stops; the owner merges (squash for agent branches), unless the PR meets the standing merge rule in 5.4, in which case the lead merges it and runs the safety net.
@@ -261,7 +261,7 @@ Primary owner edits. The other agent may write tests for the path (in the tests 
 | `frontend/src/app`, `ui` (design system tokens), `map-engine` core | Claude Code | The living network is the identity of the product |
 | `frontend/src/features/*` (screens), data layer, i18n strings, UI tests | Codex | From the design plan and generated types; Claude reviews visually |
 | Tests that verify an owner's module | The non-owner | Principle 1 |
-| `docs/progress/claude-code.md`, `docs/progress/codex.md`, `docs/reviews/` | Each agent owns its own file | Avoids merge conflicts. Lead consolidates into `docs/PROGRESS.md` |
+| `docs/progress/<agent>/<task-id>.md` (one new file per task), `docs/progress/claude-code.md` (the lead's session log), `docs/reviews/` | Each agent owns its own files | Avoids merge conflicts (D-020: a shared `docs/progress/codex.md` conflicted after almost every merge). `docs/progress/codex.md` is frozen history. Lead consolidates into `docs/PROGRESS.md` |
 
 Creating the repository structure (Phase A1, card T-A1-001) and any later move of directories is done by **one agent only (Claude Code)** with other work frozen, because moves conflict with every parallel edit. Nothing inside `freebuff/` is moved, edited or deleted by either agent.
 
@@ -402,7 +402,7 @@ There is NO ACUD data. Layout comes from public sources; pipes are inferred; hyd
 - Work in your own git worktree and branch (claude/... or codex/...). Never commit to main or dev. Open a PR into dev.
 - Conventional commits with an "Agent: <name>" trailer. Small commits; tests green at each.
 - Author, tester and reviewer are different agents. Never mark your own work reviewed.
-- Write a handoff note in the PR and in docs/progress/<agent>.md. If it is not in the repo, the other agent has not seen it.
+- Write a handoff note in the PR and in docs/progress/<agent>/<task-id>.md. If it is not in the repo, the other agent has not seen it.
 - Do not delete files, change contracts, add heavy dependencies, or run destructive git commands without approval.
 - Keep reads narrow: git ls-files, wc -l, grep; do not read the whole repo.
 
@@ -465,7 +465,7 @@ Max sessions: 1-2. If exceeded, stop and report.
 <conditions>
 ```
 
-## Appendix D: Handoff note template (PR description and `docs/progress/<agent>.md`)
+## Appendix D: Handoff note template (PR description and `docs/progress/<agent>/<task-id>.md`)
 
 ```markdown
 ## Handoff: T-A1-007

@@ -98,6 +98,9 @@ Every change of stance, every reuse from `freebuff/`, and every proposed deletio
 - **Process.** Codex cannot commit from its sandbox, so the lead commits reviewed Codex work with the `Agent: codex` trailer. The lead added tests where a mutation survived (CLI: the `FAIL` prefix, a repeated schema `$id`, an unresolvable `$dynamicRef`; deploy: the launcher defaults). Mistake to correct: the commit message of the CLI commit says 28 of 29 mutations were caught by Codex's tests; the right number is 25 (the PR text was corrected; the merged commit is not rewritten).
 - Lesson: after each owner merge the open PRs that append to `docs/progress/codex.md` conflict again (three rebases this wave, always keep both sections). Each agent's handoff could go to its own file per task to stop this; proposed, not changed.
 
+### D-020: One handoff file per task (2026-10-26, owner approved the proposal)
+- Handoff notes go in `docs/progress/<agent>/<task-id>.md`, one new file per task, in the PR that does the task. The shared `docs/progress/codex.md` conflicted after almost every merge in Wave 3 (three rebases); a new file per task cannot conflict. `docs/progress/codex.md` and its old sections stay as history; `docs/progress/claude-code.md` stays the lead's session log (only one author, no conflicts). Written into `AGENTS.md` (Working agreement) and `COLLABORATION.md` (step 4, the ownership table, the working rules, Appendix D). Tier 0, merged by the lead under D-018.
+
 ## Reuse log (REUSE and ADAPT only)
 
 No reuse has been decided yet. Candidates and likely verdicts are in `ADOPTION_PLAN.md` section 8. A line is added here, in the same PR that brings the code in, with: date, source file and lines in `freebuff/`, what was reused, verdict (REUSE or ADAPT), target path, tests added (including golden tests for the reused behavior), reviewer, and why it is better than writing it new.
