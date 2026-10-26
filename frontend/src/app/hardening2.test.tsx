@@ -16,6 +16,10 @@ afterEach(() => {
 });
 
 const PROVENANCE = { label: "PUBLIC_GEOMETRY", source: "OpenStreetMap", licence: "ODbL-1.0", retrieved: "2026-10-01", coverage_report: "c" };
+// Each hostile fixture is a VALID hybrid F1 network with exactly one defect (review round 2).
+const DISTRICTS = { label: "ASSUMPTION", method: "hand-drawn", source: "manual overlay", drawn: "2026-10-26" };
+const VALID_F1 = { network_version: "n", fidelity: "F1", geometry_provenance: PROVENANCE, district_boundaries: DISTRICTS };
+const without = (key: string) => Object.fromEntries(Object.entries(VALID_F1).filter(([k]) => k !== key));
 
 describe("state is read inside the boundaries", () => {
   it.each(["network", "lastEnvelope", "status"])("keeps the notice when state.%s throws on a mounted update", (key) => {
@@ -50,23 +54,26 @@ describe("state is read inside the boundaries", () => {
 
 describe("only inert data is accepted", () => {
   class WithHook {
+    network_version = "n";
     fidelity = "F1";
     geometry_provenance = PROVENANCE;
+    district_boundaries = DISTRICTS;
     toJSON() { return { fidelity: "F0" }; }
   }
   const hidden = (o: object, key: string, value: unknown) => Object.defineProperty(o, key, { value, enumerable: false });
 
   it.each([
     ["a class instance", () => new WithHook()],
-    ["a non-enumerable toJSON", () => hidden({ fidelity: "F1", geometry_provenance: PROVENANCE }, "toJSON", () => ({}))],
-    ["a symbol key", () => ({ fidelity: "F1", geometry_provenance: PROVENANCE, [Symbol("x")]: 1 })],
-    ["an accessor", () => ({ fidelity: "F1", get geometry_provenance() { return PROVENANCE; } })],
+    ["a non-enumerable toJSON", () => hidden({ ...VALID_F1 }, "toJSON", () => ({}))],
+    ["a symbol key", () => ({ ...VALID_F1, [Symbol("x")]: 1 })],
+    ["an accessor", () => ({ ...without("geometry_provenance"), get geometry_provenance() { return PROVENANCE; } })],
+    ["an accessor on the districts", () => ({ ...without("district_boundaries"), get district_boundaries() { return DISTRICTS; } })],
     ["a Date", () => new Date()],
     ["a Map", () => new Map([["fidelity", "F1"]])],
-    ["a non-enumerable field", () => hidden({ fidelity: "F1" }, "geometry_provenance", PROVENANCE)],
-    ["a cyclic object", () => { const o: Record<string, unknown> = { fidelity: "F1", geometry_provenance: PROVENANCE }; o.self = o; return o; }],
-    ["a deeply nested object", () => { let o: Record<string, unknown> = { fidelity: "F1" }; for (let i = 0; i < 200; i++) o = { next: o }; return { fidelity: "F1", geometry_provenance: o }; }],
-    ["a huge string", () => ({ fidelity: "F1", geometry_provenance: { ...PROVENANCE, source: "x".repeat(1_000_000) } })],
+    ["a non-enumerable field", () => hidden(without("geometry_provenance"), "geometry_provenance", PROVENANCE)],
+    ["a cyclic object", () => { const o: Record<string, unknown> = { ...VALID_F1 }; o.self = o; return o; }],
+    ["a deeply nested object", () => { let o: Record<string, unknown> = { leaf: 1 }; for (let i = 0; i < 200; i++) o = { next: o }; return { ...VALID_F1, extra: o }; }],
+    ["a huge string", () => ({ ...VALID_F1, note: "x".repeat(1_000_000) })],
   ])("never gives F1 for %s", (_name, make) => {
     const view = fidelityBadge(make() as never);
     expect(view.text).not.toContain("F1");
@@ -104,13 +111,11 @@ describe("only inert data is accepted", () => {
     });
     expect(streamSourceFromEnvelope(forged)).toBe("REPLAY");
     const forgedNetwork = new Proxy({}, {
-      ownKeys: () => ["fidelity", "geometry_provenance"],
+      ownKeys: () => ["network_version", "fidelity", "geometry_provenance", "district_boundaries"],
       getOwnPropertyDescriptor: (_t, key) =>
-        key === "fidelity"
-          ? { value: "F1", enumerable: true, configurable: true, writable: true }
-          : key === "geometry_provenance"
-            ? { value: PROVENANCE, enumerable: true, configurable: true, writable: true }
-            : undefined,
+        key in VALID_F1
+          ? { value: VALID_F1[key as keyof typeof VALID_F1], enumerable: true, configurable: true, writable: true }
+          : undefined,
     });
     expect(fidelityBadge(forgedNetwork as never).text).not.toContain("F1");
   });
