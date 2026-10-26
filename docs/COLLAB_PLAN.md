@@ -197,7 +197,7 @@ Status: **closed 2026-10-26** (two Codex rounds, `docs/reviews/T-A1-013.md`; #31
 
 ## 4b. Phase B1 cards: Twin core (Spec M1). APPROVED by the owner on 2026-10-26 (decisions G1 to G3 and D1 to D3, D-023)
 
-Nothing below is built until the owner approves this plan (approval: merging the plan PR, or a message). Source: Adoption Plan Phase B1, Master Spec 21 (M1), 5.1 to 5.5, 4.6, 4.8, 10.4, 11.2. The geometry feasibility test came first, as Prompt 5 requires: `docs/audit/B1_GEOMETRY_FEASIBILITY.md`.
+The owner approved this plan on 2026-10-26 and added card T-B1-005. Source: Adoption Plan Phase B1, Master Spec 21 (M1), 5.1 to 5.5, 4.6, 4.8, 10.4, 11.2. The geometry feasibility test came first, as Prompt 5 requires: `docs/audit/B1_GEOMETRY_FEASIBILITY.md`.
 
 **M1 acceptance (Spec 21) and B1 exit gate (Adoption Plan):** normal week runs cleanly; same seed gives identical hashes; a leak lowers pressure near its location; chunk-size convergence report written; geometry provenance report; identical hashes for identical manifests. Plus the A1 carry-over (D-022): the fixes after review round 2 without a third review (D-016, D-021) and the code only the lead reviewed (#25, #26).
 
@@ -220,36 +220,40 @@ Nothing below is built until the owner approves this plan (approval: merging the
 Status: **merged (PR #36)**, review log `docs/reviews/T-B1-001.md`   Owner: claude   Reviewer: codex   Tier: T1
 
 ### T-B1-002: Python dependency audit job
-Status: **PR #37, waiting for the owner** (it changes dependency handling), review log `docs/reviews/T-B1-002.md`   Owner: claude   Reviewer: codex   Tier: T1
+Status: **merged by the owner (PR #37)**, review log `docs/reviews/T-B1-002.md`   Owner: claude   Reviewer: codex   Tier: T1
 
 ### T-B1-003: Geometry feasibility test
-Status: **delivered** (`docs/audit/B1_GEOMETRY_FEASIBILITY.md`); decisions G1 to G3 open   Owner: claude   Reviewer: owner   Tier: T1
+Status: **delivered** (`docs/audit/B1_GEOMETRY_FEASIBILITY.md`; section 7 compares the fetch-time study box); G1 to G3 approved   Owner: claude   Reviewer: owner   Tier: T1
 
 ### Wave 1 (after G1 to G3; parallel)
 
 ### T-B1-004: The development and CI environments install what the container ships
+Status: **merged by the owner (PR #40)**, review log `docs/reviews/T-B1-004.md`
 Owner: codex   Reviewer: claude   Tier: T1 (the owner merges: dependency handling)   Branch: `codex/b1-dev-constraints`
 **Why:** the audit found that `make install` resolves `fastapi` to 0.143.5 (8 days old) while the container's lock pins 0.143.0, and that package builds fetch the newest `setuptools>=68`. **Allowed:** `Makefile` (the `install` recipe only), `requirements-dev.txt`, a new `constraints/` folder, `mk/audit.mk`, tests in `platform/tests/unit/test_environment.py`. **Behaviour:** `make install` uses `deploy/requirements-api.lock` as a pip constraints file and a pinned build-backend constraint. **Acceptance:** in a fresh clone, `make install install-dev`, then `.venv/bin/python -c "import fastapi; assert fastapi.__version__ == '0.143.0'"`; `pip check` clean; `make audit-python` exit 0; `make ci` exit 0.
 
 ### T-B1-005: Banner and Fidelity badge wording for the hybrid geometry
-Status: Wave 1 (added by the owner on 2026-10-26)   Owner: claude   Reviewer: codex   Tier: T2 (honesty text and the Master Spec; the owner merges)   Branch: `claude/b1-fidelity-wording`   Spec refs: 1.4, 5.1, 13.3
+Status: **merged by the owner (PR #39)**, review log `docs/reviews/T-B1-005.md` (added by the owner on 2026-10-26)   Owner: claude   Reviewer: codex   Tier: T2 (honesty text and the Master Spec; the owner merges)   Branch: `claude/b1-fidelity-wording`   Spec refs: 1.4, 5.1, 13.3
 **Allowed:** `frontend/src/app/strings.ts`, `fidelity.ts`, `App.tsx` and their tests, `frontend/src/ui/HonestyStrip.tsx`, `tokens.css`, `docs/UtilityGuard_Master_Spec.md` (1.4 and the 5.1 note), `platform/tests/unit/test_spec_wording.py`, `docs/`.
 **Behaviour:** the F1 badge says `Fidelity F1: Real OSM streets, hand-drawn districts, inferred pipes, synthetic hydraulics`; for an F1 network the honesty notice adds `Street network © OpenStreetMap contributors (ODbL). District boundaries are hand-drawn approximations. Pipes, demands and equipment are synthetic.`, which stays visible when the notice is collapsed; a network is F1 only when its streets carry `PUBLIC_GEOMETRY` provenance and its district boundaries are declared as hand-drawn `ASSUMPTION`, otherwise the badge shows the lowest level; the honesty statement itself is unchanged.
 **Acceptance:** `make test-frontend` (the F1 cases, the downgrade cases, the line only for F1, the line kept when collapsed, a failing network read keeps the plain notice); `test_spec_wording.py` keeps the shell's texts equal to the Spec's; mutations of the rule and of the wording are caught.
 
 ### T-B1-010: `ug fetch-geometry` and the coverage report
+Status: **PR #45, in review** (round 1 fixed; round 2 next), review log `docs/reviews/T-B1-010.md`
 Owner: claude   Reviewer: codex   Tier: T2 (provenance and labels)   Branch: `claude/b1-fetch-geometry`   Spec refs: 1.4, 5.1
 **Allowed:** `platform/ug_core/src/ug_core/geometry/**` (new, domain-agnostic: fetch, cache, provenance, report), `platform/ug_cli/src/ug_cli/main.py` and a new `fetch_geometry.py`, `platform/tests/unit/test_geometry_*.py`, `.gitignore` (`data/geometry/`), `docs/`. **Forbidden:** committing any OSM extract.
 **Behaviour:** `ug fetch-geometry --area capital [--refresh] [--report]`. The area comes from a versioned file that holds no OSM-derived geometry (G2): an anchor point from Wikidata (CC0), a search half-width, a margin and the landmark names; the study box is placed at fetch time (the landmarks found plus the margin, `ASSUMPTION`) and stored only in the cache provenance, and the query text comes from versioned templates; requests carry the project User-Agent, back off exponentially on 429 and 502, and stop with a clear error after the last attempt; the extract and a `provenance.json` (source, licence ODbL 1.0, retrieved at, `timestamp_osm_base`, query SHA-256, extract SHA-256) are written to `data/geometry/<area>/<osm_base>/`; with a cached extract it runs offline; `--report` writes the coverage report of the feasibility test (streets, junctions, components, grid, districts, land use, buildings, names, freshness) as JSON and Markdown.
 **Acceptance:** offline unit tests with a synthetic Overpass answer built by the test (no OSM data): cache hit and miss, backoff (no real sleep), 404/429/502/timeout paths, provenance fields, report numbers on a hand-checkable graph; the report of a cached extract is byte-identical across two runs; a test fails if anything under `data/geometry/` is tracked by git; `make ci` exit 0. Network check, outside CI: `make fetch-geometry-live` reproduces the feasibility report's junction and component numbers within 2% on a new `timestamp_osm_base`, or explains the difference.
 
 ### T-B1-011: `ProceduralCapitalProvider` (F0 fallback and test fixture)
+Status: **merged by the lead (PR #43)**, review log `docs/reviews/T-B1-011.md`; its parameters are in `network/data/procedural_capital_v1.json` (labelled `ASSUMPTION`), not in `assumptions/`
 Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/b1-procedural-network`   Spec refs: 5.1 steps 1 to 5
 **Allowed:** `domains/water/src/ug_water/network/` (`model.py`, `procedural.py`), `domains/water/tests/test_procedural_*.py`, `assumptions/network_f0_v1.yaml` (new; the owner merges assumption files), `docs/progress/codex/T-B1-011.md`. Reuse candidate `freebuff/backend/app/network/builder.py`, `zones.py`: ADAPT only after the Adoption Plan section 6 review, logged in `DECISIONS.md` with golden tests.
 **Behaviour:** seeded districts, street grids, transmission ring and radial mains, synthetic terrain, tanks at high points, diameters by hierarchy, roughness by age class, demands by land use times area times per-capita (`ASSUMPTION`), three sensor sets `S_base`, `S_dense`, `S_sparse`. Targets: about 260 junctions, 340 pipes, 3 pump stations (2 duty plus 1 standby), 3 tanks, about 30 isolation valves and 2 PRVs, about 48 pressure, 10 flow and 3 level sensors.
 **Acceptance:** same seed gives a byte-identical network (hash); different seeds differ; counts within the targets; every parameter traces to the assumption file (a test changes a value and sees the network change); the Fidelity badge text for this provider is `Fidelity F0: Generic synthetic`; `make ci` exit 0.
 
 ### T-B1-015: WNTR API manifest for everything B1 calls
+Status: **merged by the lead (PR #41)**, review log `docs/reviews/T-B1-015.md`
 Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/b1-wntr-manifest`
 **Allowed:** `domains/water/src/ug_water/wntr_api.py`, `wntr_api_manifest.json`, `scripts/gen_wntr_manifest.py`, `domains/water/tests/test_wntr_api_*.py`.
 **Behaviour:** the manifest declares, by introspection of WNTR 1.5.0, every symbol B1 uses (see "External APIs" below); a test parses the water package with `ast` and fails if code calls a WNTR attribute that the manifest does not declare.
@@ -258,24 +262,28 @@ Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/b1-wntr-manifest`
 ### Wave 2
 
 ### T-B1-013: `OsmCapitalProvider`, scale tiers, pipe inference, district overlay
+Status: **next for the lead** (Wave 2)
 Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/b1-osm-provider`   Needs: T-B1-010, G1 to G3, D2
 **Allowed:** `domains/water/src/ug_water/network/` (`osm.py`, `inference.py`, `overlay.py`), `domains/water/data/overlays/capital_districts_v1.geojson` (hand-made, no OSM data), `domains/water/tests/test_osm_*.py`, `docs/`.
 **Behaviour:** read the cached extract; project to local Cartesian metres (equirectangular about a reference point, error bound computed and documented); merge degree-2 nodes; choose a tier (`lite` about 250, `standard` about 800, `full` 2,000 or more junctions); transmission mains from the trunk, primary and secondary classes, distribution on the rest (seeded, documented rule); diameters by hierarchy and demands per zone are `ASSUMPTION`; junctions are assigned to the overlay's zones; roads under construction are a separate, opt-in layer. Labels: junction coordinates taken from OSM nodes are `PUBLIC_GEOMETRY` with provenance; pipes, diameters and demands are `ASSUMPTION`; the network reports F1 only when its geometry provenance is `PUBLIC_GEOMETRY`.
 **Acceptance:** with a synthetic street-graph fixture: the same extract and seed give an identical network hash; each tier is within 10% of its junction target; the network is connected; every pipe lies on a street segment (distance under 1 m); a zone without overlay coverage is an error, not a silent default; the Fidelity badge shows the F1 text for this provider and never for F0. Locally, outside CI: `standard` from the real cached extract builds and validates.
 
 ### T-B1-012: Demand model
+Status: **in progress** (Codex lane, `codex/b1-demand`, started 2026-10-26; interfaces in D-024)
 Owner: codex   Reviewer: claude   Tier: T2 (assumptions and determinism)   Branch: `codex/b1-demand`   Spec refs: 5.2
 **Allowed:** `domains/water/src/ug_water/demand/**`, `assumptions/demand_v1.yaml` (new; the owner merges it), `domains/water/tests/test_demand_*.py`.
 **Behaviour:** base demand per junction from land use; multipliers for the diurnal pattern per land use, the week (Friday and Saturday weekend), holidays, Ramadan (evening peak at Iftar), the season, heatwave, special events and fire flow; AR(1) correlated noise per zone; a separate forecast-error process (its own random stream) for the expectation model of M3. Every parameter comes from the assumption file and carries `ASSUMPTION`.
 **Acceptance:** property tests (every multiplier finite and positive; deterministic per seed; independent random streams per zone and for the forecast); the Ramadan peak moves to the Iftar window; a holiday lowers the government zone's demand and not the others'; the forecast differs from the truth by the configured error statistics (within sampling tolerance); golden hashes for one week.
 
 ### T-B1-016: Hydraulic engine (WNTR, pressure-driven demand)
+Status: **next for the lead** (Wave 2)
 Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/b1-hydraulics`   Needs: T-B1-011, T-B1-015
 **Allowed:** `domains/water/src/ug_water/solver/**`, `domains/water/tests/test_solver_*.py`, `docs/approximations.md`.
 **Behaviour:** WNTR with pressure-driven demand (PDD options verified in the installed version); 5-minute hydraulic step; pump head and efficiency curves; energy in kWh per pump and per run; results as `TruthSeries` (`SIMULATION`); a non-finite result raises, never becomes zero.
 **Acceptance:** 48 hours on the `lite` network (about 250 nodes) in under 60 s on this laptop (Spec 4.8; measured and reported); PDD reduces delivered demand when pressure falls below the required pressure (a test with a throttled source); a planted NaN in the results raises; energy agrees with an independent calculation from head, flow and efficiency within 1%.
 
 ### T-B1-020: Run store, manifest and hashes
+Status: **in progress** (Codex lane, `codex/b1-run-store`, started 2026-10-26; interfaces in D-024)
 Owner: codex   Reviewer: claude   Tier: T2 (determinism, truth separation)   Branch: `codex/b1-run-store`   Needs: D1
 **Allowed:** `platform/ug_core/src/ug_core/store/**`, `platform/tests/unit/test_store_*.py`, `pyproject` dependency lines approved in D1.
 **Behaviour:** `data/runs/{run_id}/manifest.json` and `truth.parquet` per Spec 11.2 (`fault_tag_hidden` only in the truth bundle); output hashes over canonical content; DuckDB reads.

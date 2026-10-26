@@ -52,7 +52,7 @@
       {"id": "tank_west", "zones": ["green", "medical", "education"], "elevated": false}
     ],
     "tank": {"offset_m": [20, 20], "elevated_height_m": 18, "init_level_m": 4, "min_level_m": 0.5, "max_level_m": 8, "diameter_m": 20},
-    "valves": {"isolation": 30, "prv": 2, "prv_setting_m": 25, "isolation_setting": 0}
+    "valves": {"isolation": 30, "prv": 2, "prv_setting_m": 25, "prv_zones": ["residential_outer", "green"], "prv_min_static_margin_m": 15, "prv_note": "ASSUMPTION: Outer residential and green districts lie on the low southern terrain, away from the government cluster, source and highest tank sites. Each retains its inner grid and one PRV-fed radial inlet; all other district boundary pipes are omitted. Static margin is reservoir head minus downstream elevation minus setting, not a dynamic guarantee.", "isolation_setting": 0}
   },
   "sensors": {
     "coverage_hops": 3,
