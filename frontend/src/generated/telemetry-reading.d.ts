@@ -15,7 +15,7 @@ export interface TelemetryReading {
   sensor_id: string;
   value: number | null;
   /**
-   * A unit written as one ASCII token (no spaces, no letters outside A-Z, a-z): m, m3, L/s, kWh, EGP/m3. Currencies are written EGP only (see money_consistency).
+   * The unit of a sensor reading: one ASCII token built only from known physical units (metres, litres, seconds, pascals, watts, ...), optionally with a metric prefix, an exponent, and / * . between factors. A currency, however it is spelled, is not a physical unit, so money cannot be labelled as sensor output. The list of units is ug_core.grammar.PHYSICAL_UNIT_ATOMS; a test keeps this pattern equal to it.
    */
   unit: string;
   /**

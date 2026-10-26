@@ -104,7 +104,7 @@ PHYSICAL_UNIT_ATOMS = frozenset({
     # electrical and thermal
     "V", "A", "Hz", "ohm", "S", "K", "degC", "degF",
     # concentration, turbidity, ratios and counts
-    "ppm", "ppb", "NTU", "pH", "pct", "rpm", "count",
+    "ppm", "ppb", "NTU", "pH", "pct", "percent", "fraction", "rpm", "count",
 })  # fmt: skip
 _PHYSICAL_PREFIXES = (
     "da", "y", "z", "a", "f", "p", "n", "u", "m", "c", "d", "h", "k", "M", "G", "T", "P", "E",
@@ -113,6 +113,21 @@ _PHYSICAL_PREFIXES = (
 # (`1/s`) or a percent sign.
 _UNIT_FACTOR = re.compile(r"(?P<body>[A-Za-z]+)(?:\^?-?[0-9]+)?|%|1")
 _PRODUCT_OPERATORS = re.compile(r"[/*.]")
+
+
+def physical_unit_pattern() -> str:
+    """The JSON Schema `pattern` that accepts exactly the units `is_physical_unit` accepts.
+
+    Built from the vocabulary, so the code and `contracts/v1/common.schema.json` (`physical_unit`)
+    cannot drift apart: a test compares them character for character and by fuzzing.
+    """
+    atoms = "|".join(sorted(PHYSICAL_UNIT_ATOMS, key=lambda atom: (-len(atom), atom)))
+    prefixes = "|".join(_PHYSICAL_PREFIXES)
+    factor = rf"(?:(?:{prefixes})?(?:{atoms})(?:\^?-?[0-9]+)?|%|1)"
+    return rf"^{factor}(?:[/*.]{factor})*$"
+
+
+PHYSICAL_UNIT_PATTERN = physical_unit_pattern()
 _NOT_A_LETTER = re.compile(r"[^A-Za-z]")
 _LETTER_RUNS = re.compile(r"[A-Za-z]+")
 _UNIT_OPERATORS = re.compile(r"[/*]")

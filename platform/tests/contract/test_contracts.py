@@ -251,6 +251,11 @@ EXPECTED: dict[str, Expect] = {
     "evidence-record/cost_labelled_simulation": ({"enum"}, "label", "SIMULATION"),
     "evidence-record/extra_field": (ADDITIONAL, "", "confidence_pct"),
     "evidence-record/insufficient_evidence_with_value": ({"type"}, "value", ""),
+    "evidence-record/insufficient_evidence_with_estimates": (
+        {"not"},
+        "uncertainty",
+        "",
+    ),
     "evidence-record/insufficient_evidence_without_reason": (
         {"required"},
         "",
@@ -321,6 +326,19 @@ EXPECTED: dict[str, Expect] = {
         {"enum"},
         "payload/stream_source",
         "REPLAYED",
+    ),
+    "telemetry-reading/money_in_a_sensor_reading": ({"pattern"}, "unit", ""),
+    "telemetry-reading/currency_in_a_product_unit": ({"pattern"}, "unit", ""),
+    "telemetry-reading/unit_that_is_not_physical": ({"pattern"}, "unit", ""),
+    "stream-envelope/money_in_a_stream_reading": (
+        {"pattern"},
+        "payload/readings/0/unit",
+        "",
+    ),
+    "stream-envelope/currency_in_a_stream_unit": (
+        {"pattern"},
+        "payload/readings/0/unit",
+        "",
     ),
     "telemetry-reading/fault_tag_in_telemetry": (ADDITIONAL, "", "fault_tag_hidden"),
     "telemetry-reading/label_simulation_not_allowed": ({"enum"}, "label", "SIMULATION"),

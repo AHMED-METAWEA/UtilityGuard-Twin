@@ -12,6 +12,7 @@ export type {
   ModelVersion,
   MoneyConsistency,
   NullableUnit,
+  PhysicalUnit,
   Quality,
   Scalar,
   SchemaVersion,
