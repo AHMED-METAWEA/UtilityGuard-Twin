@@ -1,7 +1,7 @@
 .PHONY: install-dev lint typecheck test-unit ci
 
 install-dev: install
-	$(VPY) -m pip install --disable-pip-version-check -r requirements-dev.txt
+	$(VPY) -m pip install --disable-pip-version-check --constraint constraints/runtime.txt -r requirements-dev.txt
 
 lint:
 	$(VPY) -m ruff check .

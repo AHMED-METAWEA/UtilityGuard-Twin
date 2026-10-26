@@ -1,0 +1,5 @@
+# setuptools 84.0.0 (2026-08-08) is the newest release at least 14 days old.
+# Its one open advisory, GHSA-xmj3-9gf7-h52w, affects only legacy wheel-to-egg
+# installation on Windows, which builds of this repository's packages do not use.
+# Move to 84.1.0 on or after 2026-11-02.
+setuptools==84.0.0
