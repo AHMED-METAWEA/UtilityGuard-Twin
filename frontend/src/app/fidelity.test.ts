@@ -11,8 +11,8 @@ import { STRINGS } from "./strings";
 
 const PROVENANCE = {
   label: "PUBLIC_GEOMETRY" as const,
-  source: "public map data",
-  licence: "ODbL",
+  source: "OpenStreetMap",
+  licence: "ODbL-1.0",
   retrieved: "2026-10-01",
   coverage_report: "coverage.json",
 };
@@ -146,6 +146,19 @@ describe("the hybrid F1 network (owner decisions G1 to G3)", () => {
   it("never throws and never adds the line for unreadable data", () => {
     const exploding = new Proxy({}, { get() { throw new Error("network exploded"); } });
     expect(geometryNotice(exploding as never)).toBeNull();
+  });
+});
+
+describe("the OpenStreetMap claim needs OpenStreetMap provenance (review round 1)", () => {
+  it.each([
+    ["another source", { ...PROVENANCE, source: "municipal CAD export, not OpenStreetMap" }],
+    ["another licence", { ...PROVENANCE, licence: "CC0" }],
+    ["a licence spelled loosely", { ...PROVENANCE, licence: "ODbL" }],
+    ["the source in another case", { ...PROVENANCE, source: "openstreetmap" }],
+  ])("shows no F1 badge and no attribution line for %s", (_name, provenance) => {
+    const loaded = network({ geometry_provenance: provenance as never });
+    expect(fidelityBadge(loaded).level).not.toBe("F1");
+    expect(geometryNotice(loaded)).toBeNull();
   });
 });
 

@@ -58,6 +58,18 @@ export function hasPublicGeometryProvenance(value: unknown): boolean {
   );
 }
 
+// The F1 wording names OpenStreetMap and its licence, so only that exact provenance may unlock
+// it (review round 1): the backend network model writes the same two values.
+export const OSM_SOURCE = "OpenStreetMap";
+export const OSM_LICENCE = "ODbL-1.0";
+
+/** Street geometry from OpenStreetMap under the ODbL, with the full PUBLIC_GEOMETRY record. */
+export function hasOsmStreetProvenance(value: unknown): boolean {
+  if (!hasPublicGeometryProvenance(value)) return false;
+  const data = snapshot(value);
+  return isRecord(data) && data.source === OSM_SOURCE && data.licence === OSM_LICENCE;
+}
+
 /** Are the district boundaries declared as hand-drawn approximations (decision G3)? */
 export function hasHandDrawnDistrictBoundaries(value: unknown): boolean {
   const data = snapshot(value);
@@ -82,7 +94,7 @@ export function fidelityBadge(network: LoadedNetwork | null | undefined): BadgeV
   }
   if (
     data.fidelity === "F1" &&
-    hasPublicGeometryProvenance(data.geometry_provenance) &&
+    hasOsmStreetProvenance(data.geometry_provenance) &&
     hasHandDrawnDistrictBoundaries(data.district_boundaries)
   ) {
     return { level: "F1", text: STRINGS.fidelity.f1, downgraded: false };
@@ -107,3 +119,24 @@ export function geometryNotice(network: LoadedNetwork | null | undefined): strin
     return null;
   }
 }
+
+/** The network as the shell reads it: one inert copy per render, or nothing it may trust. */
+export type NetworkRead = { readable: true; network: unknown } | { readable: false };
+
+/**
+ * Reads `state.network` once, through its property descriptor, so an accessor is never called
+ * (review round 1: a getter could answer differently to the badge and to the notice). The badge
+ * and the notice are both derived from the copy this returns. Never throws.
+ */
+export function readNetwork(state: unknown): NetworkRead {
+  try {
+    if (typeof state !== "object" || state === null) return { readable: false };
+    const descriptor = Object.getOwnPropertyDescriptor(state, "network");
+    if (descriptor === undefined) return { readable: true, network: null };
+    if (!("value" in descriptor)) return { readable: false };
+    return { readable: true, network: snapshot(descriptor.value) };
+  } catch {
+    return { readable: false };
+  }
+}
+

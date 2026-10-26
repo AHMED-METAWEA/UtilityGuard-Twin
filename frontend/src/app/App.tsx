@@ -4,7 +4,8 @@ import { Boundary } from "../ui/Boundary";
 import { FidelityBadge } from "../ui/FidelityBadge";
 import { HonestyStrip } from "../ui/HonestyStrip";
 import { StreamSourcePill } from "../ui/StreamSourcePill";
-import { geometryNotice } from "./fidelity";
+import { geometryNotice, readNetwork } from "./fidelity";
+import type { LoadedNetwork, NetworkRead } from "./fidelity";
 import { ROUTES, findRoute, pathFromHash } from "./routes";
 import { INITIAL_STATE } from "./state";
 import type { ShellState } from "./state";
@@ -83,14 +84,17 @@ function Screen({ state, path }: { state: ShellState; path: string }) {
  * notice, navigation and the screen. The first three are drawn in every state (ready, loading,
  * error, unknown address), because the screen only fills the main area.
  */
-function BadgeFromState({ state }: { state: ShellState }) {
-  return <FidelityBadge network={state.network} />;
+// The badge and the notice's F1 geometry line come from ONE read of the network (review round 1):
+// a value that changed between two reads could otherwise show the F1 badge without the
+// attribution. An accessor is never called; a network that cannot be read gives the fallback
+// badge and the plain notice, which claim nothing.
+function BadgeFromRead({ read }: { read: NetworkRead }) {
+  return read.readable ? <FidelityBadge network={read.network as LoadedNetwork | null} /> : <BadgeFallback />;
 }
 
-// The notice reads the network only to add the F1 geometry line. If that read fails, the
-// fallback is the plain notice: the statement itself never depends on the data.
-function HonestyFromState({ state }: { state: ShellState }) {
-  return <HonestyStrip geometryNotice={geometryNotice(state.network)} />;
+function HonestyFromRead({ read }: { read: NetworkRead }) {
+  const line = read.readable ? geometryNotice(read.network as LoadedNetwork | null) : null;
+  return <HonestyStrip geometryNotice={line} />;
 }
 
 function PillFromState({ state }: { state: ShellState }) {
@@ -128,19 +132,20 @@ export function App(props: { state?: ShellState; path?: string }) {
 function Shell({ state = INITIAL_STATE, path }: { state?: ShellState; path?: string }) {
   const hashPath = useHashPath();
   const current = path ?? hashPath;
+  const read = readNetwork(state);
   return (
     <div className="ug-shell">
       <header className="ug-topbar">
         <span className="ug-brand">{STRINGS.appName}</span>
-        <Boundary fallback={<BadgeFallback />}>
-          <BadgeFromState state={state} />
+        <Boundary fallback={<BadgeFallback />} resetKey={state}>
+          <BadgeFromRead read={read} />
         </Boundary>
-        <Boundary fallback={<PillFallback />}>
+        <Boundary fallback={<PillFallback />} resetKey={state}>
           <PillFromState state={state} />
         </Boundary>
       </header>
-      <Boundary fallback={<HonestyStrip />}>
-        <HonestyFromState state={state} />
+      <Boundary fallback={<HonestyStrip />} resetKey={state}>
+        <HonestyFromRead read={read} />
       </Boundary>
       <div className="ug-body">
         <nav aria-label={STRINGS.nav.label}>
@@ -155,7 +160,7 @@ function Shell({ state = INITIAL_STATE, path }: { state?: ShellState; path?: str
           </ul>
         </nav>
         <main>
-          <Boundary fallback={<ScreenFallback />}>
+          <Boundary fallback={<ScreenFallback />} resetKey={state}>
             <Screen state={state} path={current} />
           </Boundary>
         </main>

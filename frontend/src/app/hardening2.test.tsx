@@ -15,7 +15,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-const PROVENANCE = { label: "PUBLIC_GEOMETRY", source: "s", licence: "l", retrieved: "2026-10-01", coverage_report: "c" };
+const PROVENANCE = { label: "PUBLIC_GEOMETRY", source: "OpenStreetMap", licence: "ODbL-1.0", retrieved: "2026-10-01", coverage_report: "c" };
 
 describe("state is read inside the boundaries", () => {
   it.each(["network", "lastEnvelope", "status"])("keeps the notice when state.%s throws on a mounted update", (key) => {
