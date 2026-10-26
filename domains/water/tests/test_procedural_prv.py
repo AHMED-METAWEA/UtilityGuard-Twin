@@ -70,7 +70,9 @@ def test_prv_zone_is_a_single_inlet_component(seed: int) -> None:
 @pytest.mark.parametrize(
     "zones,margin,pattern",
     [
-        (["government", "green"], 15, "PRV.*government.*(source|government)"),
+        # The exact message: the government district also holds the source, so a looser
+        # pattern passes on the source rule even without the exclusion (lead mutation).
+        (["government", "green"], 15, "government cluster is excluded"),
         (["missing", "green"], 15, "PRV.*unknown.*missing"),
         (["diplomatic", "green"], 15, "PRV.*diplomatic.*tank"),
         (["residential_outer", "green"], 1000, "v_0030.*static.*margin"),

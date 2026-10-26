@@ -424,17 +424,22 @@ class _Builder:
         the existing street RNG sequence (including isolation-valve sites).
         """
 
-        def crosses_zone(pipe: Pipe) -> bool:
-            a, b = self.nodes[pipe.start], self.nodes[pipe.end]
+        def crosses_zone(start: str, end: str) -> bool:
+            a, b = self.nodes[start], self.nodes[end]
             return any(
                 (isinstance(a, Junction) and a.zone == zone)
                 != (isinstance(b, Junction) and b.zone == zone)
                 for zone in self.prv_zones
             )
 
-        omitted = {p.id for p in self.pipes if crosses_zone(p)}
+        omitted = {p.id for p in self.pipes if crosses_zone(p.start, p.end)}
         edges = {frozenset((p.start, p.end)) for p in street_pipes}
-        unused = [p for p in self.optional if frozenset(p[:2]) not in edges]
+        # A replacement must not cross a zone boundary, or it would bypass the PRV.
+        unused = [
+            p
+            for p in self.optional
+            if frozenset(p[:2]) not in edges and not crosses_zone(p[0], p[1])
+        ]
         if len(unused) < len(omitted):
             raise ValueError("pipe target cannot be met within PRV pressure zones")
         for endpoints in unused[: len(omitted)]:
