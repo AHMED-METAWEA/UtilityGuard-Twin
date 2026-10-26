@@ -137,6 +137,32 @@ class _Builder:
         self.flow_inlets: dict[str, str] = {}
         self.discharge_sensors: dict[str, str] = {}
         self.optional: list[tuple[str, str, PipeTier]] = []
+        self.prv_zones = self.validate_prv_zones()
+
+    def validate_prv_zones(self) -> list[str]:
+        cfg = self.cfg["equipment"]["valves"]
+        zones = cfg["prv_zones"]
+        if not isinstance(zones, list) or len(zones) != _count(cfg["prv"], "prv"):
+            raise ValueError("PRVs require exactly one district zone per PRV")
+        known = {d["id"] for d in self.cfg["districts"]}
+        for zone in zones:
+            if not isinstance(zone, str) or zone not in known:
+                raise ValueError(f"PRV zone: unknown district {zone!r}")
+            if zone == "government":
+                raise ValueError("PRV zone government: government cluster is excluded")
+        if len(set(zones)) != len(zones):
+            raise ValueError("PRV zones must be distinct districts")
+        margin = cfg["prv_min_static_margin_m"]
+        if (
+            isinstance(margin, bool)
+            or not isinstance(margin, int | float)
+            or not math.isfinite(margin)
+            or margin < 0
+        ):
+            raise ValueError(
+                "PRV minimum static margin must be finite and non-negative"
+            )
+        return zones
 
     def elevation(self, x: float, y: float) -> float:
         t = self.cfg["terrain"]
@@ -250,6 +276,13 @@ class _Builder:
         eq = self.cfg["equipment"]
         sites = tuple(self.junctions)
         high = max(sites, key=lambda j: j.elevation)
+        if high.zone in self.prv_zones:
+            raise ValueError(f"PRV zone {high.zone}: holds the source site")
+        for station in eq["stations"]:
+            if station["zone"] in self.prv_zones:
+                raise ValueError(
+                    f"PRV zone {station['zone']}: holds a source discharge"
+                )
         sx = high.x + eq["source"]["offset_m"][0]
         sy = high.y + eq["source"]["offset_m"][1]
         source = Reservoir(
@@ -297,6 +330,8 @@ class _Builder:
             site = max(
                 (j for j in sites if j.zone in spec["zones"]), key=lambda j: j.elevation
             )
+            if site.zone in self.prv_zones:
+                raise ValueError(f"PRV zone {site.zone}: holds tank {spec['id']}")
             x, y = site.x + tc["offset_m"][0], site.y + tc["offset_m"][1]
             tank = Tank(
                 spec["id"],
@@ -315,7 +350,7 @@ class _Builder:
             self.pipe(site.id, tank.id, "submain")
         return source
 
-    def inline_valves(self, street_pipes: list[Pipe]) -> None:
+    def inline_valves(self, street_pipes: list[Pipe], source: Reservoir) -> None:
         cfg = self.cfg["equipment"]["valves"]
         fraction = self.cfg["streets"]["valve_pipe_fraction"]
         if not 0 < fraction < 1:
@@ -329,8 +364,25 @@ class _Builder:
         if len(kinds) > len(indices):
             raise ValueError("not enough street pipes for inline valves")
         positions = {p.id: i for i, p in enumerate(self.pipes)}
+        prv_index = 0
         for i, kind in zip(indices, kinds, strict=False):
             old = street_pipes[i]
+            if kind == "prv":
+                zone = self.prv_zones[prv_index]
+                prv_index += 1
+                # A PRV replaces the end of the district's sole radial inlet main.
+                mains = [
+                    p
+                    for p in self.pipes
+                    if p.tier == "transmission"
+                    and p.end == self.inlets[zone]
+                    and any(p.start == pump.end for pump in self.pumps)
+                ]
+                if len(mains) != 1:
+                    raise ValueError(
+                        f"PRV zone {zone}: requires exactly one radial inlet"
+                    )
+                old = mains[0]
             a, b = self.nodes[old.start], self.nodes[old.end]
             assert isinstance(a, Junction) and isinstance(b, Junction)
             node = self.junction(
@@ -339,6 +391,18 @@ class _Builder:
             self.pipes[positions[old.id]] = replace(
                 old, end=node.id, length=math.hypot(a.x - node.x, a.y - node.y)
             )
+            if kind == "prv":
+                # The new split node is upstream, outside the pressure zone.
+                node = replace(node, zone=a.zone)
+                self.junctions[-1] = node
+                self.nodes[node.id] = node
+                margin = source.head - b.elevation - cfg["prv_setting_m"]
+                if margin < cfg["prv_min_static_margin_m"]:
+                    raise ValueError(
+                        f"v_{len(self.valves):04d}: static pressure margin {margin:g} m "
+                        f"is below prv_min_static_margin_m "
+                        f"{cfg['prv_min_static_margin_m']:g} m"
+                    )
             setting = (
                 cfg["prv_setting_m"] if kind == "prv" else cfg["isolation_setting"]
             )
@@ -352,6 +416,35 @@ class _Builder:
                     setting,
                 )
             )
+
+    def isolate_prv_zones(self, street_pipes: list[Pipe]) -> None:
+        """Omit every district boundary pipe except the PRV's upstream main.
+
+        Construct replacements before omission to keep pipe ids unique and retain
+        the existing street RNG sequence (including isolation-valve sites).
+        """
+
+        def crosses_zone(start: str, end: str) -> bool:
+            a, b = self.nodes[start], self.nodes[end]
+            return any(
+                (isinstance(a, Junction) and a.zone == zone)
+                != (isinstance(b, Junction) and b.zone == zone)
+                for zone in self.prv_zones
+            )
+
+        omitted = {p.id for p in self.pipes if crosses_zone(p.start, p.end)}
+        edges = {frozenset((p.start, p.end)) for p in street_pipes}
+        # A replacement must not cross a zone boundary, or it would bypass the PRV.
+        unused = [
+            p
+            for p in self.optional
+            if frozenset(p[:2]) not in edges and not crosses_zone(p[0], p[1])
+        ]
+        if len(unused) < len(omitted):
+            raise ValueError("pipe target cannot be met within PRV pressure zones")
+        for endpoints in unused[: len(omitted)]:
+            self.pipe(*endpoints)
+        self.pipes = [p for p in self.pipes if p.id not in omitted]
 
     def sensors(
         self, graph: dict[str, set[str]]
@@ -419,7 +512,8 @@ class _Builder:
         for i in self.streets.permutation(len(self.optional))[:needed]:
             self.pipe(*self.optional[int(i)])
         street_pipes.extend(self.pipes[extra_start:])
-        self.inline_valves(street_pipes)
+        self.inline_valves(street_pipes, source)
+        self.isolate_prv_zones(street_pipes)
         graph = _adjacency([*self.pipes, *self.pumps, *self.valves])
         reached = _neighborhood(source.id, graph, len(self.nodes))
         unreachable = sorted(j.id for j in self.junctions if j.id not in reached)
