@@ -1,0 +1,4 @@
+# Advisories accepted on purpose by scripts/audit_python.py (task T-B1-002).
+# One per line: <advisory id or alias> until <YYYY-MM-DD> <reason>
+# An entry past its date stops hiding the advisory, so an acceptance is never permanent.
+# Adding an entry is the owner's decision; say why the risk is acceptable and until when.
