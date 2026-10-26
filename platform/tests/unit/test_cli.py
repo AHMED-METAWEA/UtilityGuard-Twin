@@ -152,6 +152,19 @@ def contracts_root(tmp_path: Path) -> Path:
         # Gate round 1 (T-A1-013): a reference that resolves to something that is not a schema.
         ('{"$ref":"#/default","default":{"type":"not-a-type"}}', "not-a-type"),
         ('{"$ref":"#/default","default":5}', "#/default"),
+        # Round 2 of the gate: a reference inside a resolved target is followed too.
+        (
+            '{"$ref":"#/default","default":{"$ref":"#/examples/0"},"examples":[5]}',
+            "#/examples/0",
+        ),
+        (
+            '{"$dynamicRef":"#/default","default":{"$dynamicRef":"#/examples/0"},"examples":[5]}',
+            "#/examples/0",
+        ),
+        (
+            '{"$ref":"#/default","default":{"$ref":"#/examples/0"},"examples":[{"$ref":"#/examples/1"},{"minimum":"x"}]}',
+            "#/examples/1",
+        ),
         # A number that overflows to infinity is not finite JSON either.
         ('{"default":1e9999}', "not a finite number"),
         ('{"default":-1e9999}', "not a finite number"),
@@ -407,3 +420,41 @@ def test_domain_cli_exit_and_json(
         assert check["status"] == "warn"
     if mode == "health_error":
         assert "LookupError" in captured.out
+
+
+def test_a_reference_chain_through_data_in_another_file_is_followed(
+    contracts_root: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    folder = contracts_root / "contracts/v1"
+    (folder / "chain.schema.json").write_text(
+        '{"$ref":"chain_target.schema.json#/default"}'
+    )
+    (folder / "chain_target.schema.json").write_text(
+        '{"default":{"$ref":"#/examples/0"},"examples":[5]}'
+    )
+    assert main(["doctor", "--json", "--root", str(contracts_root)]) == 1
+    report = json.loads(capsys.readouterr().out)
+    check = next(c for c in report["checks"] if c["name"] == "contracts.chain.schema")
+    assert check["status"] == "fail"
+    assert "chain.schema.json" in check["detail"] and "#/examples/0" in check["detail"]
+
+
+@pytest.mark.parametrize(
+    "contents",
+    [
+        '{"$ref":"#/$defs/a","$defs":{"a":{"$ref":"#/$defs/b"},"b":{"$ref":"#/$defs/a"}}}',
+        '{"$ref":"#/$defs/t","$defs":{"t":true}}',
+        '{"$ref":"#/$defs/t","$defs":{"t":{"$ref":"#/$defs/u"},"u":false}}',
+        '{"$ref":"#","type":"object"}',
+        '{"$ref":"#/$defs/a","$defs":{"a":{"properties":{"x":{"$ref":"#/$defs/a"}}}}}',  # a tree
+        '{"$ref":"#/default","default":{"type":"string","$ref":"#/default"}}',
+    ],
+)
+def test_cycles_and_boolean_targets_are_still_fine(
+    contracts_root: Path, contents: str
+) -> None:
+    (contracts_root / "contracts/v1/probe.schema.json").write_text(contents)
+    results = doctor.check_contracts(contracts_root)
+    assert all(c.status == "ok" for c in results), [
+        c for c in results if c.status != "ok"
+    ]

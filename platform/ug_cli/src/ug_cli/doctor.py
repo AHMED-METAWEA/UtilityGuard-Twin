@@ -97,8 +97,16 @@ def _unique_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
     return result
 
 
-def _check_refs(resource: Resource[Any], resolver: Resolver[Any]) -> None:
-    """Walk schema locations, preserving nested IDs without following reference cycles."""
+def _check_refs(
+    resource: Resource[Any], resolver: Resolver[Any], seen: set[int] | None = None
+) -> None:
+    """Walk schema locations, preserving nested IDs; follow every reference once.
+
+    A reference target must be a schema, and the references inside that target are checked in turn
+    (a pointer into a `default` can lead to a second pointer into `examples`). `seen` holds the
+    identity of each target already walked, so reference cycles terminate.
+    """
+    seen = set() if seen is None else seen
     schema = resource.contents
     if isinstance(schema, dict):
         for keyword in ("$ref", "$dynamicRef"):
@@ -116,11 +124,21 @@ def _check_refs(resource: Resource[Any], resolver: Resolver[Any]) -> None:
                     raise ValueError(
                         f"{keyword} {ref!r} does not point at a valid schema: {exc.message}"
                     ) from exc
+                target = resolved.contents
+                if isinstance(target, dict) and id(target) not in seen:
+                    seen.add(id(target))
+                    _check_refs(
+                        Resource.from_contents(
+                            target, default_specification=DRAFT202012
+                        ),
+                        resolved.resolver,
+                        seen,
+                    )
     for child in sorted(
         resource.subresources(),
         key=lambda child: json.dumps(child.contents, sort_keys=True),
     ):
-        _check_refs(child, resolver.in_subresource(child))
+        _check_refs(child, resolver.in_subresource(child), seen)
 
 
 def check_contracts(root: Path | None) -> list[Result]:
