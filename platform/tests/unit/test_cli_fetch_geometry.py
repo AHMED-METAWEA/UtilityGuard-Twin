@@ -37,6 +37,7 @@ def test_a_cached_extract_is_used_and_reported_without_any_fetch(
     out = capsys.readouterr().out
     assert str(extract) in out and BASE in out and "© OpenStreetMap contributors" in out
     assert (extract / "report.json").is_file() and (extract / "report.md").is_file()
+    assert "km inside it)" in out
 
 
 def test_refresh_and_offline_exclude_each_other(tmp_path: Path) -> None:

@@ -14,6 +14,7 @@ from geometry_fixtures import (
     STEP,
     STUDY_BOX,
     FakeOverpass,
+    roads_answer,
     stat,
     stats_answer,
 )
@@ -52,9 +53,10 @@ def test_the_street_graph_of_the_grid(extract: Path) -> None:
         streets["main_streets"],
     )
     # 4 edge middles (3 neighbours), the centre (4) and the corner with the spur (3).
-    assert everything | {"length_km": None} == {
+    assert everything | {"length_km": None, "length_km_inside_study_box": None} == {
         "ways": 8,
         "length_km": None,
+        "length_km_inside_study_box": None,
         "nodes": 12,
         "junctions": 6,
         "dead_ends": 3,
@@ -65,6 +67,9 @@ def test_the_street_graph_of_the_grid(extract: Path) -> None:
         "junctions_in_largest_component": 6,
     }
     assert everything["length_km"] == round(6 * ROW + 6 * COL + SPUR + BUILDING, 1)
+    # Every segment of the fixture lies in the study box.
+    assert everything["length_km_inside_study_box"] == everything["length_km"]
+    assert built["length_km_inside_study_box"] == built["length_km"]
     assert (
         built["ways"],
         built["junctions"],
@@ -144,6 +149,37 @@ def test_the_report_is_identical_byte_for_byte(extract: Path) -> None:
     assert "residential km=0.6 (CALCULATED) ways=6 (OBSERVED)" in markdown
     assert "Study box (ASSUMPTION): south 29.92, west 31.66, north 30.03" in markdown
     assert "km is CALCULATED, computed by Overpass" in markdown
+
+
+def test_a_way_across_the_edge_counts_inside_only_where_its_segments_are(
+    tmp_path: Path,
+) -> None:
+    """Overpass returns whole ways: the part beyond the box edge is reported apart."""
+    points = [
+        (30.02, 31.70),
+        (30.025, 31.70),
+        (30.05, 31.70),
+    ]  # the box ends at 30.03 N
+    crossing = {
+        "type": "way",
+        "id": 30,
+        "tags": {"highway": "residential"},
+        "nodes": [950, 951, 952],
+        "geometry": [{"lat": lat, "lon": lon} for lat, lon in points],
+    }
+    roads = roads_answer()
+    roads["elements"].append(crossing)
+    extract = F.fetch_area(
+        F.load_area("capital"), tmp_path, FakeOverpass({"roads_v1": roads}), NOW
+    )  # type: ignore[arg-type]
+    report = R.coverage_report(extract, F.load_area("capital"))
+    m = report["streets"]["drivable_built"]
+    inner, outer = km(points[0], points[1]), km(points[1], points[2])
+    base = 6 * ROW + 6 * COL + SPUR
+    assert m["length_km"] == round(base + inner + outer, 1)
+    assert m["length_km_inside_study_box"] == round(base + inner, 1)
+    assert "Inside the box (km)" in R.render_markdown(report)
+    assert "whole length" in report["formulas"]["length_km"]
 
 
 def test_a_statistic_the_report_does_not_know_is_refused(tmp_path: Path) -> None:

@@ -50,14 +50,18 @@ MAIN_STREETS = frozenset(
 )  # fmt: skip
 FORMULAS = {
     "segment": "consecutive node pairs of each way",
-    "length_km": "great-circle distance, sphere of radius 6371.0088 km",
+    "length_km": "great-circle distance, sphere of radius 6371.0088 km, over the whole "
+    "length of every way that touches the study box (Overpass returns whole ways)",
+    "length_km_inside_study_box": "length of the segments whose midpoint lies in the "
+    "study box",
     "junction": "node with three or more distinct neighbours",
     "dead_end": "node with exactly one neighbour",
     "component": "connected set of segments (union-find)",
     "grid": "segments assigned to square cells by their midpoint",
     "landmark_road_km": "length of segments whose midpoint lies within the radius",
     "landmark_position": "the feature of that name nearest the anchor",
-    "mapped_km": "computed by Overpass: sum(length()) / 1000 over the ways of the class",
+    "mapped_km": "computed by Overpass: sum(length()) / 1000 over the whole length of the "
+    "ways of the class that touch the study box",
 }
 STAT_LABELS = {
     "ways": "OBSERVED",
@@ -139,6 +143,19 @@ def graph_metrics(segs: list[Segment], ways: int) -> dict[str, Any]:
     }
 
 
+def road_set(
+    segs: list[Segment], ways: int, box: tuple[float, float, float, float]
+) -> dict[str, Any]:
+    """Graph metrics of a road set, plus the part of its length inside the study box."""
+    south, west, north, east = box
+    inside = math.fsum(
+        km
+        for _, _, km, (lat, lon) in segs
+        if south <= lat <= north and west <= lon <= east
+    )
+    return {**graph_metrics(segs, ways), "length_km_inside_study_box": round(inside, 1)}
+
+
 def _load(extract: Path, name: str) -> dict[str, Any]:
     data: dict[str, Any] = json.loads((extract / f"{name}.json").read_bytes())
     return data
@@ -178,7 +195,6 @@ def coverage_report(extract: Path, area: Area) -> dict[str, Any]:
     built = [w for w in roads if (w.get("tags") or {}).get("highway") != "construction"]
     main = [w for w in roads if (w.get("tags") or {}).get("highway") in MAIN_STREETS]
     all_segs, built_segs, main_segs = segments(roads), segments(built), segments(main)
-    all_metrics = graph_metrics(all_segs, len(roads))
     total_km = math.fsum(km for _, _, km, _ in all_segs)
     construction_km = total_km - math.fsum(km for _, _, km, _ in built_segs)
 
@@ -257,9 +273,13 @@ def coverage_report(extract: Path, area: Area) -> dict[str, Any]:
         },
         "formulas": FORMULAS,
         "streets": {
-            "drivable_and_under_construction": all_metrics,
-            "drivable_built": graph_metrics(built_segs, len(built)),
-            "main_streets": graph_metrics(main_segs, len(main)),
+            "drivable_and_under_construction": road_set(
+                all_segs, len(roads), (south, west, north, east)
+            ),
+            "drivable_built": road_set(
+                built_segs, len(built), (south, west, north, east)
+            ),
+            "main_streets": road_set(main_segs, len(main), (south, west, north, east)),
             "share_of_length_under_construction": round(construction_km / total_km, 3)
             if total_km
             else 0.0,
@@ -291,8 +311,12 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"east {box['east']}; {report['study_box']['method']}; landmarks used: "
         f"{', '.join(report['study_box']['landmarks_found'])}.",
         "",
-        "| Road set | Ways | Length (km) | Junctions | Dead ends | Components | Largest component (length share) |",
-        "|---|---|---|---|---|---|---|",
+        "Lengths and graph numbers count every way that touches the study box over its whole "
+        "length (Overpass returns whole ways); the length inside the box counts the segments whose "
+        "midpoint lies in it.",
+        "",
+        "| Road set | Ways | Length (km) | Inside the box (km) | Junctions | Dead ends | Components | Largest component (length share) |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for key, label in (
         ("drivable_built", "Drivable, built"),
@@ -301,7 +325,8 @@ def render_markdown(report: dict[str, Any]) -> str:
     ):
         m = streets[key]
         lines.append(
-            f"| {label} | {m['ways']} | {m['length_km']} | {m['junctions']} | {m['dead_ends']} | "
+            f"| {label} | {m['ways']} | {m['length_km']} | {m['length_km_inside_study_box']} | "
+            f"{m['junctions']} | {m['dead_ends']} | "
             f"{m['components']} | {m['largest_component_length_share']} |"
         )
     lines += [

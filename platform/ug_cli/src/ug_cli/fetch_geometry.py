@@ -79,7 +79,9 @@ def run(args: argparse.Namespace) -> int:
         streets = coverage_report(extract, area)["streets"]["drivable_built"]
         print(f"report: {json_path} and {md_path}")
         print(
-            f"drivable, built: {streets['length_km']} km, {streets['junctions']} junctions, "
+            f"drivable, built: {streets['length_km']} km on the ways that touch the box "
+            f"({streets['length_km_inside_study_box']} km inside it), "
+            f"{streets['junctions']} junctions, "
             f"{streets['largest_component_length_share']} of the length in the largest component"
         )
     return 0
