@@ -1,0 +1,168 @@
+"""T-B1-010: the coverage report on a hand-checkable street grid (offline)."""
+
+from __future__ import annotations
+
+import json
+import math
+from datetime import UTC, datetime
+from pathlib import Path
+
+import pytest
+from geometry_fixtures import LAT0, LON0, STEP, FakeOverpass
+from ug_core.geometry import fetch as F
+from ug_core.geometry import report as R
+
+NOW = datetime(2026, 10, 26, 10, 25, 33, tzinfo=UTC)
+
+
+@pytest.fixture
+def extract(tmp_path: Path) -> Path:
+    return F.fetch_area(F.load_area("capital"), tmp_path, FakeOverpass(), NOW)  # type: ignore[arg-type]
+
+
+def km(a: tuple[float, float], b: tuple[float, float]) -> float:
+    return R.haversine_km(a, b)
+
+
+ROW = km((LAT0, LON0), (LAT0, LON0 + STEP))  # one east-west grid segment
+COL = km((LAT0, LON0), (LAT0 + STEP, LON0))  # one north-south grid segment
+SPUR = km((LAT0 + 2 * STEP, LON0 + 2 * STEP), (LAT0 + 3 * STEP, LON0 + 2 * STEP))
+BUILDING = km((29.95, 31.75), (29.95, 31.751))
+
+
+def test_the_haversine_distance_is_right() -> None:
+    # One degree of latitude is 111.195 km on a sphere of radius 6371.0088 km.
+    assert R.haversine_km((0.0, 0.0), (1.0, 0.0)) == pytest.approx(111.195, abs=1e-3)
+    assert R.haversine_km((30.0, 31.0), (30.0, 31.0)) == 0.0
+
+
+def test_the_street_graph_of_the_grid(extract: Path) -> None:
+    streets = R.coverage_report(extract, F.load_area("capital"))["streets"]
+    everything, built, main = (
+        streets["drivable_and_under_construction"],
+        streets["drivable_built"],
+        streets["main_streets"],
+    )
+    # 4 edge middles (3 neighbours), the centre (4) and the corner with the spur (3).
+    assert everything | {"length_km": None} == {
+        "ways": 8,
+        "length_km": None,
+        "nodes": 12,
+        "junctions": 6,
+        "dead_ends": 3,
+        "components": 2,
+        "largest_component_length_share": round(
+            (6 * ROW + 6 * COL + SPUR) / (6 * ROW + 6 * COL + SPUR + BUILDING), 3
+        ),
+        "junctions_in_largest_component": 6,
+    }
+    assert everything["length_km"] == round(6 * ROW + 6 * COL + SPUR + BUILDING, 1)
+    assert (
+        built["ways"],
+        built["junctions"],
+        built["dead_ends"],
+        built["components"],
+    ) == (7, 6, 1, 1)
+    assert built["largest_component_length_share"] == 1.0
+    assert (main["ways"], main["junctions"], main["dead_ends"], main["components"]) == (
+        6,
+        5,
+        0,
+        1,
+    )
+    assert streets["share_of_length_under_construction"] == round(
+        BUILDING / (6 * ROW + 6 * COL + SPUR + BUILDING), 3
+    )
+
+
+def test_landmarks_grid_and_mapped_features(extract: Path) -> None:
+    report = R.coverage_report(extract, F.load_area("capital"))
+    marks = report["landmarks"]["by_name"]
+    assert marks["Central Business District"] == {
+        "found": True,
+        "road_km_within_radius": round(6 * ROW + 6 * COL + SPUR, 1),
+    }
+    assert marks["Green River"] == {"found": False}
+    grid = report["grid"]
+    assert grid["cells"] > 300 and grid["cells_with_any_road"] == 2
+    assert report["mapped_features"]["highway"]["residential"] == {"km": 0.6, "ways": 6}
+    assert report["mapped_features"]["buildings"]["all"] == {"relations": 1, "ways": 12}
+    assert report["mapped_features"]["water_infrastructure"] == {
+        "water_tower": {"n": 1}
+    }
+
+
+def test_the_report_names_its_source_labels_and_formulas(extract: Path) -> None:
+    report = R.coverage_report(extract, F.load_area("capital"))
+    assert (
+        report["source"]["source"] == "OpenStreetMap"
+        and report["source"]["licence"] == "ODbL-1.0"
+    )
+    assert report["source"]["attribution"] == "© OpenStreetMap contributors"
+    assert report["labels"] == {
+        "counts": "OBSERVED",
+        "derived": "CALCULATED",
+        "study_area": "ASSUMPTION",
+    }
+    assert report["area"]["label"] == "ASSUMPTION" and "junction" in report["formulas"]
+
+
+def test_the_report_is_identical_byte_for_byte(extract: Path) -> None:
+    area = F.load_area("capital")
+    first = [p.read_bytes() for p in R.write_report(extract, area)]
+    second = [p.read_bytes() for p in R.write_report(extract, area)]
+    assert first == second
+    assert json.loads(first[0])["schema_version"] == "1"
+    markdown = first[1].decode()
+    assert "© OpenStreetMap contributors" in markdown and "ODbL-1.0" in markdown
+
+
+def test_a_tampered_extract_gives_no_report(extract: Path) -> None:
+    (extract / "stats_v1.json").write_bytes(b'{"elements": []}')
+    with pytest.raises(F.FetchError):
+        R.coverage_report(extract, F.load_area("capital"))
+
+
+def test_a_way_whose_nodes_and_points_disagree_is_refused() -> None:
+    with pytest.raises(F.FetchError, match="nodes but"):
+        R.segments([{"id": 1, "nodes": [1, 2], "geometry": [{"lat": 0, "lon": 0}]}])
+    assert math.isclose(
+        sum(
+            s[2]
+            for s in R.segments(
+                [
+                    {
+                        "id": 1,
+                        "nodes": [1, 2],
+                        "geometry": [{"lat": 0, "lon": 0}, {"lat": 1, "lon": 0}],
+                    }
+                ]
+            )
+        ),
+        111.195,
+        abs_tol=1e-3,
+    )
+
+
+def test_a_repeated_node_is_not_a_segment() -> None:
+    way = {
+        "id": 1,
+        "nodes": [1, 1, 2],
+        "geometry": [{"lat": 0, "lon": 0}, {"lat": 0, "lon": 0}, {"lat": 1, "lon": 0}],
+    }
+    segs = R.segments([way])
+    assert [(a, b) for a, b, _, _ in segs] == [(1, 2)]
+    assert R.graph_metrics(segs, 1)["dead_ends"] == 2
+
+
+def test_the_landmark_radius_is_respected(tmp_path: Path) -> None:
+    base = json.loads(
+        (Path(F.__file__).parent / "areas" / "capital_v1.json").read_text()
+    )
+    area = F.area_from_dict({**base, "landmark_radius_m": 100})
+    extract = F.fetch_area(area, tmp_path, FakeOverpass(), NOW)  # type: ignore[arg-type]
+    near = R.coverage_report(extract, area)["landmarks"]["by_name"][
+        "Central Business District"
+    ]
+    # Within 100 m of the centre node: the four segments that touch it, nothing else.
+    assert near == {"found": True, "road_km_within_radius": round(2 * ROW + 2 * COL, 1)}

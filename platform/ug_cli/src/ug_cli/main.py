@@ -8,7 +8,7 @@ import sys
 from dataclasses import asdict
 from pathlib import Path
 
-from ug_cli import __version__
+from ug_cli import __version__, fetch_geometry
 from ug_cli.doctor import run_doctor
 
 
@@ -21,6 +21,7 @@ def main(argv: list[str] | None = None) -> int:
     doctor.add_argument(
         "--root", type=Path, help="repository root containing contracts/v1"
     )
+    fetch_geometry.add_parser(commands)
     for command, milestone in (
         ("run", "M1"),
         ("reproduce", "M4"),
@@ -33,6 +34,8 @@ def main(argv: list[str] | None = None) -> int:
         )
         stub.set_defaults(milestone=milestone)
     args = parser.parse_args(argv)
+    if args.command == "fetch-geometry":
+        return fetch_geometry.run(args)
     if args.command != "doctor":
         print(
             f"ug {args.command}: not implemented yet "

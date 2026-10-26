@@ -1,0 +1,23 @@
+{
+  "area": "capital",
+  "version": "1",
+  "name": "New Administrative Capital, study box",
+  "label": "ASSUMPTION",
+  "note": "OpenStreetMap holds no boundary for the capital (feasibility test T-B1-003). This box is drawn around the OSM features that name the capital or its masterplan districts. It probably takes in some ground next to the capital and leaves out the far east of the masterplan. Only the box and the landmark names are stored here; landmark positions are read from the cached extract.",
+  "bbox": {"south": 29.87, "west": 31.61, "north": 30.07, "east": 31.8},
+  "landmarks": [
+    "Central Business District",
+    "Governmental District",
+    "Arts and Culture City",
+    "Green River",
+    "The Iconic Tower",
+    "Capital Presidential Palace",
+    "Egypt International Olympic City",
+    "New Capital Combined Cycle Power Plant",
+    "Administrative Capital HSR Station"
+  ],
+  "landmark_radius_m": 1500,
+  "grid_cell_m": 1000,
+  "queries": ["roads_v1", "stats_v1", "landmarks_v1"],
+  "endpoint": "https://overpass-api.de/api/interpreter"
+}
