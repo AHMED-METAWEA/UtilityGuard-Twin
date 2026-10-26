@@ -27,7 +27,7 @@ $(VPY):
 install: $(VPY)
 	$(VPY) -m pip install --disable-pip-version-check --quiet "pip==$(PIP_VERSION)"
 	$(VPY) -m pip uninstall --disable-pip-version-check --quiet --yes setuptools
-	$(VPY) -m pip install --disable-pip-version-check --quiet $(addprefix -e ,$(PACKAGES))
+	$(VPY) -m pip install --disable-pip-version-check --quiet --constraint constraints/runtime.txt --build-constraint constraints/build.txt $(addprefix -e ,$(PACKAGES))
 	@echo "installed: $(PACKAGES)"
 
 check-layout:
