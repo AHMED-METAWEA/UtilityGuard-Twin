@@ -189,7 +189,7 @@ Responsibilities:
 - Owns anything where correctness needs scientific or architectural judgment: the hydraulic solver integration and fault models, the expectation model and diagnosis rules, localization, the cost model formulas, the decision engine, the evidence kernel, the evaluation methodology and split design.
 - Owns multi-file refactors and any change to the repository structure, where parallel edits would conflict.
 - Writes the UI design plan (tokens, type roles, wireframes) and the map-engine architecture, and reviews visual results.
-- Prepares and verifies pull requests into `dev` (the owner merges them; agents never merge), runs phase exit gates, updates `docs/PROGRESS.md`, and decides tie-breaks (Section 9).
+- Prepares and verifies pull requests into `dev` (the owner merges them, except Tier 0 and Tier 1 PRs that meet the standing merge rule in 5.4, which the lead may squash-merge), runs phase exit gates, updates `docs/PROGRESS.md`, and decides tie-breaks (Section 9).
 - Runs the integration checks and the cross-review of Codex's work.
 
 ### 5.2 Codex: implementer, test author, independent reviewer
@@ -202,7 +202,13 @@ Responsibilities:
 
 ### 5.3 Human owner
 
-Approves: plan and gates, honesty-rule changes, contract changes, deletions, new dependencies with cost or license implications, and anything that spends money. Reviews and merges every pull request (into `dev` and `main`), pushes phase tags, and sets branch protection. Resolves disagreements the agents cannot settle with evidence.
+Approves: plan and gates, honesty-rule changes, contract changes, deletions, new dependencies with cost or license implications, and anything that spends money. Reviews and merges pull requests into `dev` (except those the lead may merge under 5.4) and every pull request into `main`, pushes phase tags, and sets branch protection. Resolves disagreements the agents cannot settle with evidence.
+
+### 5.4 Standing merge rule (owner rule D-018, 2026-10-26)
+
+The lead agent may squash-merge a pull request into `dev` when ALL of these hold: hosted CI is green; the cross-review is logged in `docs/reviews/`; the PR is Tier 0 or Tier 1; and it does not touch `contracts/`, `assumptions/`, the Honesty Rules text, the Master Spec, dependencies, or deletions. The lead may NOT merge Tier 2 PRs or anything into `main`, and pushes no tags: it lists them for the owner with the reason. It never bypasses a red or pending check and never force-pushes `dev`. Codex never merges.
+
+Safety net after every merge the lead makes: pull `dev`, run `make ci` in a fresh clone of `dev` (not the working tree), and confirm that hosted CI on `dev` is green. If either fails, the lead stops merging at once, does not push to `dev`, opens a revert or fix PR and reports to the owner. One PR at a time; verify before the next.
 
 ### 5.4 What an agent must not do
 
@@ -224,7 +230,7 @@ Approves: plan and gates, honesty-rule changes, contract changes, deletions, new
 4. HANDOFF   Owner writes a handoff note (Appendix D) in the PR description and in docs/progress/<agent>.md.
 5. REVIEW    The OTHER agent reviews (Section 8). Findings go into docs/reviews/<task-id>.md or the PR.
 6. FIX       Owner addresses findings (max two review rounds; then escalate, Section 9).
-7. INTEGRATE Claude Code reports the PR as ready (CI green, review logged, Honesty checklist ticked) and stops; the owner merges (squash for agent branches).
+7. INTEGRATE Claude Code reports the PR as ready (CI green, review logged, Honesty checklist ticked) and stops; the owner merges (squash for agent branches), unless the PR meets the standing merge rule in 5.4, in which case the lead merges it and runs the safety net.
 8. RECORD    Lead updates docs/PROGRESS.md, task card status, and any ADR/DECISIONS entries.
 ```
 

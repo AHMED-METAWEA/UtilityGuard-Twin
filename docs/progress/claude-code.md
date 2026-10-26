@@ -95,7 +95,15 @@ This log was first named `docs/progress/claude.md`. On macOS (case-insensitive) 
 - T-A1-014: the card stated the package before the install, as the owner required; installed with `--save-exact`, `npm audit` 0 vulnerabilities, Chromium fetched by `playwright install` (took 9 minutes). Chromium reports a policy-blocked request with the error text `csp` (not `ERR_BLOCKED_BY_CSP`), and it still emits a `request` event for a blocked request, so test 1 sees blocked attempts too.
 - Process facts verified: `run_in_background` without a trailing `&` is the only reliable way to be notified at the true end of a Codex review; a `pgrep` wait loop in a second background command also works; `git archive origin/dev` plus `sys.path.insert` compares behaviour between dev and a branch (`python -I` ignores `PYTHONPATH`); `docker buildx imagetools inspect <image>` gives the multi-architecture digest to pin.
 - Mistakes to correct: the commit message of `7847b6f` (CLI) says 28 mutations were caught by Codex's tests; the right number is 25 (PR #25 text corrected, commit not rewritten because that needs a force push).
-- Stopped at the owner's instruction (usage limit almost reached). State of every card, the Codex jobs and the exact next step: `docs/PROGRESS.md`, section "Wave 3 state".
+- Stopped at the owner's instruction (usage limit almost reached), then resumed on 2026-10-26.
+
+### Phase A1, Wave 3 close-out (2026-10-26)
+- The owner merged #18, #21 to #26 (and #22). Each time a merge appended to `docs/progress/codex.md`, the open Codex-authored branches conflicted: #18 and #26 were rebased three times in total (always keep both sections), verified with `make ci` in a fresh clone of the new `dev` and pushed with `--force-with-lease` on that branch only. Hosted CI on `dev` was green after the last four merges.
+- New standing merge rule from the owner (D-018): the lead may squash-merge Tier 0 and Tier 1 PRs into `dev` when hosted CI is green, the cross-review is logged, and the PR touches no contracts, assumptions, Honesty Rules text, Master Spec, dependencies or deletions; never Tier 2, `main` or tags; after every merge pull `dev`, run `make ci` in a fresh clone and confirm hosted CI on `dev`. Written into `AGENTS.md` and `docs/COLLABORATION.md` (5.4) in the records PR.
+- T-A1-014 (#27): rebased, hosted-CI Chromium install step added, fresh-clone `make ci` exit 0 with the browser test included, Codex T1 review: no defects. It adds a dependency, so it is left for the owner under D-018. Codex T1 review of #23 (after its merge): no defects. Both reviews were reading reviews (the Codex sandbox cannot run the code); the lead's runs are in the logs.
+- Records written: `docs/reviews/` logs for T-A1-002c, 008b, 009, 011, 014; D-018 (the rule), D-019 (Wave 3 decisions and the CLI commit-message correction); card statuses; the corrected Wave 3 state in `docs/PROGRESS.md`.
+- Proposal to remove a recurring chore: one handoff file per task under `docs/progress/` instead of appending to `docs/progress/codex.md`, which conflicted after every merge. Not changed without the owner.
+- Stopped at the Wave 3 gate; Wave 4 (T-A1-013) waits for the owner. State and next step: `docs/PROGRESS.md`, section "Wave 3 state".
 
 ### Next
 See `docs/PROGRESS.md`.
