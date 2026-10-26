@@ -127,6 +127,7 @@ class _Results:
         expected = np.arange(timebase.n_ticks, dtype=float) * step
         if (
             len(times) == 0
+            or not np.isfinite(times).all()
             or times[0] != 0
             or (np.diff(times) <= 0).any()
             or times[-1] != expected[-1]
@@ -139,6 +140,10 @@ class _Results:
         self.reference = reference
         self.times = times
         self.ticks = np.searchsorted(times, expected)
+        if not np.array_equal(times[self.ticks], expected):
+            raise HydraulicsError(
+                "the results' time axis does not hold every tick exactly"
+            )
 
     def frame(self, table: str, key: str, ids: list[str], what: str) -> np.ndarray:
         """Values at every solved time, shape (times, ids)."""
@@ -213,6 +218,8 @@ def _truth(
             )
             channels[f"power:{pump.id}"] = axis.at_ticks(power_kw)
             energy[pump.id] = math.fsum(power_kw[:-1] * intervals / 3600.0)
+            if not (np.isfinite(power_kw).all() and math.isfinite(energy[pump.id])):
+                raise HydraulicsError(f"non-finite power or energy for {pump.id}")
     truth = TruthSeries(
         demand.timebase, {name: v.tolist() for name, v in sorted(channels.items())}
     )

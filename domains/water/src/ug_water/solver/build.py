@@ -118,6 +118,14 @@ def build_model(
             minor_loss=pipe.minor_loss,
         )
     for pump in network.pumps:
+        if len(pump.curve) == 2:
+            # WNTR 1.5 computes the slope of a two-point curve from squared flows but solves it
+            # as a straight line (wntr/network/elements.py:1438-1441): the operating point is
+            # wrong without any error (review round 2). One or three or more points only.
+            raise ValueError(
+                f"pump {pump.id}: a two-point head curve is solved wrongly by WNTR 1.5; "
+                "give one point or three or more"
+            )
         curve = f"head:{pump.id}"
         wn.add_curve(curve, "HEAD", [[q, h] for q, h in pump.curve])
         wn.add_pump(

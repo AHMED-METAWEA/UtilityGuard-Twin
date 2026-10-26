@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import pandas as pd
 import pytest
 import wntr
 from solver_fixtures import demand, line, provenance, pumped_loop
@@ -389,3 +390,36 @@ def test_an_axis_that_misses_a_tick_or_repeats_a_time_is_an_error(
     net = pumped_loop()
     with pytest.raises(HydraulicsError, match="time axis"):
         simulate(net, demand(net, 13))
+
+
+def test_a_two_point_pump_curve_is_refused() -> None:
+    """Round 2 (Codex): WNTR 1.5 solves a two-point curve with the wrong slope
+    (wntr/network/elements.py:1438-1441), so the operating point was wrong without an error."""
+    net = pumped_loop()
+    two = ((0.0, 45.0), (0.04, 28.0))
+    net = replace(net, pumps=tuple(replace(p, curve=two) for p in net.pumps))
+    with pytest.raises(HydraulicsError, match="two-point head curve"):
+        simulate(net, demand(net, 3))
+
+
+def test_a_non_finite_time_on_every_table_is_an_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Round 2 (Codex): a NaN time shared by every table passed the order check (comparisons
+    with NaN are false), returned the wrong pressure at a tick and NaN energy."""
+    run = E._run
+
+    def nan_time(wn: Any, options: Any) -> Any:
+        results = run(wn, options)
+        for table in (results.node, results.link):
+            for key in list(table):
+                frame = table[key]
+                extra = frame.iloc[[0]].copy()
+                extra.index = [float("nan")]
+                table[key] = pd.concat([frame.iloc[[0]], extra, frame.iloc[1:]])
+        return results
+
+    monkeypatch.setattr(E, "_run", nan_time)
+    net = pumped_loop()
+    with pytest.raises(HydraulicsError, match="time axis"):
+        simulate(net, demand(net, 3))
