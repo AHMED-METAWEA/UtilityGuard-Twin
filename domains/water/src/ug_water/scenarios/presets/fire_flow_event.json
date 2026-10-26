@@ -1,0 +1,32 @@
+{
+  "schema_version": "1",
+  "scenario_id": "fire_flow_event",
+  "network_version": "procedural-capital-v1-seed1",
+  "sensor_set": "S_base",
+  "seed": 1,
+  "start": "2027-03-04T22:00:00Z",
+  "duration_hours": 48,
+  "timestep_minutes": 5,
+  "demand": {
+    "calendar": "default_egypt",
+    "holiday": false,
+    "ramadan": false,
+    "heatwave_multiplier": 1.0,
+    "zone_multipliers": {},
+    "forecast_error": {
+      "model": "ar1",
+      "sigma_pct": 0.0
+    }
+  },
+  "faults": [
+    {
+      "type": "fire_flow",
+      "start_hour": 19,
+      "node": "node:j_0088",
+      "flow_l_s": 31.5,
+      "duration_hours": 2
+    }
+  ],
+  "cross_domain_inputs": [],
+  "assumption_set": "demand_v1"
+}
