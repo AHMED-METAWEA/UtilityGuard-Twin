@@ -28,7 +28,7 @@ from types import MappingProxyType
 from typing import Any
 
 import numpy as np
-import wntr
+import wntr  # type: ignore[import-untyped]
 from ug_core.canonical import canonical_json, sha256_hex
 from ug_core.numeric import round_for_hash
 from ug_core.truth import TruthSeries
@@ -148,7 +148,11 @@ def _truth(
         for k, tank in enumerate(tanks):
             channels[f"head:{tank.id}"] = heads[:, k]
             channels[f"level:{tank.id}"] = heads[:, k] - tank.elevation
-    links = [link.id for link in (*network.pipes, *network.pumps, *network.valves)]
+    links = [
+        *(p.id for p in network.pipes),
+        *(p.id for p in network.pumps),
+        *(v.id for v in network.valves),
+    ]
     flows = _frame(results, "link", "flowrate", links, "flow")
     for k, lid in enumerate(links):
         channels[f"flowrate:{lid}"] = flows[:, k]

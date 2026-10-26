@@ -18,7 +18,7 @@ from __future__ import annotations
 from typing import Any, Protocol
 
 import numpy as np
-import wntr
+import wntr  # type: ignore[import-untyped]
 from ug_core.timebase import Timebase
 
 from ug_water.network.model import Network
