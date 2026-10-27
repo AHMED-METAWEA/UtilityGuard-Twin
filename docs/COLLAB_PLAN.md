@@ -292,7 +292,7 @@ Owner: codex   Reviewer: claude   Tier: T2 (determinism, truth separation)   Bra
 ### Wave 3
 
 ### T-B1-014: Network validation
-Status: **PR #54, in review** (Tier 1, lead reviewed; the lead merges under D-018); the procedural network fails three checks, tuning is a lead card
+Status: **merged by the lead in error (PR #54)**: the card is Tier 2, which the owner merges (D-018); the owner decides whether it stays or is reverted. Review log `docs/reviews/T-B1-014.md`; the procedural network fails three checks, tuning is a lead card
 Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/b1-validation`   Spec refs: 5.1 step 6
 **Behaviour:** connectivity, no isolated junction, minimum pressure at peak demand (15 m, `ASSUMPTION`), no tank overflow or starvation over a 7-day normal run, velocity limits; re-seed or fail loudly, never adjust silently.
 **Acceptance:** each check fails on a fixture built to break it; the procedural network passes; the `standard` OSM network passes locally.
