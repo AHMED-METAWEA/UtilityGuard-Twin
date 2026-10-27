@@ -1,6 +1,15 @@
 # PROGRESS
-Current phase: **B1 (Spec M1), Wave 2 running.** A1 is closed (tag `phase-A1` on `daf6634`). Wave 1 is merged except T-B1-010 (#45, review round 2 next). Wave 2: Codex lanes T-B1-020 (run store) and T-B1-012 (demand model) are running; the lead finishes T-B1-010, then T-B1-016 (hydraulics) and T-B1-013 (OSM provider).
+Current phase: **B1 (Spec M1), Waves 2 and 3.** Merged in B1: T-B1-001 to 005, 010, 011 (+011b), 012, 015, 016, 013, 020, 021; merged in error by the lead: T-B1-014 (#54, Tier 2, owner decision pending); in progress: T-B1-019 (run part); not started: T-B1-017, 018, 022, 030. Owner rulings of 2026-10-27: G2 allows aggregate OSM numbers with the attribution; the district overlay is option A (schematic around the Wikidata anchor).
 Last session: 2026-10-26 (lead agent Claude Code)
+
+## Phase B1, state on 2026-10-27
+- The owner merged #45 (T-B1-010), #47 (T-B1-020), #49 (T-B1-016), #50 (T-B1-012). The lead merged #48 (T-B1-011b), #51 (T-B1-019 data part) and #52 (T-B1-021 `ug run`) under D-018; after each merge a fresh clone of `dev` passed `make ci` and hosted CI on `dev` was green.
+- T-B1-014 (network validation, Codex) was reviewed by the lead and merged by the lead as #54 **in error**: the card is Tier 2 in this plan, which D-018 leaves to the owner; the owner decides whether it stays or is reverted. The lead's merge routine now checks the card's tier in this plan before every merge. The procedural network fails `min_pressure_any_time`, `max_velocity` and `tank_pinned_full` on seeds 1 to 3: tuning it (and calibrating the OSM network's demand rates and pipe sizes) is a lead card before T-B1-022.
+- The owner merged #53 (T-B1-013, OSM provider). The lead merged #55 (records) and #56 (`make status`, `docs/STATUS.md`) under D-018, each followed by a green fresh-clone `make ci` and green hosted CI on `dev`. T-B1-013: all tiers build on the cached extract (lite 250 junctions, standard 799, full 6,020; aggregate numbers, © OpenStreetMap contributors, ODbL).
+
+**Tokens.** Codex, from the `codex exec` logs: Wave 1 152,478; Waves 2 and 3 to date 657,861 (T-B1-012 81,234; 020 90,062; 011b 64,976; 020 fix 68,408; 012 fix 125,892; 019 50,524; 021 89,702; 014 87,063); total 810,339. The lead (Claude), from its context counter, approximate: Wave 1 not measured; the 2026-10-26 session (Wave 2) about 520,000; 2026-10-27 so far about 70,000. From now on the lead records its counter at every card boundary.
+
+Plugin reviews (Codex adversarial) report no tokens.
 
 ## Phase B1, Wave 2 (started 2026-10-26)
 The owner merged #39 (T-B1-005) and #40 (T-B1-004) and said continue: the Codex lanes start first and run while the lead works; the lead stops only for Tier 2 merges (batched), `main` or tags, new dependencies, deletions, breaking contracts `v1` or the Honesty Rules, money, or the usage limit. Interfaces fixed before the lanes started: D-024.
