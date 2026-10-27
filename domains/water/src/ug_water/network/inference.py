@@ -190,18 +190,29 @@ def _find(parent: dict[int, int], n: int) -> int:
     return n
 
 
-def _routes(
-    short: list[_Chain], parent: dict[int, int]
-) -> dict[int, tuple[float, tuple[tuple[int, int], ...]]]:
+Route = tuple[float, tuple[tuple[int, int], ...], tuple[tuple[str, float], ...]]
+
+
+def _merge_tiers(
+    *parts: tuple[tuple[str, float], ...],
+) -> tuple[tuple[str, float], ...]:
+    total: dict[str, float] = defaultdict(float)
+    for part in parts:
+        for tier, length in part:
+            total[tier] += length
+    return tuple(sorted(total.items()))
+
+
+def _routes(short: list[_Chain], parent: dict[int, int]) -> dict[int, Route]:
     """For every joined node, the shortest street route to its group's representative over the
-    joined streets: (length, street segments). Representatives map to (0, ())."""
+    joined streets: (length, street segments, length per tier). Representatives: (0, (), ())."""
     graph: dict[int, list[tuple[int, _Chain]]] = defaultdict(list)
     for e in short:
         graph[e.a].append((e.b, e))
         graph[e.b].append((e.a, e))
-    routes: dict[int, tuple[float, tuple[tuple[int, int], ...]]] = {}
+    routes: dict[int, Route] = {}
     for rep in sorted({_find(parent, n) for n in graph}):
-        best: dict[int, tuple[float, tuple[tuple[int, int], ...]]] = {rep: (0.0, ())}
+        best: dict[int, Route] = {rep: (0.0, (), ())}
         queue = [(0.0, rep)]
         while queue:
             dist, n = heapq.heappop(queue)
@@ -210,7 +221,11 @@ def _routes(
             for m, e in sorted(graph[n], key=lambda item: (item[1].length, item[0])):
                 if _find(parent, m) != rep:
                     continue
-                candidate = (dist + e.length, best[n][1] + e.streets)
+                candidate = (
+                    dist + e.length,
+                    best[n][1] + e.streets,
+                    _merge_tiers(best[n][2], e.by_tier),
+                )
                 if m not in best or candidate[0] < best[m][0]:
                     best[m] = candidate
                     heapq.heappush(queue, (candidate[0], m))
@@ -248,11 +263,48 @@ def _join(edges: list[_Chain], radius: float) -> list[_Chain]:
             ra, rb = _find(parent, e.a), _find(parent, e.b)
             if ra == rb:
                 continue  # inside a group: its street is part of the group's routes
-            (la, sa), (lb, sb) = routes.get(e.a, (0.0, ())), routes.get(e.b, (0.0, ()))
+            (la, sa, ta), (lb, sb, tb) = (
+                routes.get(e.a, (0.0, (), ())),
+                routes.get(e.b, (0.0, (), ())),
+            )
             moved.append(
-                _Chain(ra, rb, e.length + la + lb, sa + e.streets + sb, e.by_tier)
+                _Chain(
+                    ra,
+                    rb,
+                    e.length + la + lb,
+                    sa + e.streets + sb,
+                    _merge_tiers(ta, e.by_tier, tb),
+                )  # fmt: skip
             )
         edges, _ = _contract(moved)
+
+
+def ordered_route(
+    streets: tuple[tuple[int, int], ...], start: int, end: int
+) -> tuple[int, ...]:
+    """The OSM nodes of a pipe's street route in order from `start` to `end` (an Euler trail
+    over its segments, which form one route; a repeated street is walked twice)."""
+    remaining: dict[int, list[int]] = defaultdict(list)
+    for k, (a, b) in enumerate(streets):
+        remaining[a].append(k)
+        remaining[b].append(k)
+    used: set[int] = set()
+    stack, trail = [start], []
+    while stack:
+        n = stack[-1]
+        while remaining[n] and remaining[n][-1] in used:
+            remaining[n].pop()
+        if remaining[n]:
+            k = remaining[n].pop()
+            used.add(k)
+            a, b = streets[k]
+            stack.append(b if a == n else a)
+        else:
+            trail.append(stack.pop())
+    route = tuple(reversed(trail))
+    if len(used) != len(streets) or route[0] != start or route[-1] != end:
+        raise ValueError(f"the streets of the pipe {start}-{end} do not form one route")
+    return route
 
 
 def _one_per_corridor(edges: list[_Chain]) -> list[_Chain]:

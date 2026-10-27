@@ -182,9 +182,27 @@ class Pipe:
     roughness: float
     tier: PipeTier
     minor_loss: float = 0.0
+    # The street route the pipe follows, in local metres from its start node to its end node
+    # (an OSM provider fills it; empty for a provider without street geometry). An empty route
+    # is left out of the canonical content, so it does not change any hash.
+    route: tuple[tuple[float, float], ...] = ()
 
     def __post_init__(self) -> None:
         _identifier(self.id, "pipe id")
+        if self.route:
+            if len(self.route) < 2:
+                raise ValueError(f"pipe {self.id}: a route needs at least two points")
+            object.__setattr__(
+                self,
+                "route",
+                tuple(
+                    (
+                        _number(x, f"pipe {self.id}: route"),
+                        _number(y, f"pipe {self.id}: route"),
+                    )
+                    for x, y in self.route
+                ),
+            )
         _identifier(self.start, f"pipe {self.id}: start")
         _identifier(self.end, f"pipe {self.id}: end")
         if self.start == self.end:
@@ -487,6 +505,18 @@ class Network:
                     f"sensor {sensor.id} is on unknown element {sensor.element!r}"
                 )
         sensor_ids = {s.id for s in self.sensors}
+        positions: dict[str, tuple[float, float]] = {}
+        for group in (self.junctions, self.reservoirs, self.tanks):
+            for n in group:
+                positions[n.id] = (n.x, n.y)
+        for pipe in self.pipes:
+            if pipe.route and (
+                math.dist(pipe.route[0], positions[pipe.start]) > 1e-6
+                or math.dist(pipe.route[-1], positions[pipe.end]) > 1e-6
+            ):
+                raise ValueError(
+                    f"pipe {pipe.id}: its route must run from its start to its end"
+                )
         for set_name, members in self.sensor_sets.items():
             _identifier(set_name, "sensor set name")
             unknown = sorted(set(members) - sensor_ids)
@@ -502,6 +532,11 @@ class Network:
                 row = {name: getattr(item, name) for name in item.__dataclass_fields__}
                 if "curve" in row:
                     row["curve"] = [list(point) for point in row["curve"]]
+                if "route" in row:
+                    if row["route"]:
+                        row["route"] = [list(point) for point in row["route"]]
+                    else:
+                        del row["route"]
                 out.append(row)
             return out
 

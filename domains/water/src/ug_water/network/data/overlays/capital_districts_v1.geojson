@@ -2,7 +2,7 @@
  "type": "FeatureCollection",
  "label": "ASSUMPTION",
  "method": "hand-drawn",
- "source": "Schematic drawn by the lead around the Wikidata anchor of the capital (Q19588497, P625, CC0): rings with radii chosen by hand (2, 6 and 14 km) and an outer area to the edge of the area file's search box. Not traced from OpenStreetMap, a masterplan or any map; it places no real district.",
+ "source": "Schematic drawn by the lead around the Wikidata anchor of the capital (Q19588497, P625, CC0): rings with radii chosen by hand (2, 6 and 14 km) and an outer area to 0.1 degree beyond the area file's search box (the study box may pass the search box by the 3 km margin and 0.01 degree of rounding, and a kept street's end by half a segment). Not traced from OpenStreetMap, a masterplan or any map; it places no real district.",
  "drawn": "2026-10-27",
  "confidence": "low: a schematic, not the masterplan's districts",
  "anchor": {
@@ -1379,24 +1379,24 @@
     "coordinates": [
      [
       [
-       31.555056,
-       29.833694
+       31.455056,
+       29.733694
       ],
       [
-       31.955056,
-       29.833694
+       32.055056,
+       29.733694
       ],
       [
-       31.955056,
-       30.233694
+       32.055056,
+       30.333694
       ],
       [
-       31.555056,
-       30.233694
+       31.455056,
+       30.333694
       ],
       [
-       31.555056,
-       29.833694
+       31.455056,
+       29.733694
       ]
      ],
      [

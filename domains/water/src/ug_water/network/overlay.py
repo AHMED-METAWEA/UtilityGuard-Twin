@@ -126,6 +126,38 @@ def assign(
     return zones
 
 
+def check_overlay(overlay: Overlay, box: tuple[float, float, float, float]) -> None:
+    """Refuse zones that overlap with positive area inside the box (in local metres).
+
+    Rule: within the part of the box the overlay spans, the zones' clipped areas may not add up
+    to more than that part's area (the sum exceeds it when zones overlap and no gap offsets
+    it); a 250 m sample grid over that part also finds overlaps that a gap could offset.
+    """
+    xs = [p[0] for d in overlay.districts for p in d.outer]
+    ys = [p[1] for d in overlay.districts for p in d.outer]
+    x0, y0 = max(box[0], min(xs)), max(box[1], min(ys))
+    x1, y1 = min(box[2], max(xs)), min(box[3], max(ys))
+    if x1 <= x0 or y1 <= y0:
+        return
+    rect = (x0, y0, x1, y1)
+    span = (x1 - x0) * (y1 - y0) / 10_000
+    total = sum(d.area_within_ha(rect) for d in overlay.districts)
+    if total > span * (1 + 1e-6):
+        raise OverlayError(
+            f"zones overlap: their areas add up to {total:.1f} ha inside {span:.1f} ha"
+        )
+    step = 250.0
+    y = y0 + step / 2
+    while y < y1:
+        x = x0 + step / 2
+        while x < x1:
+            found = [d.id for d in overlay.districts if d.contains((x, y))]
+            if len(found) > 1:
+                raise OverlayError(f"zones {found} overlap at ({x:.0f}, {y:.0f}) m")
+            x += step
+        y += step
+
+
 def _ring(
     coordinates: Any, project: Callable[[float, float], tuple[float, float]], zone: str
 ) -> Ring:

@@ -49,7 +49,12 @@ from ug_water.network.model import (
     Tank,
     Zone,
 )
-from ug_water.network.overlay import assign, load_overlay
+from ug_water.network.overlay import (
+    OverlayError,
+    assign,
+    check_overlay,
+    load_overlay,
+)
 
 if TYPE_CHECKING:
     from ug_water.network.inference import TierRule
@@ -228,9 +233,8 @@ class OsmCapitalProvider:
             raise ValueError(
                 "the OSM provider needs a district overlay (decisions G1 and G3)"
             )
-        from ug_water.network.inference import (
-            skeleton,
-        )  # inference reads this module's types
+        # inference reads this module's types: imported here to avoid an import cycle
+        from ug_water.network.inference import ordered_route, skeleton
 
         cfg = self.config
         overlay = load_overlay(self.overlay_data, graph.projection.xy)
@@ -242,6 +246,13 @@ class OsmCapitalProvider:
         members: dict[str, list[int]] = defaultdict(list)
         for node, zone in zone_of.items():
             members[zone].append(node)
+        check_overlay(overlay, graph.box_xy)
+        for district in overlay.districts:
+            if district.area_within_ha(graph.box_xy) > 0 and district.id not in members:
+                raise OverlayError(
+                    f"zone {district.id} has area in the study box but no junction in tier "
+                    f"{tier}: its demand would be lost"
+                )
         demand: dict[int, float] = {}
         for zone, nodes in members.items():
             land_use = districts[zone].land_use
@@ -262,6 +273,7 @@ class OsmCapitalProvider:
             Pipe(
                 f"p_{k:05d}", f"j_{p.a}", f"j_{p.b}", p.length_m,
                 float(cfg["diameters_m"][p.tier]), float(cfg["roughness"][p.tier]), p.tier,
+                route=tuple(graph.nodes[n] for n in ordered_route(p.streets, p.a, p.b)),
             )
             for k, p in enumerate(sk.pipes)
         ]  # fmt: skip

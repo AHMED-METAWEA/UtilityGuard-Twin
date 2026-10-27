@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import math
 from collections import Counter
 
 import pytest
 from osm_fixtures import PROVENANCE, box, graph, grid, node, overlay
-from ug_core.geometry.fetch import load_area
+from ug_core.geometry.fetch import load_area, study_box
 from ug_water.network.inference import TierRule, skeleton
 from ug_water.network.osm import OsmCapitalProvider, Projection, projection_error
 from ug_water.network.overlay import OverlayError, assign, load_overlay
@@ -17,9 +18,15 @@ ALL = frozenset({"primary", "residential", "secondary", "service", "trunk"})
 def test_the_projection_error_over_the_capital_box_is_about_a_tenth_of_a_percent() -> (
     None
 ):
-    box_ = (29.85, 31.62, 30.06, 31.79)
-    centre = Projection((box_[0] + box_[2]) / 2, (box_[1] + box_[3]) / 2)
-    assert 1e-4 < projection_error(centre, box_) < 2e-3
+    # Synthetic boxes chosen for the test (never values from the cache, decision G2): a box
+    # about 22 km by 19 km at 30 N, the size of a capital study box, and a small one.
+    big, small = (29.9, 31.6, 30.1, 31.8), (29.99, 31.69, 30.01, 31.71)
+    for box_ in (big, small):
+        centre = Projection((box_[0] + box_[2]) / 2, (box_[1] + box_[3]) / 2)
+        assert projection_error(centre, box_) < 2e-3
+    assert projection_error(Projection(30.0, 31.7), big) > projection_error(
+        Projection(30.0, 31.7), small
+    )
 
 
 def test_degree_two_nodes_are_contracted_and_lengths_kept() -> None:
@@ -230,16 +237,24 @@ def test_the_packaged_overlay_is_a_labelled_schematic() -> None:
     }
 
 
-def test_the_packaged_overlay_covers_the_whole_search_box_once() -> None:
-    """Ruling 2: every junction of the study box must lie in a zone. The study box lies inside
-    the area file's search box, so covering the search box covers every junction; checked on a
-    200 m grid without any OpenStreetMap data."""
+def test_the_packaged_overlay_covers_the_largest_possible_study_box_once() -> None:
+    """Ruling 2: every junction of the study box must lie in a zone. A study box can pass the
+    search box by the margin and the 0.01 degree rounding (round 1: landmarks at the search
+    box's corners), and a kept street's end half a segment more: the largest box allowed by the
+    area file plus 0.05 degree is covered once, on a 250 m grid, without any OSM data."""
     area = load_area("capital")
     projection = Projection(*area.anchor)
     overlay = load_overlay(OsmCapitalProvider().overlay_data, projection.xy)
-    south, west, north, east = area.search_box()
+    s0, w0, n0, e0 = area.search_box()
+    widest = study_box([(s0, w0), (n0, e0)], area.study_margin_km)
+    south, west, north, east = (
+        widest[0] - 0.05,
+        widest[1] - 0.05,
+        widest[2] + 0.05,
+        widest[3] + 0.05,
+    )
     (x0, y0), (x1, y1) = projection.xy(south, west), projection.xy(north, east)
-    step = 200.0
+    step = 250.0
     points = {
         (i, k): (x0 + 1 + i * step, y0 + 1 + k * step)
         for i in range(int((x1 - x0) // step))
@@ -294,3 +309,57 @@ def test_demand_counts_the_zone_area_inside_the_study_box() -> None:
     rate = provider().config["demand_l_s_per_ha"]["government"]
     # The east zone runs from x = 500 to 1100; the box ends at 800: half of it counts.
     assert by_zone["east"] == pytest.approx(rate * 300 * 1200 / 10_000 / 1000, rel=1e-9)
+
+
+def test_a_joined_route_counts_towards_the_pipe_tier() -> None:
+    """Round 1 (Codex): the route added to a joined end did not count for the tier."""
+    positions = {1: (0.0, 0.0), 2: (30.0, 0.0), 3: (55.0, 0.0), 4: (95.0, 0.0),
+                 10: (0.0, 2000.0), 11: (0.0, -2000.0), 12: (55.0, 2000.0),
+                 13: (55.0, -2000.0), 14: (95.0, 2000.0), 15: (95.0, -2000.0)}  # fmt: skip
+    streets = [(1, 2, "primary"), (2, 3, "primary"), (3, 4, "residential"),
+               (1, 10, "residential"), (1, 11, "residential"), (3, 12, "residential"),
+               (3, 13, "residential"), (4, 14, "residential"), (4, 15, "residential")]  # fmt: skip
+    sk = skeleton(graph(streets, positions), "test", TierRule(ALL, 8))
+    joined = [p for p in sk.pipes if {p.a, p.b} <= {1, 2, 3, 4} and p.length_m > 50]
+    assert joined and all(p.tier == "transmission" for p in joined)
+
+
+def test_the_network_pipes_carry_their_street_routes() -> None:
+    """Round 1 (Codex): the returned network dropped the street routes."""
+    g = grid(6, 6, main_row=2)
+    net = provider().from_graph(g, "test", 1, TierRule(ALL, 12))
+    streets = {(min(s.a, s.b), max(s.a, s.b)) for s in g.streets}
+    by_position = {xy: n for n, xy in g.nodes.items()}
+    for pipe in net.pipes:
+        if pipe.id.startswith("p_tank"):
+            continue
+        nodes = [by_position[xy] for xy in pipe.route]
+        assert all(
+            (min(a, b), max(a, b)) in streets
+            for a, b in zip(nodes, nodes[1:], strict=False)
+        )
+        length = sum(
+            math.dist(a, b) for a, b in zip(pipe.route, pipe.route[1:], strict=False)
+        )
+        assert length == pytest.approx(pipe.length, rel=1e-9)
+
+
+def test_a_district_that_keeps_no_junction_is_an_error() -> None:
+    """Round 1 (Codex): its demand was silently lost."""
+    o = overlay([("west", "residential", box(-100, -100, 1100, 1100)),
+                 ("east", "government", box(1100, -100, 1700, 1200))])  # fmt: skip
+    from dataclasses import replace
+
+    g = replace(grid(6, 6), box_xy=(-100.0, -100.0, 1700.0, 1100.0))
+    with pytest.raises(OverlayError, match="no junction"):
+        OsmCapitalProvider(overlay=o).from_graph(g, "test", 1, TierRule(ALL, None))
+
+
+def test_overlapping_zones_between_junctions_are_an_error() -> None:
+    """Round 1 (Codex): an overlap no junction falls in doubled the demand."""
+    o = overlay([("a", "residential", box(-100, -100, 330, 1100)),
+                 ("b", "residential", box(270, -100, 1100, 1100))])  # fmt: skip
+    with pytest.raises(OverlayError, match="overlap"):
+        OsmCapitalProvider(overlay=o).from_graph(
+            grid(6, 6), "test", 1, TierRule(ALL, None)
+        )
