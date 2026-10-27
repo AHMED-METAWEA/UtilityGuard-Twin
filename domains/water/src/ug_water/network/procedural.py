@@ -327,19 +327,39 @@ class _Builder:
             )
             self.flow_inlets[pipe.id] = pipe.end
         tc = eq["tank"]
+        # `tank.site`: "highest" (default) puts a tank by the highest junction of its zones;
+        # "inlet" by the highest zone inlet, on the transmission main, so a tank feeding the
+        # zones while the pumps are off does not push that flow through distribution pipes.
+        site_rule = tc.get("site", "highest")
+        if site_rule not in ("highest", "inlet"):
+            raise ValueError(f"tank site {site_rule!r}: use highest or inlet")
+        if tc.get("bottom_above_highest_m", 0) < 0:
+            raise ValueError("bottom_above_highest_m must not be negative")
+        by_id = {j.id: j for j in sites}
         for spec in eq["tanks"]:
-            site = max(
-                (j for j in sites if j.zone in spec["zones"]), key=lambda j: j.elevation
+            candidates = (
+                [j for j in sites if j.zone in spec["zones"]]
+                if site_rule == "highest"
+                else [by_id[self.inlets[z]] for z in spec["zones"]]
             )
+            site = max(candidates, key=lambda j: j.elevation)
             if site.zone in self.prv_zones:
                 raise ValueError(f"PRV zone {site.zone}: holds tank {spec['id']}")
             x, y = site.x + tc["offset_m"][0], site.y + tc["offset_m"][1]
+            # An elevated tank stands `elevated_height_m` above its ground, or, with
+            # `bottom_above_highest_m`, has its bottom that far above the highest junction:
+            # every such tank then floats on one hydraulic grade, whatever its site's terrain.
+            if spec["elevated"] and "bottom_above_highest_m" in tc:
+                bottom = high.elevation + tc["bottom_above_highest_m"]
+            else:
+                bottom = self.elevation(x, y) + (
+                    tc["elevated_height_m"] if spec["elevated"] else 0
+                )
             tank = Tank(
                 spec["id"],
                 x,
                 y,
-                self.elevation(x, y)
-                + (tc["elevated_height_m"] if spec["elevated"] else 0),
+                bottom,
                 tc["init_level_m"],
                 tc["min_level_m"],
                 tc["max_level_m"],
@@ -399,7 +419,14 @@ class _Builder:
                 node = replace(node, zone=a.zone)
                 self.junctions[-1] = node
                 self.nodes[node.id] = node
-                margin = source.head - b.elevation - cfg["prv_setting_m"]
+                # The upstream grade: the source's, or, when the tanks float above a pumped
+                # source, the lowest tank grade at minimum level, whichever is higher.
+                grade = source.head
+                if self.tanks:
+                    grade = max(
+                        grade, min(t.elevation + t.min_level for t in self.tanks)
+                    )
+                margin = grade - b.elevation - cfg["prv_setting_m"]
                 if margin < cfg["prv_min_static_margin_m"]:
                     raise ValueError(
                         f"v_{len(self.valves):04d}: static pressure margin {margin:g} m "

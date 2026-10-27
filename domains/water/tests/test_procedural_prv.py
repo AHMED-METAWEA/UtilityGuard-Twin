@@ -59,7 +59,11 @@ def test_prv_zone_is_a_single_inlet_component(seed: int) -> None:
         inlet = [p for p in net.pipes if p.end == valve.start]
         assert len(inlet) == 1
         assert inlet[0].diameter == valve.diameter
-        margin = net.reservoirs[0].head - nodes[valve.end].elevation - valve.setting
+        # The upstream grade: the source head, or the lowest tank grade at minimum level.
+        grade = max(
+            net.reservoirs[0].head, min(t.elevation + t.min_level for t in net.tanks)
+        )
+        margin = grade - nodes[valve.end].elevation - valve.setting
         assert margin >= cfg["prv_min_static_margin_m"]
         print(
             f"ASSUMPTION seed={seed} PRV={valve.id} zone={zone} "
