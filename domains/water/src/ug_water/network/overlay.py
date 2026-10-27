@@ -37,6 +37,13 @@ class District:
     def area_ha(self) -> float:
         return (_area(self.outer) - sum(_area(h) for h in self.holes)) / 10_000
 
+    def area_within_ha(self, rect: tuple[float, float, float, float]) -> float:
+        """The area inside the rectangle (x0, y0, x1, y1), holes removed."""
+        clipped = _area(_clip(self.outer, rect)) - sum(
+            _area(_clip(h, rect)) for h in self.holes
+        )
+        return max(clipped, 0.0) / 10_000
+
     def contains(self, point: tuple[float, float]) -> bool:
         return _inside(point, self.outer) and not any(
             _inside(point, h) for h in self.holes
@@ -131,6 +138,8 @@ def _ring(
 
 
 def _area(ring: Ring) -> float:
+    if len(ring) < 4:
+        return 0.0
     return (
         abs(
             sum(
@@ -140,6 +149,46 @@ def _area(ring: Ring) -> float:
         )
         / 2
     )
+
+
+def _clip(ring: Ring, rect: tuple[float, float, float, float]) -> Ring:
+    """Sutherland-Hodgman clip of a closed ring to an axis-aligned rectangle."""
+    x0, y0, x1, y1 = rect
+    points = list(ring[:-1])
+    edges = (
+        (lambda p: p[0] >= x0, lambda a, b: _cut_x(a, b, x0)),
+        (lambda p: p[0] <= x1, lambda a, b: _cut_x(a, b, x1)),
+        (lambda p: p[1] >= y0, lambda a, b: _cut_y(a, b, y0)),
+        (lambda p: p[1] <= y1, lambda a, b: _cut_y(a, b, y1)),
+    )
+    for inside, cut in edges:
+        out: list[tuple[float, float]] = []
+        for k, cur in enumerate(points):
+            prev = points[k - 1]
+            if inside(cur):
+                if not inside(prev):
+                    out.append(cut(prev, cur))
+                out.append(cur)
+            elif inside(prev):
+                out.append(cut(prev, cur))
+        points = out
+        if not points:
+            return ()
+    return (*points, points[0])
+
+
+def _cut_x(
+    a: tuple[float, float], b: tuple[float, float], x: float
+) -> tuple[float, float]:
+    t = (x - a[0]) / (b[0] - a[0])
+    return (x, a[1] + t * (b[1] - a[1]))
+
+
+def _cut_y(
+    a: tuple[float, float], b: tuple[float, float], y: float
+) -> tuple[float, float]:
+    t = (y - a[1]) / (b[1] - a[1])
+    return (a[0] + t * (b[0] - a[0]), y)
 
 
 def _inside(point: tuple[float, float], ring: Ring) -> bool:

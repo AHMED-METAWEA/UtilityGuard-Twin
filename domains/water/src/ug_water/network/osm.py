@@ -110,9 +110,10 @@ class StreetGraph:
     streets: tuple[Street, ...]
     projection: Projection
     projection_error: float
-    provenance: Mapping[
-        str, Any
-    ]  # source, licence, osm_base, extract_sha256, retrieved
+    # source, licence, attribution, osm_base, extract_sha256, retrieved, coverage_report
+    provenance: Mapping[str, Any]
+    # The study box in local metres (x0, y0, x1, y1); unbounded for a hand-made test graph.
+    box_xy: tuple[float, float, float, float] = (-1e12, -1e12, 1e12, 1e12)
 
 
 def load_street_graph(
@@ -153,6 +154,7 @@ def load_street_graph(
         streets=tuple(streets),
         projection=projection,
         projection_error=projection_error(projection, (south, west, north, east)),
+        box_xy=(*projection.xy(south, west), *projection.xy(north, east)),
         provenance={
             "source": record["source"],
             "licence": record["licence"],
@@ -172,6 +174,8 @@ class OsmCapitalProvider:
     Rules (see also `inference.py`): junction ids are `j_<OSM node id>` at the OSM node's position
     (`PUBLIC_GEOMETRY`); elevations come from a seeded synthetic terrain; a zone's demand is its
     land use's rate (L/s per hectare) times the district's area, shared equally by its junctions;
+    the district's area counts inside the study box only; the overlay defaults to the packaged
+    schematic `data/overlays/capital_districts_v1.geojson` (owner ruling 2, option A);
     the source is a ground reservoir beside the transmission junction furthest to the configured
     side, feeding it through the duty and standby pumps, whose curve is sized for the peak
     demand; each of the tanks stands beside the highest junction of one sector around the centre.
@@ -197,7 +201,15 @@ class OsmCapitalProvider:
             raise ValueError(
                 "the OSM provider's parameters are chosen: label ASSUMPTION"
             )
-        self.overlay_data = overlay
+        self.overlay_data = (
+            overlay
+            if overlay is not None
+            else json.loads(
+                resources.files("ug_water.network")
+                .joinpath("data/overlays/capital_districts_v1.geojson")
+                .read_text(encoding="utf-8")
+            )
+        )
         self.cache = cache
 
     def build(self, tier: str = "lite", seed: int = 1) -> Network:
@@ -237,7 +249,9 @@ class OsmCapitalProvider:
                 raise ValueError(
                     f"zone {zone}: no demand rate for land use {land_use!r}"
                 )
-            total = float(rates[land_use]) * districts[zone].area_ha / 1000.0  # m3/s
+            # The district's area inside the study box: the network covers only that part.
+            area_ha = districts[zone].area_within_ha(graph.box_xy)
+            total = float(rates[land_use]) * area_ha / 1000.0  # m3/s
             for node in nodes:
                 demand[node] = total / len(nodes)
         junctions = [

@@ -12,6 +12,7 @@
   "roughness": {"transmission": 130.0, "submain": 120.0, "distribution": 110.0},
   "demand_l_s_per_ha": {
     "residential": 0.45,
+    "residential_low": 0.15,
     "government": 0.25,
     "business": 0.35,
     "commercial": 0.35,

@@ -6,6 +6,7 @@ from collections import Counter
 
 import pytest
 from osm_fixtures import PROVENANCE, box, graph, grid, node, overlay
+from ug_core.geometry.fetch import load_area
 from ug_water.network.inference import TierRule, skeleton
 from ug_water.network.osm import OsmCapitalProvider, Projection, projection_error
 from ug_water.network.overlay import OverlayError, assign, load_overlay
@@ -214,9 +215,48 @@ def test_the_same_graph_and_seed_give_the_same_network() -> None:
     )
 
 
-def test_an_overlay_is_required() -> None:
-    with pytest.raises(ValueError, match="needs a district overlay"):
-        OsmCapitalProvider().from_graph(grid(3, 3), "test", 1, TierRule(ALL, None))
+def test_the_packaged_overlay_is_a_labelled_schematic() -> None:
+    data = OsmCapitalProvider().overlay_data
+    assert data["label"] == "ASSUMPTION" and data["method"] == "hand-drawn"
+    assert (
+        "Wikidata" in data["source"]
+        and "Not traced from OpenStreetMap" in data["source"]
+    )
+    assert {f["properties"]["id"] for f in data["features"]} == {
+        "core",
+        "inner",
+        "middle",
+        "outer",
+    }
+
+
+def test_the_packaged_overlay_covers_the_whole_search_box_once() -> None:
+    """Ruling 2: every junction of the study box must lie in a zone. The study box lies inside
+    the area file's search box, so covering the search box covers every junction; checked on a
+    200 m grid without any OpenStreetMap data."""
+    area = load_area("capital")
+    projection = Projection(*area.anchor)
+    overlay = load_overlay(OsmCapitalProvider().overlay_data, projection.xy)
+    south, west, north, east = area.search_box()
+    (x0, y0), (x1, y1) = projection.xy(south, west), projection.xy(north, east)
+    step = 200.0
+    points = {
+        (i, k): (x0 + 1 + i * step, y0 + 1 + k * step)
+        for i in range(int((x1 - x0) // step))
+        for k in range(int((y1 - y0) // step))
+    }
+    zones = assign(points, overlay)
+    assert len(zones) == len(points)
+
+
+def test_a_zone_area_counts_inside_the_study_box_only() -> None:
+    o = load_overlay(two_zones(), grid(2, 2).projection.xy)
+    west = next(d for d in o.districts if d.id == "west")
+    whole = west.area_ha
+    half = west.area_within_ha((-100.0, -100.0, 500.0, 500.0))
+    assert whole == pytest.approx(600 * 1200 / 10_000, rel=1e-6)
+    assert half == pytest.approx(600 * 600 / 10_000, rel=1e-6)
+    assert west.area_within_ha((5000.0, 5000.0, 6000.0, 6000.0)) == 0.0
 
 
 def _component(start: set, links: list) -> set:
