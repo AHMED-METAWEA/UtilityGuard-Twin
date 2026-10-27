@@ -10,7 +10,7 @@ from osm_fixtures import PROVENANCE, box, graph, grid, node, overlay
 from ug_core.geometry.fetch import load_area, study_box
 from ug_water.network.inference import TierRule, skeleton
 from ug_water.network.osm import OsmCapitalProvider, Projection, projection_error
-from ug_water.network.overlay import OverlayError, assign, load_overlay
+from ug_water.network.overlay import OverlayError, assign, check_overlay, load_overlay
 
 ALL = frozenset({"primary", "residential", "secondary", "service", "trunk"})
 
@@ -363,3 +363,44 @@ def test_overlapping_zones_between_junctions_are_an_error() -> None:
         OsmCapitalProvider(overlay=o).from_graph(
             grid(6, 6), "test", 1, TierRule(ALL, None)
         )
+
+
+def test_an_overlap_offset_by_a_gap_is_still_an_error() -> None:
+    """Round 2 (Codex): a 40 m overlap cancelled a 40 m gap in the area sum and fell between
+    the sample points."""
+    o = overlay(
+        [
+            ("a", "residential", box(-100, -100, 320, 1100)),
+            ("b", "residential", box(280, -100, 700, 1100)),
+            ("c", "residential", box(740, -100, 1100, 1100)),
+        ]
+    )
+    with pytest.raises(OverlayError, match="zones a and b overlap"):
+        OsmCapitalProvider(overlay=o).from_graph(
+            grid(6, 6, main_row=2), "test", 1, TierRule(ALL, None)
+        )
+
+
+def test_zones_that_only_touch_do_not_overlap() -> None:
+    o = load_overlay(
+        overlay(
+            [
+                ("a", "residential", box(0, 0, 500, 500)),
+                ("b", "green", box(500, 0, 900, 500)),
+            ]
+        ),
+        grid(2, 2).projection.xy,
+    )
+    check_overlay(o, (-1e9, -1e9, 1e9, 1e9))
+    rings = load_overlay(OsmCapitalProvider().overlay_data, grid(2, 2).projection.xy)
+    check_overlay(rings, (-1e9, -1e9, 1e9, 1e9))  # the schematic's rings touch only
+
+
+def test_a_pipe_route_cannot_be_changed_after_construction() -> None:
+    """Round 2 (Codex): an empty list route stayed mutable inside a frozen network."""
+    from ug_water.network.model import Pipe
+
+    source: list = []
+    pipe = Pipe("p1", "a", "b", 10.0, 0.1, 100.0, "distribution", route=source)
+    source.extend([(0.0, 0.0), (1.0, 1.0)])
+    assert pipe.route == ()

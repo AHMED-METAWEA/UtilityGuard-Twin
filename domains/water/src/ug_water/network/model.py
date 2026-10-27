@@ -189,20 +189,21 @@ class Pipe:
 
     def __post_init__(self) -> None:
         _identifier(self.id, "pipe id")
-        if self.route:
-            if len(self.route) < 2:
-                raise ValueError(f"pipe {self.id}: a route needs at least two points")
-            object.__setattr__(
-                self,
-                "route",
-                tuple(
-                    (
-                        _number(x, f"pipe {self.id}: route"),
-                        _number(y, f"pipe {self.id}: route"),
-                    )
-                    for x, y in self.route
-                ),
-            )
+        # Always a tuple of tuples, also when empty, so no caller's list stays reachable
+        # (review round 2).
+        if self.route and len(self.route) < 2:
+            raise ValueError(f"pipe {self.id}: a route needs at least two points")
+        object.__setattr__(
+            self,
+            "route",
+            tuple(
+                (
+                    _number(x, f"pipe {self.id}: route"),
+                    _number(y, f"pipe {self.id}: route"),
+                )
+                for x, y in self.route
+            ),
+        )
         _identifier(self.start, f"pipe {self.id}: start")
         _identifier(self.end, f"pipe {self.id}: end")
         if self.start == self.end:

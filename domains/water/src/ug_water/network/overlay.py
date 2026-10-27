@@ -127,35 +127,63 @@ def assign(
 
 
 def check_overlay(overlay: Overlay, box: tuple[float, float, float, float]) -> None:
-    """Refuse zones that overlap with positive area inside the box (in local metres).
+    """Refuse two zones that overlap with positive area (in local metres; `box` is kept for the
+    caller's symmetry, the test is exact and needs no box).
 
-    Rule: within the part of the box the overlay spans, the zones' clipped areas may not add up
-    to more than that part's area (the sum exceeds it when zones overlap and no gap offsets
-    it); a 250 m sample grid over that part also finds overlaps that a gap could offset.
+    Two zones overlap exactly when their boundaries cross properly somewhere, or when a point
+    one millimetre from a vertex of one lies inside both (this finds overlaps whose boundaries
+    only touch, at corners and T-junctions); review round 2 showed that an area sum and a
+    sample grid can both miss an overlap that a gap offsets.
     """
-    xs = [p[0] for d in overlay.districts for p in d.outer]
-    ys = [p[1] for d in overlay.districts for p in d.outer]
-    x0, y0 = max(box[0], min(xs)), max(box[1], min(ys))
-    x1, y1 = min(box[2], max(xs)), min(box[3], max(ys))
-    if x1 <= x0 or y1 <= y0:
-        return
-    rect = (x0, y0, x1, y1)
-    span = (x1 - x0) * (y1 - y0) / 10_000
-    total = sum(d.area_within_ha(rect) for d in overlay.districts)
-    if total > span * (1 + 1e-6):
-        raise OverlayError(
-            f"zones overlap: their areas add up to {total:.1f} ha inside {span:.1f} ha"
-        )
-    step = 250.0
-    y = y0 + step / 2
-    while y < y1:
-        x = x0 + step / 2
-        while x < x1:
-            found = [d.id for d in overlay.districts if d.contains((x, y))]
-            if len(found) > 1:
-                raise OverlayError(f"zones {found} overlap at ({x:.0f}, {y:.0f}) m")
-            x += step
-        y += step
+    districts = overlay.districts
+    for k, a in enumerate(districts):
+        for b in districts[k + 1 :]:
+            if _overlap(a, b):
+                raise OverlayError(f"zones {a.id} and {b.id} overlap")
+
+
+def _rings(d: District) -> tuple[Ring, ...]:
+    return (d.outer, *d.holes)
+
+
+def _overlap(a: District, b: District) -> bool:
+    for ra in _rings(a):
+        for rb in _rings(b):
+            for p, q in zip(ra, ra[1:], strict=False):
+                for r, t in zip(rb, rb[1:], strict=False):
+                    if _cross(p, q, r, t):
+                        return True
+    eps = 1e-3
+    for d, other in ((a, b), (b, a)):
+        for ring in _rings(d):
+            for x, y in ring[:-1]:
+                for dx, dy in ((eps, 0), (-eps, 0), (0, eps), (0, -eps),
+                               (eps, eps), (eps, -eps), (-eps, eps), (-eps, -eps)):  # fmt: skip
+                    point = (x + dx, y + dy)
+                    if d.contains(point) and other.contains(point):
+                        return True
+    return False
+
+
+def _cross(
+    p: tuple[float, float],
+    q: tuple[float, float],
+    r: tuple[float, float],
+    t: tuple[float, float],
+) -> bool:
+    """Whether segments pq and rt cross properly (each strictly separates the other's ends)."""
+
+    def side(
+        o: tuple[float, float], u: tuple[float, float], w: tuple[float, float]
+    ) -> float:
+        return (u[0] - o[0]) * (w[1] - o[1]) - (u[1] - o[1]) * (w[0] - o[0])
+
+    d1, d2 = side(r, t, p), side(r, t, q)
+    d3, d4 = side(p, q, r), side(p, q, t)
+    tol = 1e-9 * max(1.0, abs(d1), abs(d2), abs(d3), abs(d4))
+    return (d1 > tol and d2 < -tol or d1 < -tol and d2 > tol) and (
+        d3 > tol and d4 < -tol or d3 < -tol and d4 > tol
+    )
 
 
 def _ring(
