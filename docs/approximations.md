@@ -21,3 +21,21 @@ What the simulation simplifies, and how large the effect is where it has been me
 **Failures.** Non-convergence, a non-finite result, a results axis that is not the demand series' axis, and reverse flow through a pump beyond 1e-9 m3/s are errors; nothing is replaced by zero.
 
 **Performance (Spec 4.8).** 48 hours at 5 minutes on the procedural network (260 junctions, 340 pipes, 9 pumps, 32 valves, 3 tanks): 5.7 s with `WNTRSimulator` on the lead's laptop (budget 60 s), measured by `test_48_hours_on_the_procedural_network_within_the_budget`.
+
+## OSM network (T-B1-013)
+
+Aggregate numbers below come from OpenStreetMap: © OpenStreetMap contributors, ODbL. No coordinate, name or geometry derived from it is written to the repository (owner ruling on G2, 2026-10-27).
+
+**Streets kept.** The segments of the cached extract whose midpoint lies inside the study box; Overpass returns whole ways, which reach beyond it. Roads under construction are a separate opt-in layer.
+
+**Projection.** Equirectangular about the centre of the study box; the largest relative length error over the box is about 0.1% (measured by `projection_error`).
+
+**Pipes follow streets.** A pipe is a complete street route between two junctions: chains of degree-2 nodes are contracted, and when close junctions are joined (rule below) a pipe gains the street route to its group's representative, in length and in segments. Every junction is an OSM node. On the cached extract no pipe leaves the streets.
+
+**Tiers.** `lite` (about 250 junctions) and `standard` (about 800) use the main roads (motorway, trunk, primary, secondary and their links); `full` uses every street class except service roads and has about 6,000 junctions. To reach a target, junctions closer than a radius along a street are joined; the radius is found by bisection (0.1 m) as the smallest whose skeleton holds at most the target, and the tier must then hold at least 90% of it. In the joined tiers the two carriageways of a divided road become one main. Measured on the cached extract: lite 250 junctions and 339 pipes (radius 335 m), standard 799 and 1,072 (24 m), full 6,020 junctions.
+
+**Pipe tier, diameter, roughness.** A pipe's tier is that of the road classes covering most of its length (trunk and primary: transmission; secondary and tertiary: submain; the rest: distribution); diameters and roughness by tier are placeholders (`network/data/osm_capital_v1.json`).
+
+**Zones and demand.** Zones come from the schematic overlay (rings around the Wikidata anchor, owner ruling 2, option A): it places no real district. A zone's demand is its land use's rate (L/s per hectare, placeholder) times its area inside the study box, shared equally by its junctions. With the placeholder rates the total is about 12 m3/s, beyond what the placeholder mains carry: the rates and sizes are calibrated with network validation (T-B1-014), not here.
+
+**Terrain, source, tanks.** Elevations are a seeded synthetic plane with one wave (no survey); the source is a ground reservoir beside the transmission junction furthest to the configured side, with two duty and one standby pumps sized for the peak; three elevated tanks stand beside the highest junction of three sectors around the centre. All `ASSUMPTION`.
