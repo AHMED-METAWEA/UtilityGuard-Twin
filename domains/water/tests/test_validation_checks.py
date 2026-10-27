@@ -163,3 +163,13 @@ def test_reject_invalid_config(key, value):
 def test_reject_invalid_horizon(horizon):
     with pytest.raises(ValueError, match="horizon_days"):
         validate_network(line(), seed=1, horizon_days=horizon)
+
+
+def test_a_check_that_cannot_be_evaluated_is_not_a_pass() -> None:
+    """Lead review: a network without demand cannot show its pressures at peak; the report
+    must not pass on checks it could not evaluate."""
+    net = line()
+    net = replace(net, junctions=(replace(net.junctions[0], base_demand=0.0),))
+    report = run(net)
+    pressure = {c.name: c for c in report.checks}["min_pressure_at_peak"]
+    assert pressure.passed is None and report.passed is False

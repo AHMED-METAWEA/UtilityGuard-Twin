@@ -199,7 +199,10 @@ def validate_network(
 
     def finish() -> ValidationReport:
         return ValidationReport(
-            not any(c.passed is False for c in checks), tuple(checks)
+            # Fail closed: every check except the informational delivered share must pass;
+            # a check that could not be evaluated (None) is not a pass (lead review).
+            all(c.passed is True for c in checks if c.name != "delivered_share"),
+            tuple(checks),
         )
 
     def skip(reason: str, start: int = 0) -> ValidationReport:
