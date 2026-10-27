@@ -21,8 +21,8 @@ from test_demand_helpers import (
 # Regenerate with the exact case in test_golden_hashes using content_hash().
 # Update only for a reviewed, intentional model/assumption/numeric change, with
 # before/after results and rationale in the handoff; never to hide a regression.
-GOLDEN_TRUTH = "7e0769b15e2ba522c0fb243490846496eb50e808d80564b390b4f94b6a8e8b07"
-GOLDEN_FORECAST = "b4b507632b9121380fe90361fb47bd9ceb530544e5249e694498ae36952a5e3e"
+GOLDEN_TRUTH = "12e2527e5952dedec3c3f60a0065cda7ede829dfaee61606e9debec4504043f5"
+GOLDEN_FORECAST = "80f179c3211a8d712509ae2498d71ad0385e4bef7de5ff83049c93014aba5beb"
 
 
 @pytest.mark.parametrize("path", ["truth", "forecast"])

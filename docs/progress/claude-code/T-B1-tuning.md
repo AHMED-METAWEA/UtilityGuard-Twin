@@ -1,13 +1,35 @@
-# Handoff: network tuning (lead card, Wave 3; WIP)
+# Handoff: network tuning (lead card, Wave 3, Tier 2)
 
-Why: T-B1-014's validation (merged as #54) fails the procedural network on `min_pressure_any_time`, `max_velocity` and `tank_pinned_full` (seeds 1 to 3); the OSM network's placeholder demand (about 12 m3/s) is beyond its pipe sizes.
+Why: T-B1-014's validation (merged as #54) failed the procedural network on `min_pressure_any_time`, `max_velocity` and `tank_pinned_full` (seeds 1 to 3).
 
-## Found (procedural network, SIMULATION, 2- to 7-day validation runs)
-- The source's grade (gravity reservoir 157.6 m plus pumps up to 45 m) sat 50 to 80 m above every tank top, so tanks filled at start-up (velocities 4 to 5 m/s, pressure dip to 4 m) and stayed full; demand was low for a capital-scale district (a synthetic design choice, ASSUMPTION; no benchmark is cited).
-- Config changes that fix pressure and velocity (validated over 4 days, seed 1): demand density x6 (327 L/s), every tank elevated 38 m, pump curve heads x0.42 and flows x1.2 (design point about 15 m at 0.048 m3/s), PRV setting 35 m (static margin 15.7 m against 15 m). Result: lowest pressure 19.1 m, top velocity 2.5 m/s, no starvation.
-- What no setting fixes: tanks still sit near full 96% of the week. The pumps run all the time; the model has no level controls (pumps off when tanks are full, on when low), so the tanks are floating storage that only fill. Pumping at curve run-out "passes" but is not a design to accept (WNTR warns the pumps exceed their maximum flow).
+## Causes found (SIMULATION, procedural network)
+1. The source's grade (a reservoir 40 m above terrain, plus pumps up to 45 m) sat 50 to 80 m above every tank top, so the tanks filled at start-up and stayed full, and no pump ever stopped (no level controls).
+2. The tanks stood at three different grades (each a fixed height above its own ground, two of them on the ground): the higher tanks drained into the lower one through the pumps' discharge.
+3. Each tank hung off the highest junction inside a district grid, so while the pumps were off its whole outflow went through 100 to 200 mm distribution pipes (velocities about 3.7 m/s, pressures 4 to 5 m).
+4. Demand was low for a capital-scale district (a synthetic design choice, ASSUMPTION; no benchmark is cited); once raised six-fold, the 100 to 200 mm distribution pipes lost about 30 m at peak in the densest district (seed 3).
 
-## Next step
-1. Solver feature (lead, Tier 2): tank-level pump controls (on below a level, off above one; per station, from the network's equipment config), through WNTR controls; declare the control symbols in the WNTR API manifest first (`ug doctor` verifies them).
-2. Then apply the config changes above to `procedural_capital_v1.json`, update the demand golden hashes in `test_demand_determinism.py` (deliberate network change), and rerun the 7-day validation for seeds 1 to 3.
-3. The OSM network: calibrate `osm_capital_v1.json` (demand rates and pipe sizes) the same way once #53 is merged.
+## Design (all values ASSUMPTION, synthetic, in `procedural_capital_v1.json`)
+- Source: a ground-level clearwell, 5 m above terrain.
+- Three stations (2 duty, 1 standby each) lift into three elevated tanks on one common grade: tank bottom 36 m above the highest junction (`tank.bottom_above_highest_m`), each tank on the highest zone inlet of its zones, on the transmission main (`tank.site` "inlet", `tank.pipe_tier` "transmission").
+- Tank-level pump controls (`equipment.level_control`): each station's duty pumps switch on its own tank, on below 2.5 m, off above 7.0 m.
+- Pump curve (0, 58), (0.08, 46), (0.14, 24) in m3/s and m.
+- Demand densities x6 (327 L/s average base demand); distribution diameters 150, 200, 250 mm; PRV setting 30 m.
+- PRV static margin: the upstream grade is now the source head or, when higher, the lowest tank grade at minimum level (the tanks set the grade above a pumped source). For the old config the source head was higher, so its result is unchanged.
+
+## Measured (SIMULATION, seven days, `normal_week`, 5-minute ticks)
+| seed | min pressure at peak (>= 15 m) | min pressure any time (>= 10 m) | max velocity (<= 3 m/s) | lowest tank level above minimum | share of time pinned full (< 0.95) |
+|---|---|---|---|---|---|
+| 1 | 25.6 m | 24.7 m | 1.44 m/s | 1.95 m | 0.0 |
+| 2 | 26.9 m | 25.5 m | 1.37 m/s | 1.94 m | 0.0 |
+| 3 | 25.5 m | 25.0 m | 1.59 m/s | 1.86 m | 0.0 |
+
+Seed 1: pumps run at 0.103 to 0.117 m3/s (inside the curve; no WNTR overrun warning on seeds 1 and 3), 0.9 to 1.4 starts per day; station east runs 86% of the time, north 25%, west 30%; the tanks cycle between 2.5 and 7.0 m. Total demand 0.131 to 0.493 m3/s.
+
+The CI test `test_procedural_validation.py` runs two days for seeds 1 to 3 (about 3 s each); it fails on all three seeds with the old config.
+
+## Changed hashes
+Deliberate network change: the demand golden hashes in `test_demand_determinism.py` change (the demand rates belong to the network). Every procedural network hash and run id changes.
+
+## Not done (next)
+- The OSM network: calibrate `osm_capital_v1.json` (demand rates, pipe sizes, tank grade, controls) the same way; its placeholder demand (about 12 m3/s) is beyond its pipe sizes. Separate card.
+- The standby pumps never run; failover belongs to T-B1-017 (faults).

@@ -67,7 +67,9 @@ def test_scale_equipment_and_nested_sensor_sets(network: Network) -> None:
     assert 8 <= len(network.zones) <= 10
     assert len(network.reservoirs) == 1
     assert len(network.tanks) == 3
-    assert sum(t.elevated for t in network.tanks) == 1
+    assert sum(t.elevated for t in network.tanks) == sum(
+        spec["elevated"] for spec in cfg["equipment"]["tanks"]
+    )
     stations: dict[str, Counter[str]] = {}
     for pump in network.pumps:
         stations.setdefault(pump.station, Counter())[pump.role] += 1
@@ -191,20 +193,81 @@ def test_tunable_junction_and_pipe_targets(target: int) -> None:
     assert {j.id for j in net.junctions} <= reachable(net)
 
 
-def test_tanks_use_highest_grid_site_in_their_configured_region(
+def tank_sites(net: Network) -> dict[str, Any]:
+    """The junction each tank connects to, and the connecting pipe."""
+    nodes = {j.id: j for j in net.junctions}
+    sites = {}
+    for tank in net.tanks:
+        (pipe,) = [p for p in net.pipes if tank.id in (p.start, p.end)]
+        site = pipe.start if pipe.end == tank.id else pipe.end
+        sites[tank.id] = (nodes[site], pipe)
+    return sites
+
+
+def test_tanks_stand_on_the_highest_zone_inlet_main(network: Network) -> None:
+    """Packaged design: `tank.site` "inlet", a transmission connection."""
+    cfg = config()
+    tc = cfg["equipment"]["tank"]
+    assert tc["site"] == "inlet"
+    pump_ends = {p.end for p in network.pumps}
+    # Zone inlets are the grid ends of the radial mains from the pump stations.
+    inlets = [
+        j
+        for j in network.junctions
+        if j.base_demand > 0
+        and any(p.start in pump_ends and p.end == j.id for p in network.pipes)
+    ]
+    sites = tank_sites(network)
+    for spec in cfg["equipment"]["tanks"]:
+        site, pipe = sites[spec["id"]]
+        high = max(
+            (j for j in inlets if j.zone in spec["zones"]), key=lambda j: j.elevation
+        )
+        assert site == high
+        assert pipe.tier == tc["pipe_tier"] == "transmission"
+        tank = next(t for t in network.tanks if t.id == spec["id"])
+        assert (tank.x, tank.y) == (
+            site.x + tc["offset_m"][0],
+            site.y + tc["offset_m"][1],
+        )
+
+
+def test_elevated_tanks_float_on_one_grade_above_the_highest_junction(
     network: Network,
 ) -> None:
+    rise = config()["equipment"]["tank"]["bottom_above_highest_m"]
+    top = max(j.elevation for j in network.junctions)
+    for tank in network.tanks:
+        assert tank.elevated
+        assert tank.elevation == pytest.approx(top + rise)
+
+
+def test_the_highest_site_rule_uses_the_highest_grid_junction() -> None:
     cfg = config()
-    tanks = {t.id: t for t in network.tanks}
+    cfg["equipment"]["tank"]["site"] = "highest"
+    net = ProceduralCapitalProvider(cfg).build(1)
     # Valve and pump auxiliary junctions carry no demand; only grid sites qualify.
-    grid = [j for j in network.junctions if j.base_demand > 0]
+    grid = [j for j in net.junctions if j.base_demand > 0]
+    sites = tank_sites(net)
     for spec in cfg["equipment"]["tanks"]:
         high = max(
             (j for j in grid if j.zone in spec["zones"]), key=lambda j: j.elevation
         )
-        tank = tanks[spec["id"]]
-        assert tank.x == high.x + cfg["equipment"]["tank"]["offset_m"][0]
-        assert tank.y == high.y + cfg["equipment"]["tank"]["offset_m"][1]
+        assert sites[spec["id"]][0] == high
+
+
+@pytest.mark.parametrize(
+    "key,value,message",
+    [
+        ("site", "lowest", "use highest or inlet"),
+        ("bottom_above_highest_m", -1, "negative"),
+    ],
+)
+def test_bad_tank_siting_is_refused(key: str, value: Any, message: str) -> None:
+    cfg = config()
+    cfg["equipment"]["tank"][key] = value
+    with pytest.raises(ValueError, match=message):
+        ProceduralCapitalProvider(cfg).build(1)
 
 
 def test_valves_are_in_series_without_a_parallel_pipe_bypass(network: Network) -> None:

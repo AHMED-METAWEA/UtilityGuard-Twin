@@ -1,7 +1,7 @@
 {
   "version": "procedural_capital_v1",
   "label": "ASSUMPTION",
-  "note": "Every value is a synthetic placeholder for the F0 fallback, not ACUD or surveyed city data. SI units unless named otherwise.",
+  "note": "Every value is a synthetic placeholder for the F0 fallback, not ACUD or surveyed city data. SI units unless named otherwise. Design (lead network tuning card): a ground-level clearwell source; three duty-and-standby pump stations lift into three elevated tanks on one common grade (bottom 36 m above the highest junction), each on its zone inlet main; each station's duty pumps switch on its tank's level. Sized so the seven-day validation passes on seeds 1 to 3; still synthetic, not a design to build.",
   "targets": {"junctions": 260, "pipes": 340},
   "districts": [
     {"id": "government", "name": "Government cluster", "land_use": "government", "center_m": [0, 3800], "area_ha": 320, "aspect": 1.4, "planned": true},
@@ -31,28 +31,29 @@
     ]
   },
   "terrain": {"base_m": 110, "slope_x": 0.0008, "slope_y": 0.0012, "amplitude_m": 3, "wavelength_m": 8000},
-  "diameters_m": {"transmission": [0.6, 0.7, 0.8], "submain": [0.25, 0.3, 0.35], "distribution": [0.1, 0.15, 0.2]},
+  "diameters_m": {"transmission": [0.6, 0.7, 0.8], "submain": [0.25, 0.3, 0.35], "distribution": [0.15, 0.2, 0.25]},
   "roughness_c": {"new": 140, "middle": 125, "old": 110},
   "pipe_minor_loss": 0,
   "demands": {
-    "m3_s_per_ha": {"government": 0.000015, "business": 0.000025, "diplomatic": 0.000012, "residential": 0.00003, "green": 0.000006, "medical": 0.000035, "education": 0.00002, "sports": 0.00001},
+    "m3_s_per_ha": {"government": 0.00009, "business": 0.00015, "diplomatic": 0.000072, "residential": 0.00018, "green": 0.000036, "medical": 0.00021, "education": 0.00012, "sports": 0.00006},
     "junction_weight_range": [0.8, 1.2]
   },
   "equipment": {
-    "source": {"offset_m": [-100, 100], "head_above_terrain_m": 40},
+    "source": {"offset_m": [-100, 100], "head_above_terrain_m": 5},
     "stations": [
       {"id": "station_north", "offset_m": [0, 60], "zone": "government"},
       {"id": "station_east", "offset_m": [60, 0], "zone": "diplomatic"},
       {"id": "station_west", "offset_m": [-60, 0], "zone": "education"}
     ],
-    "pump": {"duty": 2, "standby": 1, "curve": [[0, 45], [0.04, 36], [0.08, 15]], "efficiency": 0.78},
+    "pump": {"duty": 2, "standby": 1, "curve": [[0, 58], [0.08, 46], [0.14, 24]], "efficiency": 0.78},
     "tanks": [
       {"id": "tank_north", "zones": ["government", "business", "sports"], "elevated": true},
-      {"id": "tank_east", "zones": ["diplomatic", "residential_inner", "residential_outer"], "elevated": false},
-      {"id": "tank_west", "zones": ["green", "medical", "education"], "elevated": false}
+      {"id": "tank_east", "zones": ["diplomatic", "residential_inner", "residential_outer"], "elevated": true},
+      {"id": "tank_west", "zones": ["green", "medical", "education"], "elevated": true}
     ],
-    "tank": {"offset_m": [20, 20], "elevated_height_m": 18, "init_level_m": 4, "min_level_m": 0.5, "max_level_m": 8, "diameter_m": 20},
-    "valves": {"isolation": 30, "prv": 2, "prv_setting_m": 25, "prv_zones": ["residential_outer", "green"], "prv_min_static_margin_m": 15, "prv_note": "ASSUMPTION: Outer residential and green districts lie on the low southern terrain, away from the government cluster, source and highest tank sites. Each retains its inner grid and one PRV-fed radial inlet; all other district boundary pipes are omitted. Static margin is reservoir head minus downstream elevation minus setting, not a dynamic guarantee.", "isolation_setting": 0}
+    "tank": {"offset_m": [20, 20], "site": "inlet", "pipe_tier": "transmission", "bottom_above_highest_m": 36, "init_level_m": 4, "min_level_m": 0.5, "max_level_m": 8, "diameter_m": 20},
+    "level_control": {"on_below_m": 2.5, "off_above_m": 7.0},
+    "valves": {"isolation": 30, "prv": 2, "prv_setting_m": 30, "prv_zones": ["residential_outer", "green"], "prv_min_static_margin_m": 15, "prv_note": "ASSUMPTION: Outer residential and green districts lie on the low southern terrain, away from the government cluster, source and highest tank sites. Each retains its inner grid and one PRV-fed radial inlet; all other district boundary pipes are omitted. Static margin is the upstream grade (the source head, or the lowest tank grade at minimum level when higher) minus downstream elevation minus setting, not a dynamic guarantee.", "isolation_setting": 0}
   },
   "sensors": {
     "coverage_hops": 3,
