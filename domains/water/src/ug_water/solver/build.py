@@ -4,7 +4,8 @@ Mapping rules (every WNTR call used here is declared in the WNTR API manifest):
 - each junction gets its own demand pattern: base demand = the mean of its series, multipliers =
   series / mean, one value per tick (a junction whose series is all zero gets base 0, no pattern);
   WNTR reads pattern value k at time k x step, so tick k of the series is the demand at tick k;
-- duty pumps start open, standby pumps closed; each pump has its own head curve;
+- duty pumps start open, standby pumps closed; each pump has its own head curve; a level
+  control switches its pump on below a tank level and off above another (two WNTR controls);
 - isolation valves are throttle control valves (TCV) with loss coefficient 0, open; a PRV keeps
   its setting (m of pressure head downstream);
 - the time step of the hydraulics and the patterns is the step of the demand series, which must
@@ -156,6 +157,25 @@ def build_model(
                 valve_type="TCV",
                 initial_setting=0.0,
                 initial_status="OPEN",
+            )
+    for control in network.controls:
+        # A pump switched by a tank level: two WNTR controls, on below and off above.
+        tank, pump = wn.get_node(control.tank), wn.get_link(control.pump)
+        status = type(
+            pump.status
+        )  # WNTR's LinkStatus, read from the pump (members declared)
+        for suffix, relation, level, value in (
+            ("on", "<", control.on_below_m, status.Open),
+            ("off", ">", control.off_above_m, status.Closed),
+        ):
+            wn.add_control(
+                f"{control.id}:{suffix}",
+                wntr.network.controls.Control(
+                    wntr.network.controls.ValueCondition(
+                        tank, "level", relation, level
+                    ),
+                    wntr.network.controls.ControlAction(pump, "status", value),
+                ),
             )
     step = demand.timebase.step_seconds
     wn.options.time.duration = (demand.timebase.n_ticks - 1) * step
