@@ -239,14 +239,14 @@ Status: **merged by the owner (PR #39)**, review log `docs/reviews/T-B1-005.md` 
 **Acceptance:** `make test-frontend` (the F1 cases, the downgrade cases, the line only for F1, the line kept when collapsed, a failing network read keeps the plain notice); `test_spec_wording.py` keeps the shell's texts equal to the Spec's; mutations of the rule and of the wording are caught.
 
 ### T-B1-010: `ug fetch-geometry` and the coverage report
-Status: **PR #45, in review** (round 1 fixed; round 2 next), review log `docs/reviews/T-B1-010.md`
+Status: **merged by the owner (PR #45)**, review log `docs/reviews/T-B1-010.md` (two rounds)
 Owner: claude   Reviewer: codex   Tier: T2 (provenance and labels)   Branch: `claude/b1-fetch-geometry`   Spec refs: 1.4, 5.1
 **Allowed:** `platform/ug_core/src/ug_core/geometry/**` (new, domain-agnostic: fetch, cache, provenance, report), `platform/ug_cli/src/ug_cli/main.py` and a new `fetch_geometry.py`, `platform/tests/unit/test_geometry_*.py`, `.gitignore` (`data/geometry/`), `docs/`. **Forbidden:** committing any OSM extract.
 **Behaviour:** `ug fetch-geometry --area capital [--refresh] [--report]`. The area comes from a versioned file that holds no OSM-derived geometry (G2): an anchor point from Wikidata (CC0), a search half-width, a margin and the landmark names; the study box is placed at fetch time (the landmarks found plus the margin, `ASSUMPTION`) and stored only in the cache provenance, and the query text comes from versioned templates; requests carry the project User-Agent, back off exponentially on 429 and 502, and stop with a clear error after the last attempt; the extract and a `provenance.json` (source, licence ODbL 1.0, retrieved at, `timestamp_osm_base`, query SHA-256, extract SHA-256) are written to `data/geometry/<area>/<osm_base>/`; with a cached extract it runs offline; `--report` writes the coverage report of the feasibility test (streets, junctions, components, grid, districts, land use, buildings, names, freshness) as JSON and Markdown.
 **Acceptance:** offline unit tests with a synthetic Overpass answer built by the test (no OSM data): cache hit and miss, backoff (no real sleep), 404/429/502/timeout paths, provenance fields, report numbers on a hand-checkable graph; the report of a cached extract is byte-identical across two runs; a test fails if anything under `data/geometry/` is tracked by git; `make ci` exit 0. Network check, outside CI: `make fetch-geometry-live` reproduces the feasibility report's junction and component numbers within 2% on a new `timestamp_osm_base`, or explains the difference.
 
 ### T-B1-011: `ProceduralCapitalProvider` (F0 fallback and test fixture)
-Status: **merged by the lead (PR #43)**, review log `docs/reviews/T-B1-011.md`; its parameters are in `network/data/procedural_capital_v1.json` (labelled `ASSUMPTION`), not in `assumptions/`
+Status: **merged by the lead (PR #43)**, review log `docs/reviews/T-B1-011.md`; parameters in `network/data/procedural_capital_v1.json` (`ASSUMPTION`); fix card T-B1-011b (PRVs that can regulate) merged by the lead (PR #48), log `docs/reviews/T-B1-011b.md`
 Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/b1-procedural-network`   Spec refs: 5.1 steps 1 to 5
 **Allowed:** `domains/water/src/ug_water/network/` (`model.py`, `procedural.py`), `domains/water/tests/test_procedural_*.py`, `assumptions/network_f0_v1.yaml` (new; the owner merges assumption files), `docs/progress/codex/T-B1-011.md`. Reuse candidate `freebuff/backend/app/network/builder.py`, `zones.py`: ADAPT only after the Adoption Plan section 6 review, logged in `DECISIONS.md` with golden tests.
 **Behaviour:** seeded districts, street grids, transmission ring and radial mains, synthetic terrain, tanks at high points, diameters by hierarchy, roughness by age class, demands by land use times area times per-capita (`ASSUMPTION`), three sensor sets `S_base`, `S_dense`, `S_sparse`. Targets: about 260 junctions, 340 pipes, 3 pump stations (2 duty plus 1 standby), 3 tanks, about 30 isolation valves and 2 PRVs, about 48 pressure, 10 flow and 3 level sensors.
@@ -262,28 +262,28 @@ Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/b1-wntr-manifest`
 ### Wave 2
 
 ### T-B1-013: `OsmCapitalProvider`, scale tiers, pipe inference, district overlay
-Status: **next for the lead** (Wave 2)
+Status: **PR #53, in review** (Codex round 1 running; Tier 2, the owner merges); overlay per owner ruling 2 (option A)
 Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/b1-osm-provider`   Needs: T-B1-010, G1 to G3, D2
 **Allowed:** `domains/water/src/ug_water/network/` (`osm.py`, `inference.py`, `overlay.py`), `domains/water/data/overlays/capital_districts_v1.geojson` (hand-made, no OSM data), `domains/water/tests/test_osm_*.py`, `docs/`.
 **Behaviour:** read the cached extract; project to local Cartesian metres (equirectangular about a reference point, error bound computed and documented); merge degree-2 nodes; choose a tier (`lite` about 250, `standard` about 800, `full` 2,000 or more junctions); transmission mains from the trunk, primary and secondary classes, distribution on the rest (seeded, documented rule); diameters by hierarchy and demands per zone are `ASSUMPTION`; junctions are assigned to the overlay's zones; roads under construction are a separate, opt-in layer. Labels: junction coordinates taken from OSM nodes are `PUBLIC_GEOMETRY` with provenance; pipes, diameters and demands are `ASSUMPTION`; the network reports F1 only when its geometry provenance is `PUBLIC_GEOMETRY`.
 **Acceptance:** with a synthetic street-graph fixture: the same extract and seed give an identical network hash; each tier is within 10% of its junction target; the network is connected; every pipe lies on a street segment (distance under 1 m); a zone without overlay coverage is an error, not a silent default; the Fidelity badge shows the F1 text for this provider and never for F0. Locally, outside CI: `standard` from the real cached extract builds and validates.
 
 ### T-B1-012: Demand model
-Status: **in progress** (Codex lane, `codex/b1-demand`, started 2026-10-26; interfaces in D-024)
+Status: **merged by the owner (PR #50)**, review log `docs/reviews/T-B1-012.md`
 Owner: codex   Reviewer: claude   Tier: T2 (assumptions and determinism)   Branch: `codex/b1-demand`   Spec refs: 5.2
 **Allowed:** `domains/water/src/ug_water/demand/**`, `assumptions/demand_v1.yaml` (new; the owner merges it), `domains/water/tests/test_demand_*.py`.
 **Behaviour:** base demand per junction from land use; multipliers for the diurnal pattern per land use, the week (Friday and Saturday weekend), holidays, Ramadan (evening peak at Iftar), the season, heatwave, special events and fire flow; AR(1) correlated noise per zone; a separate forecast-error process (its own random stream) for the expectation model of M3. Every parameter comes from the assumption file and carries `ASSUMPTION`.
 **Acceptance:** property tests (every multiplier finite and positive; deterministic per seed; independent random streams per zone and for the forecast); the Ramadan peak moves to the Iftar window; a holiday lowers the government zone's demand and not the others'; the forecast differs from the truth by the configured error statistics (within sampling tolerance); golden hashes for one week.
 
 ### T-B1-016: Hydraulic engine (WNTR, pressure-driven demand)
-Status: **next for the lead** (Wave 2)
+Status: **merged by the owner (PR #49)**, review log `docs/reviews/T-B1-016.md` (two rounds)
 Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/b1-hydraulics`   Needs: T-B1-011, T-B1-015
 **Allowed:** `domains/water/src/ug_water/solver/**`, `domains/water/tests/test_solver_*.py`, `docs/approximations.md`.
 **Behaviour:** WNTR with pressure-driven demand (PDD options verified in the installed version); 5-minute hydraulic step; pump head and efficiency curves; energy in kWh per pump and per run; results as `TruthSeries` (`SIMULATION`); a non-finite result raises, never becomes zero.
 **Acceptance:** 48 hours on the `lite` network (about 250 nodes) in under 60 s on this laptop (Spec 4.8; measured and reported); PDD reduces delivered demand when pressure falls below the required pressure (a test with a throttled source); a planted NaN in the results raises; energy agrees with an independent calculation from head, flow and efficiency within 1%.
 
 ### T-B1-020: Run store, manifest and hashes
-Status: **in progress** (Codex lane, `codex/b1-run-store`, started 2026-10-26; interfaces in D-024)
+Status: **merged by the owner (PR #47)**, review log `docs/reviews/T-B1-020.md`
 Owner: codex   Reviewer: claude   Tier: T2 (determinism, truth separation)   Branch: `codex/b1-run-store`   Needs: D1
 **Allowed:** `platform/ug_core/src/ug_core/store/**`, `platform/tests/unit/test_store_*.py`, `pyproject` dependency lines approved in D1.
 **Behaviour:** `data/runs/{run_id}/manifest.json` and `truth.parquet` per Spec 11.2 (`fault_tag_hidden` only in the truth bundle); output hashes over canonical content; DuckDB reads.
@@ -292,26 +292,31 @@ Owner: codex   Reviewer: claude   Tier: T2 (determinism, truth separation)   Bra
 ### Wave 3
 
 ### T-B1-014: Network validation
+Status: **PR #54, in review** (Tier 1, lead reviewed; the lead merges under D-018); the procedural network fails three checks, tuning is a lead card
 Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/b1-validation`   Spec refs: 5.1 step 6
 **Behaviour:** connectivity, no isolated junction, minimum pressure at peak demand (15 m, `ASSUMPTION`), no tank overflow or starvation over a 7-day normal run, velocity limits; re-seed or fail loudly, never adjust silently.
 **Acceptance:** each check fails on a fixture built to break it; the procedural network passes; the `standard` OSM network passes locally.
 
 ### T-B1-017: Fault catalog and injectors
+Status: not started (lead; next for the lead)
 Owner: claude (physics)   Tests: codex (author is not the tester)   Reviewer: codex   Tier: T2   Branch: `claude/b1-faults`   Spec refs: 5.4
 **Behaviour:** the 17 fault types of Spec 5.4 with their truth effects (sensor faults' measurement effects arrive with the measurement model in B2, their types and parameters now); a canonical fault order; every onset lands on its configured tick (the reference was one tick late, `PITFALLS.md`); leaks through the verified WNTR leak API. Reuse candidate `split_pipe_for_leak`: ADAPT after review, with a golden test.
 **Acceptance:** a leak at tick t changes truth from tick t, not t+1; permuting the fault list gives the same hashes; the orifice law of the leak is checked against a hand calculation; a pump outage drops downstream pressure; a valve closure redistributes flow.
 
 ### T-B1-018: Piecewise gradual faults and the chunk-size convergence report
+Status: not started (lead)
 Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/b1-chunking`   Spec refs: 5.3
 **Behaviour:** gradual faults updated per chunk (default 30 minutes), tank levels and pump states handed over between chunks; a convergence study over chunk sizes.
 **Acceptance:** `docs/approximations.md` reports the error for 60, 30, 15 and 5 minute chunks against the finest run, and the default meets a stated tolerance; the handoff is exact at a chunk boundary without a fault (identical to an unchunked run within numerical tolerance).
 
 ### T-B1-019: Scenario presets, stage 1 (10 of 28)
+Status: **in progress**: data part merged by the lead (PR #51), log `docs/reviews/T-B1-019.md`; the run acceptance waits for T-B1-017 and the network tuning
 Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/b1-presets`   Spec refs: 5.5
 **Behaviour:** `normal_week`, `holiday`, `heatwave`, `ramadan_peak`, `friday_weekend_pattern`, `fire_flow_event`, `leak_gradual_medium`, `leak_sudden`, `burst_main`, `pump_outage_standby`, each a scenario configuration that validates against `contracts/v1/scenario-config.schema.json`. The sensor-fault presets follow in B2 with the measurement model.
 **Acceptance:** every preset validates; every preset runs on the `lite` network without a validation failure; `normal_week`, `holiday` and `heatwave` show no fault in truth.
 
 ### T-B1-021: `ug run`
+Status: **merged by the lead (PR #52)**, review log `docs/reviews/T-B1-021.md`
 Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/b1-ug-run`
 **Behaviour:** `ug run <scenario> [--network procedural|osm] [--tier lite|standard|full] [--seed N]` replaces the stub, writes the run store, prints the run id and the manifest hash; exit codes 0 ok, 1 validation failure, 2 usage error.
 **Acceptance:** `ug run normal_week --network procedural --seed 1` twice gives the same manifest hash; a bad scenario exits 1 with the contract error.
@@ -319,10 +324,12 @@ Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/b1-ug-run`
 ### Wave 4
 
 ### T-B1-022: M1 acceptance runs
+Status: not started (lead; tests by Codex)
 Owner: claude   Tests: codex   Reviewer: codex   Tier: T2
 **Acceptance:** `normal_week` on the procedural network and on the OSM `standard` network (locally) runs 7 days without a validation failure and without a non-finite value; the same seed gives identical hashes in two processes and on hosted CI (procedural network); a leak lowers pressure most at the junctions nearest to it (rank correlation of pressure drop with network distance, reported); the convergence report and the geometry provenance report exist; performance against Spec 4.8 is reported.
 
 ### T-B1-030: B1 exit gate
+Status: not started (B1 gate)
 Owner: codex (review) and claude (review of Codex PRs)   Reviewer: human   Tier: T2
 **Command:** `adversarial-review --base phase-A1` with the focus: truth reaching telemetry or decisions, labels (`PUBLIC_GEOMETRY` versus `ASSUMPTION`), the licence rule, determinism, NaN to zero, the WNTR API, onset ticks, the D-016 list and the A1 carry-over. **Acceptance:** findings logged in `docs/reviews/T-B1-030.md`; no S0 or S1 open; the M1 acceptance checks pass from a fresh clone; the owner approves; the owner merges `dev` into `main` and tags `phase-B1`.
 
