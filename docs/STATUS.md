@@ -14,19 +14,19 @@ Counts: CALCULATED from plan statuses and optional open PRs.
 
 | merged | in review | in progress | not started |
 | --- | --- | --- | --- |
-| 4 | 1 | 0 | 0 |
+| 5 | 0 | 0 | 0 |
 
 ## Wave 2
 
 | merged | in review | in progress | not started |
 | --- | --- | --- | --- |
-| 0 | 0 | 2 | 2 |
+| 3 | 1 | 0 | 0 |
 
 ## Wave 3
 
 | merged | in review | in progress | not started |
 | --- | --- | --- | --- |
-| 0 | 0 | 0 | 5 |
+| 2 | 0 | 1 | 2 |
 
 ## Wave 4
 
@@ -38,12 +38,12 @@ Counts: CALCULATED from plan statuses and optional open PRs.
 
 | merged | in review | in progress | not started |
 | --- | --- | --- | --- |
-| 7 | 1 | 2 | 9 |
+| 13 | 1 | 1 | 4 |
 
 ## Waiting for Ahmed
 
-- PR #45 (T-B1-010)
+- PR #53 (T-B1-013)
 
 ## Blocked
 
-None.
+- T-B1-019: **in progress**: data part merged by the lead (PR #51), log `docs/reviews/T-B1-019.md`; the run acceptance waits for T-B1-017 and the network tuning
