@@ -1,0 +1,16 @@
+{
+  "version": "1",
+  "label": "ASSUMPTION",
+  "verified": false,
+  "note": "Placeholder values, not design criteria of any utility. Structural limits are counts; solves is a boolean; pressures and tank margin are metres, velocity m/s, pinned share a ratio.",
+  "max_unreachable_junctions": 0,
+  "max_isolated_junctions": 0,
+  "max_disconnected_tanks": 0,
+  "max_bypassed_prvs": 0,
+  "solves": true,
+  "min_pressure_m": 15.0,
+  "min_pressure_any_m": 10.0,
+  "max_velocity_m_s": 3.0,
+  "tank_margin_m": 0.05,
+  "pinned_full_share": 0.95
+}
