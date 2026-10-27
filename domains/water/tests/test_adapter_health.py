@@ -126,5 +126,7 @@ def test_the_override_is_only_a_path_to_a_manifest_that_is_still_verified(
 
 
 def test_the_adapter_still_conforms_and_other_methods_are_still_unimplemented() -> None:
+    # M1 (T-B1-021) implements the network and the solver; the rest follows in M2 to M4.
     assert WaterAdapter.unimplemented_methods()
-    assert "solver" in WaterAdapter.unimplemented_methods()
+    assert not {"asset_model", "solver"} & WaterAdapter.unimplemented_methods()
+    assert "measurement_model" in WaterAdapter.unimplemented_methods()

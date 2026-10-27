@@ -41,7 +41,6 @@ def test_parser(
 @pytest.mark.parametrize(
     ("command", "milestone"),
     [
-        ("run", "M1"),
         ("reproduce", "M4"),
         ("eval", "M5"),
         ("import", "M1"),
