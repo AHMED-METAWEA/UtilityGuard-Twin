@@ -5,7 +5,7 @@ import { STRINGS } from "./strings";
 
 // All user-visible text lives in strings.ts so the Arabic translation can be added later
 // (AGENTS.md, Language). This reads the sources of the shell and fails on text written inline.
-const SOURCES = import.meta.glob<string>(["/src/app/**/*.tsx", "/src/ui/**/*.tsx", "/src/main.tsx", "!/src/**/*.test.tsx"], {
+const SOURCES = import.meta.glob<string>(["/src/app/**/*.tsx", "/src/ui/**/*.tsx", "/src/screens/**/*.tsx", "/src/main.tsx", "!/src/**/*.test.tsx"], {
   query: "?raw",
   import: "default",
   eager: true,

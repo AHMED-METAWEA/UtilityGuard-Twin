@@ -36,6 +36,11 @@ export const STRINGS = {
     commandCenter: "Command Center",
     scenarioLab: "Scenario Lab",
     systemHealth: "System Health",
+    networkMap: "Network Map",
+    sensors: "Sensors and Data Quality",
+    forecast: "Forecast and Early Warning",
+    decision: "Cost and Decision Studio",
+    runs: "Runs and Provenance",
   },
   pages: {
     commandCenter: {
@@ -45,6 +50,26 @@ export const STRINGS = {
     scenarioLab: {
       title: "Scenario Lab",
       empty: "Scenarios can be configured once a network is loaded.",
+    },
+    networkMap: {
+      title: "Network Map",
+      empty: "The map appears once a network is loaded.",
+    },
+    sensors: {
+      title: "Sensors and Data Quality",
+      empty: "Sensor readings appear once a run is replayed.",
+    },
+    forecast: {
+      title: "Forecast and Early Warning",
+      empty: "Forecasts appear once a run is replayed.",
+    },
+    decision: {
+      title: "Cost and Decision Studio",
+      empty: "Costs and options appear once an incident is open.",
+    },
+    runs: {
+      title: "Runs and Provenance",
+      empty: "No run is loaded yet.",
     },
     systemHealth: {
       title: "System Health",

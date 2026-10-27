@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { SCREENS } from "../screens";
 import { Boundary } from "../ui/Boundary";
 import { FidelityBadge } from "../ui/FidelityBadge";
 import { HonestyStrip } from "../ui/HonestyStrip";
@@ -70,6 +71,10 @@ function Screen({ state, path }: { state: ShellState; path: string }) {
         <p>{STRINGS.pages.notFound.body}</p>
       </>
     );
+  }
+  const Registered = SCREENS[route.path];
+  if (Registered !== undefined) {
+    return <Registered route={route} />;
   }
   return (
     <>
