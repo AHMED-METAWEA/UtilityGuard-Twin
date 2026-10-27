@@ -7,9 +7,9 @@ Mapping rules (every WNTR call used here is declared in the WNTR API manifest):
 - duty pumps start open, standby pumps closed; each pump has its own head curve;
 - isolation valves are throttle control valves (TCV) with loss coefficient 0, open; a PRV keeps
   its setting (m of pressure head downstream);
-- the time step of the hydraulics, the patterns and the report is the step of the demand series,
-  which must equal `hydraulic_step_s`; the duration is (ticks - 1) x step, so the results hold
-  one row per tick;
+- the time step of the hydraulics and the patterns is the step of the demand series, which must
+  equal `hydraulic_step_s`; the duration is (ticks - 1) x step; `WNTRSimulator` reports every
+  solved time (`"ALL"`), EPANET every tick;
 - pressure-driven demand with the settings of `HydraulicOptions`, Hazen-Williams head loss.
 """
 
@@ -118,6 +118,14 @@ def build_model(
             minor_loss=pipe.minor_loss,
         )
     for pump in network.pumps:
+        if len(pump.curve) == 2:
+            # WNTR 1.5 computes the slope of a two-point curve from squared flows but solves it
+            # as a straight line (wntr/network/elements.py:1438-1441): the operating point is
+            # wrong without any error (review round 2). One or three or more points only.
+            raise ValueError(
+                f"pump {pump.id}: a two-point head curve is solved wrongly by WNTR 1.5; "
+                "give one point or three or more"
+            )
         curve = f"head:{pump.id}"
         wn.add_curve(curve, "HEAD", [[q, h] for q, h in pump.curve])
         wn.add_pump(
@@ -153,7 +161,10 @@ def build_model(
     wn.options.time.duration = (demand.timebase.n_ticks - 1) * step
     wn.options.time.hydraulic_timestep = step
     wn.options.time.pattern_timestep = step
-    wn.options.time.report_timestep = step
+    # WNTRSimulator reports every solved time (extra steps when a tank reaches a limit or a
+    # control acts), so the engine can integrate energy over them; EPANET cannot ("ALL" is a
+    # WNTRSimulator option) and reports at the ticks.
+    wn.options.time.report_timestep = "ALL" if options.engine == "wntr" else step
     wn.options.hydraulic.headloss = "H-W"
     # Pressure-driven demand: WNTR accepts "PDD" and stores it as "PDA" (its setter, 1.5.0).
     wn.options.hydraulic.demand_model = "PDA"

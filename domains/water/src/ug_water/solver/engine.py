@@ -3,18 +3,24 @@
 The engine is WNTR's `WNTRSimulator` (its leak model is what the fault cards use) or, on request,
 WNTR's `EpanetSimulator` (EPANET 2.2; no leaks), both with pressure-driven demand. Results become
 a `TruthSeries` (label `SIMULATION`) with one channel per quantity and element, named
-`"<quantity>:<element id>"`:
+`"<quantity>:<element id>"`, sampled at the ticks of the demand series:
 - junctions: `pressure` (m), `head` (m), `demand` (delivered, m3/s);
 - tanks: `level` (m above the tank bottom) and `head` (m);
 - pipes, pumps and valves: `flowrate` (m3/s); pipes also `velocity` (m/s);
 - pumps: `power` (kW).
 
+Between two ticks WNTR may solve extra hydraulic steps when something changes (a tank reaches a
+level limit, a control acts). `WNTRSimulator` reports all of them (`report_timestep = "ALL"`): the
+truth is sampled at the ticks, and the energy of a pump integrates its power over every interval
+between two solved times, the power at the start of each interval held to its end, as EPANET does
+for its own steps. `EpanetSimulator` cannot report those extra steps, so it returns no energy
+(`None`, never a number that may be wrong).
+
 Pump power is `rho * g * Q * (H_out - H_in) / efficiency`, from the flow through the pump and the
-heads at its two ends; it is zero when the pump carries no flow. The energy of a run is the power
-at each report time held over the step that follows it, as EPANET does: the last report time
-starts no step. A non-finite result, a time axis that is not the series' axis, a simulation
-that does not converge, or reverse flow through a pump beyond numerical noise is an error,
-never a value.
+heads at its two ends; it is zero when the pump carries no flow. Errors, never values: a
+simulation that does not converge; a non-finite result; a table whose time axis differs from the
+others or misses a tick; reverse flow through a pump; a pump that carries flow while losing head
+(it runs past the flow where its curve reaches zero head, which WNTR only warns about).
 """
 
 from __future__ import annotations
@@ -40,6 +46,8 @@ from ug_water.solver.options import HydraulicOptions, load_options
 LABEL = "SIMULATION"
 # Reverse flow through a pump smaller than this (m3/s) is numerical noise and counts as none.
 PUMP_FLOW_NOISE = 1e-9
+# Head lost across a pump carrying flow beyond this (m) means it runs past its curve.
+PUMP_HEAD_NOISE = 1e-6
 
 
 class HydraulicsError(RuntimeError):
@@ -49,21 +57,23 @@ class HydraulicsError(RuntimeError):
 @dataclass(frozen=True)
 class HydraulicResult:
     truth: TruthSeries
-    energy_kwh: Mapping[str, float]  # per pump, over the run
+    energy_kwh: Mapping[str, float] | None  # per pump over the run; None: not computed
     engine: str
     options_hash: str
     label: str = LABEL
 
     @property
-    def total_energy_kwh(self) -> float:
+    def total_energy_kwh(self) -> float | None:
+        if self.energy_kwh is None:
+            return None
         return math.fsum(self.energy_kwh.values())
 
     def content_hash(self) -> str:
         payload = {
             "truth": self.truth.content_hash(),
-            "energy_kwh": {
-                k: round_for_hash(v) for k, v in sorted(self.energy_kwh.items())
-            },
+            "energy_kwh": None
+            if self.energy_kwh is None
+            else {k: round_for_hash(v) for k, v in sorted(self.energy_kwh.items())},
             "engine": self.engine,
             "options": self.options_hash,
             "label": self.label,
@@ -105,46 +115,75 @@ def _run(wn: Any, options: HydraulicOptions) -> Any:
         ) from exc
 
 
-def _frame(results: Any, table: str, key: str, ids: list[str], what: str) -> np.ndarray:
-    frame = getattr(results, table)[key]
-    missing = sorted(set(ids) - set(frame.columns))
-    if missing:
-        raise HydraulicsError(f"the results hold no {what} for {missing[:5]}")
-    values = frame[ids].to_numpy(dtype=float)
-    bad = ~np.isfinite(values)
-    if bad.any():
-        tick, column = (int(i) for i in np.argwhere(bad)[0])
-        raise HydraulicsError(
-            f"non-finite {what} for {ids[column]} at tick {tick}: {values[tick, column]}"
-        )
-    return values
+class _Results:
+    """The result tables on one checked time axis: every table must carry exactly the axis of
+    the node pressures, which must start at 0, rise strictly and hold every tick."""
+
+    def __init__(self, results: Any, timebase: Any) -> None:
+        self.results = results
+        step = timebase.step_seconds
+        reference = results.node["pressure"].index
+        times = np.asarray(reference, dtype=float)
+        expected = np.arange(timebase.n_ticks, dtype=float) * step
+        if (
+            len(times) == 0
+            or not np.isfinite(times).all()
+            or times[0] != 0
+            or (np.diff(times) <= 0).any()
+            or times[-1] != expected[-1]
+            or not np.isin(expected, times).all()
+        ):
+            raise HydraulicsError(
+                "the results' time axis is not the demand series' axis "
+                f"({len(times)} solved times, {len(expected)} ticks at {step} s expected)"
+            )
+        self.reference = reference
+        self.times = times
+        self.ticks = np.searchsorted(times, expected)
+        if not np.array_equal(times[self.ticks], expected):
+            raise HydraulicsError(
+                "the results' time axis does not hold every tick exactly"
+            )
+
+    def frame(self, table: str, key: str, ids: list[str], what: str) -> np.ndarray:
+        """Values at every solved time, shape (times, ids)."""
+        frame = getattr(self.results, table)[key]
+        if not frame.index.equals(self.reference):
+            raise HydraulicsError(
+                f"the time axis of the {what} table differs from the pressure table's"
+            )
+        missing = sorted(set(ids) - set(frame.columns))
+        if missing:
+            raise HydraulicsError(f"the results hold no {what} for {missing[:5]}")
+        values = frame[ids].to_numpy(dtype=float)
+        bad = ~np.isfinite(values)
+        if bad.any():
+            row, column = (int(i) for i in np.argwhere(bad)[0])
+            raise HydraulicsError(
+                f"non-finite {what} for {ids[column]} at {self.times[row]:g} s: "
+                f"{values[row, column]}"
+            )
+        return values
+
+    def at_ticks(self, values: np.ndarray) -> np.ndarray:
+        return values[self.ticks]
 
 
 def _truth(
     network: Network, demand: DemandInput, results: Any, options: HydraulicOptions
 ) -> HydraulicResult:
-    timebase = demand.timebase
-    step = timebase.step_seconds
-    expected = [k * step for k in range(timebase.n_ticks)]
-    index = [int(t) for t in results.node["pressure"].index]
-    if index != expected:
-        raise HydraulicsError(
-            "the results' time axis is not the demand series' axis "
-            f"({len(index)} report times, expected {len(expected)} at {step} s)"
-        )
+    axis = _Results(results, demand.timebase)
     channels: dict[str, np.ndarray] = {}
     junctions = [j.id for j in network.junctions]
-    for key, quantity in (
-        ("pressure", "pressure"),
-        ("head", "head"),
-        ("demand", "demand"),
-    ):
-        values = _frame(results, "node", key, junctions, f"junction {quantity}")
+    for key in ("pressure", "head", "demand"):
+        values = axis.at_ticks(axis.frame("node", key, junctions, f"junction {key}"))
         for k, jid in enumerate(junctions):
-            channels[f"{quantity}:{jid}"] = values[:, k]
+            channels[f"{key}:{jid}"] = values[:, k]
     tanks = list(network.tanks)
     if tanks:
-        heads = _frame(results, "node", "head", [t.id for t in tanks], "tank head")
+        heads = axis.at_ticks(
+            axis.frame("node", "head", [t.id for t in tanks], "tank head")
+        )
         for k, tank in enumerate(tanks):
             channels[f"head:{tank.id}"] = heads[:, k]
             channels[f"level:{tank.id}"] = heads[:, k] - tank.elevation
@@ -153,40 +192,59 @@ def _truth(
         *(p.id for p in network.pumps),
         *(v.id for v in network.valves),
     ]
-    flows = _frame(results, "link", "flowrate", links, "flow")
+    flows = axis.frame("link", "flowrate", links, "flow")
     for k, lid in enumerate(links):
-        channels[f"flowrate:{lid}"] = flows[:, k]
+        channels[f"flowrate:{lid}"] = axis.at_ticks(flows)[:, k]
     pipes = [p.id for p in network.pipes]
-    velocity = _frame(results, "link", "velocity", pipes, "velocity")
+    velocity = axis.at_ticks(axis.frame("link", "velocity", pipes, "velocity"))
     for k, pid in enumerate(pipes):
         channels[f"velocity:{pid}"] = velocity[:, k]
     energy: dict[str, float] = {}
     if network.pumps:
         nodes = sorted({n for pump in network.pumps for n in (pump.start, pump.end)})
-        heads = _frame(results, "node", "head", nodes, "pump head")
+        heads = axis.frame("node", "head", nodes, "pump head")
         column = {n: k for k, n in enumerate(nodes)}
+        position = {lid: k for k, lid in enumerate(links)}
+        intervals = np.diff(axis.times)
         for pump in network.pumps:
-            q = channels[f"flowrate:{pump.id}"]
-            if (q < -PUMP_FLOW_NOISE).any():
-                tick = int(np.argmax(q < -PUMP_FLOW_NOISE))
-                raise HydraulicsError(
-                    f"reverse flow {q[tick]} m3/s through {pump.id} at tick {tick}"
-                )
-            q = np.where(q > PUMP_FLOW_NOISE, q, 0.0)
+            q = flows[:, position[pump.id]]
             gain = heads[:, column[pump.end]] - heads[:, column[pump.start]]
+            _check_pump(pump.id, q, gain, axis.times)
+            q = np.where(q > PUMP_FLOW_NOISE, q, 0.0)
             power_kw = (
                 (options.water_density_kg_m3 * options.gravity_m_s2 * q * gain)
                 / pump.efficiency
                 / 1000.0
             )
-            channels[f"power:{pump.id}"] = power_kw
-            energy[pump.id] = math.fsum(power_kw[:-1] * step / 3600.0)
+            channels[f"power:{pump.id}"] = axis.at_ticks(power_kw)
+            energy[pump.id] = math.fsum(power_kw[:-1] * intervals / 3600.0)
+            if not (np.isfinite(power_kw).all() and math.isfinite(energy[pump.id])):
+                raise HydraulicsError(f"non-finite power or energy for {pump.id}")
     truth = TruthSeries(
-        timebase, {name: v.tolist() for name, v in sorted(channels.items())}
+        demand.timebase, {name: v.tolist() for name, v in sorted(channels.items())}
     )
     return HydraulicResult(
         truth=truth,
-        energy_kwh=MappingProxyType(dict(sorted(energy.items()))),
+        energy_kwh=MappingProxyType(dict(sorted(energy.items())))
+        if options.engine == "wntr"
+        else None,
         engine=options.engine,
         options_hash=options.config_hash,
     )
+
+
+def _check_pump(pump: str, q: np.ndarray, gain: np.ndarray, times: np.ndarray) -> None:
+    reverse = q < -PUMP_FLOW_NOISE
+    if reverse.any():
+        row = int(np.argmax(reverse))
+        raise HydraulicsError(
+            f"reverse flow {q[row]} m3/s through {pump} at {times[row]:g} s"
+        )
+    overrun = (q > PUMP_FLOW_NOISE) & (gain < -PUMP_HEAD_NOISE)
+    if overrun.any():
+        row = int(np.argmax(overrun))
+        raise HydraulicsError(
+            f"{pump} carries {q[row]:.4f} m3/s while losing {-gain[row]:.2f} m of head at "
+            f"{times[row]:g} s: it runs past the flow where its curve reaches zero head; "
+            "check the network and the pump curve"
+        )
