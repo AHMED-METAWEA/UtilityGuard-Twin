@@ -51,6 +51,11 @@ def parse_plan(path: Path) -> list[Card]:
 
 def classify(status: str) -> str:
     status = status.lower()
+    # The leading bold phrase states the card's state; the rest may mention earlier steps
+    # ("in progress: data part merged ..."), so it decides when present (lead review).
+    lead = re.match(r"\s*(?:status:)?\s*\*\*(.+?)\*\*", status)
+    if lead:
+        status = lead.group(1)
     if re.search(r"\b(merged|delivered)\b", status):
         return "merged"
     if re.search(r"\bpr #\d+\b", status):

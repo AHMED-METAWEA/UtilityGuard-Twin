@@ -132,3 +132,14 @@ def test_gh_failure_warns_and_uses_plan(plan: Path, monkeypatch, capsys, error) 
     captured = capsys.readouterr()
     assert "Warning: gh failed; using plan only" in captured.err
     assert captured.out == status.render(status.parse_plan(plan), [])
+
+
+def test_the_leading_bold_phrase_decides_the_state() -> None:
+    """Lead review: a card in progress whose status also mentions a merged part."""
+    assert (
+        status.classify("Status: **in progress**: data part merged (PR #51)")
+        == "in progress"
+    )
+    assert status.classify("Status: **merged by the owner (PR #45)**") == "merged"
+    assert status.classify("Status: **PR #53, in review** (round 1)") == "in review"
+    assert status.classify("Status: not started (lead)") == "not started"
