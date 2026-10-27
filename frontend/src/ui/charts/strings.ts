@@ -1,0 +1,15 @@
+export const CHART_STRINGS = {
+  space: " ",
+  separator: " · ",
+  flags: { Q01: "Late", Q04: "Stuck", Q08: "Drift" },
+  missing: "Missing",
+  other: "Other quality flag",
+  empty: "No readings to plot",
+  now: "Now",
+  unavailable: "Unavailable",
+  latest: "Latest",
+  range: "Range p10 to p90",
+  time: "Elapsed time (hours:minutes)",
+  flag: "Quality flag",
+  sparkline: "Reading trend",
+};
