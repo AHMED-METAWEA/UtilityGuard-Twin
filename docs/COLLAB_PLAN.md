@@ -262,7 +262,7 @@ Owner: codex   Reviewer: claude   Tier: T1   Branch: `codex/b1-wntr-manifest`
 ### Wave 2
 
 ### T-B1-013: `OsmCapitalProvider`, scale tiers, pipe inference, district overlay
-Status: **PR #53, in review** (Codex round 1 running; Tier 2, the owner merges); overlay per owner ruling 2 (option A)
+Status: **merged (PR #53, by the owner)**; review log `docs/reviews/T-B1-013.md` (two rounds); overlay per owner ruling 2 (option A)
 Owner: claude   Reviewer: codex   Tier: T2   Branch: `claude/b1-osm-provider`   Needs: T-B1-010, G1 to G3, D2
 **Allowed:** `domains/water/src/ug_water/network/` (`osm.py`, `inference.py`, `overlay.py`), `domains/water/data/overlays/capital_districts_v1.geojson` (hand-made, no OSM data), `domains/water/tests/test_osm_*.py`, `docs/`.
 **Behaviour:** read the cached extract; project to local Cartesian metres (equirectangular about a reference point, error bound computed and documented); merge degree-2 nodes; choose a tier (`lite` about 250, `standard` about 800, `full` 2,000 or more junctions); transmission mains from the trunk, primary and secondary classes, distribution on the rest (seeded, documented rule); diameters by hierarchy and demands per zone are `ASSUMPTION`; junctions are assigned to the overlay's zones; roads under construction are a separate, opt-in layer. Labels: junction coordinates taken from OSM nodes are `PUBLIC_GEOMETRY` with provenance; pipes, diameters and demands are `ASSUMPTION`; the network reports F1 only when its geometry provenance is `PUBLIC_GEOMETRY`.
