@@ -78,6 +78,7 @@ Every change of stance, every reuse from `freebuff/`, and every proposed deletio
 - Wave 1: core types (#8), WNTR manifest (#9), adapter and import lint (#10), assumptions (#11), contracts (#12).
 - Wave 2: conformance tests (#17), honesty suite (#18, the stream-independence test and mutation), shell (#19). Every one of these cards needed both rounds and found something new in the second. T-A1-013 (the A1 gate review) must review exactly this code, and `docs/reviews/` has one log per task listing the findings.
 - Wave 3: contract-gap closure (#24: the second-round fixes, i.e. the fail-closed physical-unit rule and the `asd_` evidence-id namespace, had tests and mutation runs but no third Codex round); the CLI and deploy cards (#25, #26) were reviewed by the lead only (Codex authored them). T-A1-013 must cover these too.
+- Phase B1, Waves 2 and 3 (fixes after review round 2, no third round): T-B1-010 (#45: links below the cache root, foreign geometry, statistics fields, future timestamps, interrupted replacement), T-B1-016 (#49: two-point pump curves refused, a finite and exact time axis), T-B1-013 (#53: the exact zone-overlap test, immutable pipe routes). T-B1-030 must cover these.
 - Phase B1, Wave 1: T-B1-005 (#39), the round-2 rewrite of the hostile-input fixtures (each starts from a valid F1 network with one defect), tested and mutated, no third round. T-B1-010 (#45): whatever its round 2 finds and the lead fixes. T-B1-030 (the B1 gate) must cover these.
 
 ### D-017: Owner approvals of 2026-10-25 (end of Wave 2)
