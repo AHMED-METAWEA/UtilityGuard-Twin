@@ -16,18 +16,23 @@
     "dev": "vite"
   },
   "dependencies": {
+    "@deck.gl/core": "9.4.0",
+    "@deck.gl/layers": "9.4.0",
+    "@deck.gl/react": "9.4.0",
+    "@fontsource/ibm-plex-mono": "5.3.0",
+    "@fontsource/ibm-plex-sans": "5.3.0",
     "react": "18.3.1",
     "react-dom": "18.3.1"
   },
   "devDependencies": {
-    "typescript": "6.0.3",
-    "vite": "8.3.4",
-    "vitest": "5.0.3",
-    "jsdom": "29.1.1",
-    "@testing-library/react": "16.3.3",
+    "@playwright/test": "1.64.0",
     "@testing-library/dom": "10.4.2",
+    "@testing-library/react": "16.3.3",
     "@types/react": "18.3.31",
     "@types/react-dom": "18.3.7",
-    "@playwright/test": "1.64.0"
+    "jsdom": "29.1.1",
+    "typescript": "6.0.3",
+    "vite": "8.3.4",
+    "vitest": "5.0.3"
   }
 }
