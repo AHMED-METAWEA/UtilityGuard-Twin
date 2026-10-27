@@ -7,13 +7,7 @@ Last session: 2026-10-26 (lead agent Claude Code)
 - T-B1-014 (network validation, Codex) is finished and in review (#54). The procedural network fails `min_pressure_any_time`, `max_velocity` and `tank_pinned_full` on seeds 1 to 3: tuning it (and calibrating the OSM network's demand rates and pipe sizes) is a lead card before T-B1-022.
 - T-B1-013 (OSM provider) is in review (#53): all tiers build on the cached extract (lite 250 junctions, standard 799, full 6,020; aggregate numbers, © OpenStreetMap contributors, ODbL).
 
-**Tokens (Codex from the `codex exec` logs; the lead from its context counter, approximate):**
-
-| Wave | Codex implementation | Lead (Claude) |
-|---|---|---|
-| 1 | 152,478 | about 230,000 |
-| 2 and 3 to date | 657,861 (T-B1-012 81,234; 020 90,062; 011b 64,976; 020 fix 68,408; 012 fix 125,892; 019 50,524; 021 89,702; 014 87,063) | about 580,000 |
-| Total | 810,339 | about 810,000 |
+**Tokens.** Codex, from the `codex exec` logs: Wave 1 152,478; Waves 2 and 3 to date 657,861 (T-B1-012 81,234; 020 90,062; 011b 64,976; 020 fix 68,408; 012 fix 125,892; 019 50,524; 021 89,702; 014 87,063); total 810,339. The lead (Claude), from its context counter, approximate: Wave 1 not measured; the 2026-10-26 session (Wave 2) about 520,000; 2026-10-27 so far about 70,000. From now on the lead records its counter at every card boundary.
 
 Plugin reviews (Codex adversarial) report no tokens.
 
