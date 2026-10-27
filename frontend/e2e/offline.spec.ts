@@ -25,7 +25,12 @@ type ProbeWindow = Window & { __ug: Probe };
 
 const ROUTES = [
   { url: "/", heading: STRINGS.pages.commandCenter.title },
+  { url: "/#/map", heading: STRINGS.pages.networkMap.title },
+  { url: "/#/sensors", heading: STRINGS.pages.sensors.title },
   { url: "/#/scenarios", heading: STRINGS.pages.scenarioLab.title },
+  { url: "/#/forecast", heading: STRINGS.pages.forecast.title },
+  { url: "/#/decision", heading: STRINGS.pages.decision.title },
+  { url: "/#/runs", heading: STRINGS.pages.runs.title },
   { url: "/#/health", heading: STRINGS.pages.systemHealth.title },
   { url: "/#/no-such-screen", heading: STRINGS.pages.notFound.title },
 ];

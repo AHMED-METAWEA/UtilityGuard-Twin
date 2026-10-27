@@ -6,6 +6,8 @@ export interface RouteDef {
   empty: string;
 }
 
+// Every screen of the demo plan (docs/DEMO_PLAN.md section 3), registered once by the lead so the
+// Codex lanes never edit this file; each screen lives in `src/screens/<folder>/`.
 export const ROUTES: readonly RouteDef[] = [
   {
     path: "/",
@@ -13,9 +15,34 @@ export const ROUTES: readonly RouteDef[] = [
     empty: STRINGS.pages.commandCenter.empty,
   },
   {
+    path: "/map",
+    title: STRINGS.pages.networkMap.title,
+    empty: STRINGS.pages.networkMap.empty,
+  },
+  {
+    path: "/sensors",
+    title: STRINGS.pages.sensors.title,
+    empty: STRINGS.pages.sensors.empty,
+  },
+  {
     path: "/scenarios",
     title: STRINGS.pages.scenarioLab.title,
     empty: STRINGS.pages.scenarioLab.empty,
+  },
+  {
+    path: "/forecast",
+    title: STRINGS.pages.forecast.title,
+    empty: STRINGS.pages.forecast.empty,
+  },
+  {
+    path: "/decision",
+    title: STRINGS.pages.decision.title,
+    empty: STRINGS.pages.decision.empty,
+  },
+  {
+    path: "/runs",
+    title: STRINGS.pages.runs.title,
+    empty: STRINGS.pages.runs.empty,
   },
   {
     path: "/health",
