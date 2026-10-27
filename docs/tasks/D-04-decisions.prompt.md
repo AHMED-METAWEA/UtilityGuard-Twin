@@ -1,0 +1,7 @@
+LEAD DECISIONS for the three gaps in your D-04 handoff (they amend the card; implement the whole card now):
+
+1. Delivery metadata: do NOT subclass or change `TelemetrySeries`. Add `WaterMeasurement.measure_with_delivery(truth, seeds) -> tuple[TelemetrySeries, Mapping[str, tuple[float, ...]]]` returning the series and, per sensor, the delivery delay in seconds per tick (drawn from the sensor's own stream for every tick, even when the value is missing). `measure()` returns only the first element (the port contract). `to_readings(series, network, delays=None, quality=None)` sets `delivered_at` only when `delays` is given. `ug_intel.quality.assess(..., delivered_delay_s=...)` takes the same mapping.
+2. RTU groups: junction sensor -> the junction's zone; pipe, pump or valve sensor -> the zone of the link's START node if that node is a junction, else of its END node if that is a junction, else the link id itself; level sensor -> the tank id. Put this in one function `rtu_group(sensor, network) -> str`, documented, with a test for each branch.
+3. What-if durations: `as_faults(whatifs, step_seconds, horizon_ticks)`: duration_hours = (horizon_ticks - from_tick) * step_seconds / 3600; refuse a `from_tick >= horizon_ticks` with ValueError. Start hour = from_tick * step_seconds / 3600, so the onset rule maps it back to exactly `from_tick` (test that round trip).
+
+Write the code, the tests and the checks of the card. Update your handoff (replace the "stopped" status).
