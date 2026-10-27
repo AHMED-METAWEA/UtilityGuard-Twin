@@ -6,7 +6,7 @@ Why: T-B1-014's validation (merged as #54) failed the procedural network on `min
 1. The source's grade (a reservoir 40 m above terrain, plus pumps up to 45 m) sat 50 to 80 m above every tank top, so the tanks filled at start-up and stayed full, and no pump ever stopped (no level controls).
 2. The tanks stood at three different grades (each a fixed height above its own ground, two of them on the ground): the higher tanks drained into the lower one through the pumps' discharge.
 3. Each tank hung off the highest junction inside a district grid, so while the pumps were off its whole outflow went through 100 to 200 mm distribution pipes (velocities about 3.7 m/s, pressures 4 to 5 m).
-4. Demand density was about ten times below urban values; once raised, the 100 to 200 mm distribution pipes lost about 30 m at peak in the densest district (seed 3).
+4. Demand was low for a capital-scale district (a synthetic design choice, ASSUMPTION; no benchmark is cited); once raised six-fold, the 100 to 200 mm distribution pipes lost about 30 m at peak in the densest district (seed 3).
 
 ## Design (all values ASSUMPTION, synthetic, in `procedural_capital_v1.json`)
 - Source: a ground-level clearwell, 5 m above terrain.

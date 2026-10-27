@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import json
 from dataclasses import replace
+from importlib.resources import files
 
 import numpy as np
 import pytest
 from solver_fixtures import demand, pumped_loop
 from ug_water.network.model import LevelControl
+from ug_water.network.procedural import ProceduralCapitalProvider
 from ug_water.solver import build_model, load_options, simulate
 
 
@@ -47,6 +50,27 @@ def test_the_pump_switches_with_the_tank_level() -> None:
 
 
 def test_a_network_without_controls_hashes_as_before() -> None:
+    """Review finding: the digest itself, fixed before controls existed (dev b8bf708)."""
     net = pumped_loop()
     assert "controls" not in net.to_dict()
-    assert "controls" in controlled().to_dict()
+    assert net.content_hash() == (
+        "5ab48d5b485f60b02f8c4c53014307f0736b9504227ce2fef06c259e11480a82"
+    )
+    assert controlled().content_hash() != net.content_hash()
+
+
+@pytest.mark.parametrize("keep_on", [-1, 0.5, 3, True, "1"])
+def test_keep_on_must_be_a_whole_count_within_the_duty_pumps(keep_on: object) -> None:
+    """Review finding: -1, 0.5 and 99 were silently accepted (99 disabled every control)."""
+    cfg = json.loads(
+        files("ug_water.network")
+        .joinpath("data/procedural_capital_v1.json")
+        .read_text()
+    )
+    cfg["equipment"]["level_control"] = {
+        "on_below_m": 2.5,
+        "off_above_m": 7.0,
+        "keep_on": keep_on,
+    }
+    with pytest.raises(ValueError, match="keep_on"):
+        ProceduralCapitalProvider(cfg).build(1)

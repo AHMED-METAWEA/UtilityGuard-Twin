@@ -598,7 +598,17 @@ class _Builder:
             duty = [
                 p for p in self.pumps if p.station == station["id"] and p.role == "duty"
             ]
-            for pump in duty[int(lc.get("keep_on", 0)) :]:
+            keep_on = lc.get("keep_on", 0)
+            if (
+                not isinstance(keep_on, int)
+                or isinstance(keep_on, bool)
+                or not 0 <= keep_on < len(duty)
+            ):
+                raise ValueError(
+                    f"station {station['id']}: keep_on must be a whole number from 0 to "
+                    f"{len(duty) - 1} (at least one duty pump stays switched)"
+                )
+            for pump in duty[keep_on:]:
                 controls.append(
                     LevelControl(
                         f"ctl_{pump.id}", pump.id, tanks[0],
