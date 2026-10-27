@@ -1,0 +1,30 @@
+.ug-sensors { max-width: 1600px; min-width: 0; }
+.ug-sensor-fixture { display: inline-block; margin-top: 0; border: 1px solid var(--ug-warn); color: var(--ug-warn); padding: 4px 12px; border-radius: var(--ug-radius); }
+.ug-sensors-layout { display: grid; gap: var(--ug-gap); min-width: 0; }
+.ug-sensor-panel { min-width: 0; background: var(--ug-surface); border: 1px solid var(--ug-border); border-radius: var(--ug-radius); padding: 16px; }
+.ug-sensor-panel h2 { margin: 0 0 12px; font-size: 1rem; }
+.ug-sensor-table-scroll { overflow-x: auto; }
+.ug-sensor-table { width: 100%; border-collapse: collapse; text-align: start; font-size: 0.85rem; }
+.ug-sensor-table th, .ug-sensor-table td { padding: 8px; border-bottom: 1px solid var(--ug-border); text-align: start; }
+.ug-sensor-table thead { color: var(--ug-muted); }
+.ug-sensor-table tr[data-selected="true"] { background: var(--ug-bg); }
+.ug-sensors button, .ug-sensors input { font: inherit; color: var(--ug-fg); background: var(--ug-bg); border: 1px solid var(--ug-border); border-radius: var(--ug-radius); padding: 6px 10px; }
+.ug-sensors button { cursor: pointer; }
+.ug-sensors button[aria-pressed="true"] { color: var(--ug-accent); border-color: var(--ug-accent); }
+.ug-sensors button:disabled { opacity: 0.5; cursor: default; }
+.ug-sensors :focus-visible { outline: 2px solid var(--ug-accent); outline-offset: 3px; }
+.ug-sensor-value { font-variant-numeric: tabular-nums; }
+.ug-sensor-evidence { display: block; color: var(--ug-muted); font-size: 0.65rem; }
+.ug-sensor-flags { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.ug-sensor-chip { color: var(--ug-warn); border: 1px solid var(--ug-border); border-radius: var(--ug-radius); padding: 1px 6px; font-size: 0.75rem; }
+.ug-sensor-ok, .ug-sensor-muted { color: var(--ug-muted); }
+.ug-sensor-cursor { display: flex; align-items: center; flex-wrap: wrap; gap: var(--ug-gap); margin-block: 16px; }
+.ug-sensor-cursor input { flex: 1; min-width: 100px; accent-color: var(--ug-accent); }
+.ug-sensor-whatif { border: 1px solid var(--ug-border); border-radius: var(--ug-radius); margin: 0; }
+.ug-sensor-whatif p { margin-block: 8px; }
+.ug-sensor-whatif input { width: 110px; margin-inline: 8px; }
+.ug-sensor-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.ug-sensor-explanations { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--ug-gap); font-size: 0.8rem; }
+.ug-sensor-explanations dd { margin: 8px 0; color: var(--ug-muted); }
+@media (min-width: 1450px) { .ug-sensors-layout { grid-template-columns: minmax(520px, 1fr) minmax(500px, 1.2fr); } }
+@media (prefers-reduced-motion: no-preference) { .ug-sensors button { transition: color 150ms ease, border-color 150ms ease; } }

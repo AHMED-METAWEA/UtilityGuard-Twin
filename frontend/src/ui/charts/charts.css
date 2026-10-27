@@ -1,0 +1,18 @@
+.ug-timeseries { margin: 0; min-width: 0; }
+.ug-timeseries > svg { display: block; width: 100%; height: auto; overflow: visible; }
+.ug-timeseries text { fill: var(--ug-muted); font-family: var(--ug-font); font-size: 11px; }
+.ug-chart-grid { stroke: var(--ug-border); stroke-width: 1; vector-effect: non-scaling-stroke; }
+.ug-chart-line { fill: none; stroke: var(--ug-accent); stroke-width: 1.5; vector-effect: non-scaling-stroke; stroke-linejoin: round; }
+.ug-chart-series { color: var(--ug-accent); }
+.ug-chart-tone-1 { color: var(--ug-warn); }
+.ug-chart-tone-2 { color: var(--ug-fg); }
+.ug-chart-series .ug-chart-line { stroke: currentColor; }
+.ug-chart-band { fill: currentColor; opacity: 0.14; }
+.ug-chart-flag { fill: var(--ug-warn); stroke: var(--ug-bg); stroke-width: 1; }
+.ug-chart-now { stroke: var(--ug-fg); stroke-dasharray: 4 4; vector-effect: non-scaling-stroke; }
+.ug-chart-legend { list-style: none; padding: 0; display: flex; gap: var(--ug-gap); flex-wrap: wrap; font-size: 0.8rem; color: var(--ug-muted); }
+.ug-sparkline { display: block; width: 100px; height: 28px; }
+@media (prefers-reduced-motion: no-preference) {
+  .ug-chart-line, .ug-chart-band { transition: d 220ms ease, opacity 220ms ease; }
+  .ug-chart-now { transition: x1 220ms ease, x2 220ms ease; }
+}
