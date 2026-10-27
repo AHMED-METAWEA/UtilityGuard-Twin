@@ -270,3 +270,27 @@ def _component(start: set, links: list) -> set:
                     seen.add(y)
                     stack.append(y)
     return seen
+
+
+def test_a_loop_street_is_dropped_and_counted() -> None:
+    positions = {1: (0.0, 0.0), 2: (100.0, 0.0), 3: (200.0, 0.0), 4: (300.0, 0.0),
+                 5: (150.0, 80.0), 6: (120.0, 120.0), 7: (180.0, 120.0)}  # fmt: skip
+    streets = [(1, 2, "residential"), (2, 3, "residential"), (3, 4, "residential"),
+               (2, 5, "residential"), (5, 6, "residential"), (6, 7, "residential"),
+               (7, 5, "residential")]  # fmt: skip
+    sk = skeleton(graph(streets, positions), "test", TierRule(ALL, None))
+    assert sk.dropped["loop_streets"] == 1
+    assert all(p.a != p.b for p in sk.pipes)
+
+
+def test_demand_counts_the_zone_area_inside_the_study_box() -> None:
+    from dataclasses import replace
+
+    g = replace(grid(6, 6, main_row=2), box_xy=(-100.0, -100.0, 800.0, 1100.0))
+    net = provider().from_graph(g, "test", 1, TierRule(ALL, None))
+    by_zone = Counter()
+    for j in net.junctions:
+        by_zone[j.zone] += j.base_demand
+    rate = provider().config["demand_l_s_per_ha"]["government"]
+    # The east zone runs from x = 500 to 1100; the box ends at 800: half of it counts.
+    assert by_zone["east"] == pytest.approx(rate * 300 * 1200 / 10_000 / 1000, rel=1e-9)
