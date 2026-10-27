@@ -22,6 +22,7 @@ from ug_core.rng import SeedStreams
 from ug_water.network.model import (
     LABELLED_PARTS,
     Junction,
+    LevelControl,
     Network,
     NetworkProvenance,
     Pipe,
@@ -347,7 +348,9 @@ class _Builder:
             )
             self.tanks.append(tank)
             self.nodes[tank.id] = tank
-            self.pipe(site.id, tank.id, "submain")
+            # The tank connection's tier (`tank.pipe_tier`, default submain): it carries the
+            # whole zone while the pumps are off.
+            self.pipe(site.id, tank.id, tc.get("pipe_tier", "submain"))
         return source
 
     def inline_valves(self, street_pipes: list[Pipe], source: Reservoir) -> None:
@@ -538,4 +541,51 @@ class _Builder:
             valves=tuple(self.valves),
             sensors=sensors,
             sensor_sets=sensor_sets,
+            controls=self.level_controls(),
         )
+
+    def level_controls(self) -> tuple[LevelControl, ...]:
+        """Duty pumps switched by a tank level (optional `equipment.level_control`: on below and
+        off above, metres above the tank bottom; `tank` names one reference tank for every
+        station, otherwise each station uses the tank that serves its zone)."""
+        eq = self.cfg["equipment"]
+        lc = eq.get("level_control")
+        if lc is None:
+            return ()
+        controls = []
+        for station in eq["stations"]:
+            # One reference tank switches every station ("tank"), or each station's own tank:
+            # in a meshed network a station that stops shifts its load onto the others.
+            tanks = (
+                [lc["tank"]]
+                if "tank" in lc
+                else [t["id"] for t in eq["tanks"] if station["zone"] in t["zones"]]
+            )
+            if len(tanks) != 1:
+                raise ValueError(
+                    f"station {station['id']}: exactly one tank must serve zone "
+                    f"{station['zone']} for its level control"
+                )
+            # `keep_on` duty pumps per station stay on (default none): the tanks then cover
+            # part of the peak instead of the whole network while the switched pumps are off.
+            duty = [
+                p for p in self.pumps if p.station == station["id"] and p.role == "duty"
+            ]
+            keep_on = lc.get("keep_on", 0)
+            if (
+                not isinstance(keep_on, int)
+                or isinstance(keep_on, bool)
+                or not 0 <= keep_on < len(duty)
+            ):
+                raise ValueError(
+                    f"station {station['id']}: keep_on must be a whole number from 0 to "
+                    f"{len(duty) - 1} (at least one duty pump stays switched)"
+                )
+            for pump in duty[keep_on:]:
+                controls.append(
+                    LevelControl(
+                        f"ctl_{pump.id}", pump.id, tanks[0],
+                        float(lc["on_below_m"]), float(lc["off_above_m"]),
+                    )
+                )  # fmt: skip
+        return tuple(controls)

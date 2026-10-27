@@ -302,6 +302,29 @@ class Valve:
 
 
 @dataclass(frozen=True)
+class LevelControl:
+    """A pump switched by a tank's level: on below `on_below_m`, off above `off_above_m`
+    (levels in metres above the tank bottom). An `ASSUMPTION` of the provider's equipment."""
+
+    id: str
+    pump: str
+    tank: str
+    on_below_m: float
+    off_above_m: float
+
+    def __post_init__(self) -> None:
+        _identifier(self.id, "control id")
+        _identifier(self.pump, f"control {self.id}: pump")
+        _identifier(self.tank, f"control {self.id}: tank")
+        on = _number(self.on_below_m, f"control {self.id}: on_below_m", minimum=0.0)
+        off = _number(self.off_above_m, f"control {self.id}: off_above_m", minimum=0.0)
+        if not on < off:
+            raise ValueError(f"control {self.id}: on_below_m must be below off_above_m")
+        object.__setattr__(self, "on_below_m", on)
+        object.__setattr__(self, "off_above_m", off)
+
+
+@dataclass(frozen=True)
 class Sensor:
     """A sensor site on a network element; what it measures arrives with the measurement model (B2)."""
 
@@ -442,6 +465,7 @@ class Network:
     valves: tuple[Valve, ...] = ()
     sensors: tuple[Sensor, ...] = ()
     sensor_sets: Mapping[str, tuple[str, ...]] = field(default_factory=dict)
+    controls: tuple[LevelControl, ...] = ()
 
     def __post_init__(self) -> None:
         _identifier(self.name, "network name")
@@ -506,6 +530,26 @@ class Network:
                     f"sensor {sensor.id} is on unknown element {sensor.element!r}"
                 )
         sensor_ids = {s.id for s in self.sensors}
+        object.__setattr__(
+            self, "controls", tuple(sorted(self.controls, key=lambda c: c.id))
+        )
+        pumps = {p.id for p in self.pumps}
+        tanks = {t.id: t for t in self.tanks}
+        for control in self.controls:
+            if control.pump not in pumps or control.tank not in tanks:
+                raise ValueError(f"control {control.id}: unknown pump or tank")
+            tank = tanks[control.tank]
+            if (
+                not tank.min_level
+                <= control.on_below_m
+                < control.off_above_m
+                <= tank.max_level
+            ):
+                raise ValueError(
+                    f"control {control.id}: levels must lie within the tank's min and max level"
+                )
+        if len({c.id for c in self.controls}) != len(self.controls):
+            raise ValueError("control ids must be unique")
         positions: dict[str, tuple[float, float]] = {}
         for group in (self.junctions, self.reservoirs, self.tanks):
             for n in group:
@@ -554,6 +598,8 @@ class Network:
             "valves": rows(self.valves),
             "sensors": rows(self.sensors),
             "sensor_sets": {k: list(v) for k, v in sorted(self.sensor_sets.items())},
+            # Left out when empty, so a network without controls hashes as before.
+            **({"controls": rows(self.controls)} if self.controls else {}),
         }
 
     def content_hash(self) -> str:
