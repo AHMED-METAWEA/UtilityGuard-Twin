@@ -143,3 +143,16 @@ def test_the_leading_bold_phrase_decides_the_state() -> None:
     assert status.classify("Status: **merged by the owner (PR #45)**") == "merged"
     assert status.classify("Status: **PR #53, in review** (round 1)") == "in review"
     assert status.classify("Status: not started (lead)") == "not started"
+
+
+def test_a_merged_card_awaiting_an_owner_decision_is_listed(tmp_path: Path) -> None:
+    """Lead review: #54 was merged in error and waits for the owner's keep-or-revert call."""
+    plan = tmp_path / "plan.md"
+    plan.write_text(
+        "## 4b. B1\n### T-B1-014: Validation\n"
+        "Status: **merged by the lead in error (PR #54)**; the owner decides whether it stays\n",
+        encoding="utf-8",
+    )
+    output = status.render(status.parse_plan(plan), [])
+    waiting = output.split("## Waiting for Ahmed\n")[1].split("## Blocked")[0]
+    assert "PR #54 (T-B1-014): owner decision" in waiting

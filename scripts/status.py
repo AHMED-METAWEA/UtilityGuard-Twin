@@ -110,6 +110,11 @@ def render(cards: list[Card], prs: list[dict]) -> str:
                 r"PR #(\d+)", card.status
             )
             waiting.update(f"PR #{number} ({card.id})" for number in numbers)
+        elif re.search(r"\bthe owner decides\b", card.status, re.I):
+            numbers = re.findall(r"PR #(\d+)", card.status) or ["?"]
+            waiting.update(
+                f"PR #{number} ({card.id}): owner decision" for number in numbers
+            )
         if re.search(r"\b(blocked|waits for)\b", card.status, re.I):
             blocked.append(f"{card.id}: {card.status}")
     for pr in prs:

@@ -20,7 +20,7 @@ Counts: CALCULATED from plan statuses and optional open PRs.
 
 | merged | in review | in progress | not started |
 | --- | --- | --- | --- |
-| 3 | 1 | 0 | 0 |
+| 4 | 0 | 0 | 0 |
 
 ## Wave 3
 
@@ -38,11 +38,11 @@ Counts: CALCULATED from plan statuses and optional open PRs.
 
 | merged | in review | in progress | not started |
 | --- | --- | --- | --- |
-| 13 | 1 | 1 | 4 |
+| 14 | 0 | 1 | 4 |
 
 ## Waiting for Ahmed
 
-- PR #53 (T-B1-013)
+- PR #54 (T-B1-014): owner decision
 
 ## Blocked
 
