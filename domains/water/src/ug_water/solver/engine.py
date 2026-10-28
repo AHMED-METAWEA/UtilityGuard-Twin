@@ -28,7 +28,7 @@ from __future__ import annotations
 import math
 import os
 import tempfile
-from collections.abc import Mapping
+from collections.abc import Collection, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
@@ -87,10 +87,13 @@ def simulate(
     demand: DemandInput,
     options: HydraulicOptions | None = None,
     faults: FaultPlan | None = None,
+    channels: Collection[str] | None = None,
 ) -> HydraulicResult:
     """The truth of the network under the demand series and the faults' plan (`plan_faults`).
 
-    Fire flows must already be in `demand` (`add_fire_flows`). Raises `HydraulicsError`.
+    Fire flows must already be in `demand` (`add_fire_flows`). `channels`, when given, keeps
+    only those truth channels (the solve is the same; it saves memory, e.g. for the expectation,
+    which needs only the sensors' channels). Raises `HydraulicsError`.
     """
     options = options or load_options()
     try:
@@ -100,7 +103,7 @@ def simulate(
             f"the network or the demand cannot be modelled: {exc}"
         ) from exc
     results = _run(wn, options)
-    return _truth(network, demand, results, options, faults or FaultPlan())
+    return _truth(network, demand, results, options, faults or FaultPlan(), channels)
 
 
 def _run(wn: Any, options: HydraulicOptions) -> Any:
@@ -180,6 +183,7 @@ def _truth(
     results: Any,
     options: HydraulicOptions,
     faults: FaultPlan,
+    keep: Collection[str] | None = None,
 ) -> HydraulicResult:
     axis = _Results(results, demand.timebase)
     channels: dict[str, np.ndarray] = {}
@@ -202,8 +206,11 @@ def _truth(
         *(v.id for v in network.valves),
     ]
     flows = axis.frame("link", "flowrate", links, "flow")
+    # Index the ticks once: one copy per link would also keep every copy alive through its
+    # column view (gigabytes on the standard tier).
+    tick_flows = axis.at_ticks(flows)
     for k, lid in enumerate(links):
-        channels[f"flowrate:{lid}"] = axis.at_ticks(flows)[:, k]
+        channels[f"flowrate:{lid}"] = tick_flows[:, k]
     pipes = [p.id for p in network.pipes]
     velocity = axis.at_ticks(axis.frame("link", "velocity", pipes, "velocity"))
     for k, pid in enumerate(pipes):
@@ -237,7 +244,11 @@ def _truth(
                 raise HydraulicsError(f"non-finite power or energy for {pump.id}")
     truth = TruthSeries(
         demand.timebase,
-        {name: v.tolist() for name, v in sorted(channels.items())},
+        {
+            name: v.tolist()
+            for name, v in sorted(channels.items())
+            if keep is None or name in keep
+        },
         faults.events,
     )
     return HydraulicResult(

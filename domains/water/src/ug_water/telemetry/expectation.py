@@ -22,9 +22,12 @@ def expected_readings(
         raise ValueError("expectation requires MODEL-labelled forecast demand")
     if sensor_set not in network.sensor_sets:
         raise ValueError(f"unknown sensor set {sensor_set!r}")
-    channels = simulate(network, forecast).truth.channels
     quantities = {"pressure": "pressure", "flow": "flowrate", "level": "level"}
     selected = set(network.sensor_sets[sensor_set])
+    needed = {
+        f"{quantities[s.kind]}:{s.element}" for s in network.sensors if s.id in selected
+    }
+    channels = simulate(network, forecast, channels=needed).truth.channels
     result = {}
     for sensor in network.sensors:
         if sensor.id not in selected:
