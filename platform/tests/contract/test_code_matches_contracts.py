@@ -46,6 +46,10 @@ NOT_PRODUCED_YET = {
     "scenario-config": "no scenario type yet (Spec milestone M1); only used as Manifest config",
     "stream-envelope": "the stream builder arrives with Spec milestone M2",
     "incident": "the incident manager arrives with Spec milestone M3",
+    "network-view": "the API's map payload arrives with demo card D-07",
+    "time-series": "the API's series payloads arrive with demo card D-07",
+    "decision-comparison": "the cost and decision engine arrives with demo card D-06",
+    "whatif-request": "the what-if endpoint arrives with demo card D-07",
 }
 
 

@@ -1,0 +1,288 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://utilityguard.invalid/contracts/v1/network-view.schema.json",
+  "title": "Network view",
+  "description": "The network as the map draws it (DEMO_PLAN D-01): structure and geometry only. By design it carries no simulated state, no fault and no hidden field; states arrive as time series. Coordinates are local metres from the study origin, never geographic.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "common.schema.json#/$defs/schema_version"
+    },
+    "network_hash": {
+      "$ref": "common.schema.json#/$defs/sha256"
+    },
+    "name": {
+      "$ref": "common.schema.json#/$defs/identifier"
+    },
+    "fidelity": {
+      "enum": [
+        "F0",
+        "F1"
+      ]
+    },
+    "coordinates": {
+      "const": "local_m"
+    },
+    "geometry_label": {
+      "enum": [
+        "PUBLIC_GEOMETRY",
+        "ASSUMPTION"
+      ],
+      "description": "PUBLIC_GEOMETRY when the street geometry comes from a public source (then attribution is required); ASSUMPTION for generated layouts."
+    },
+    "attribution": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "attribute_labels": {
+      "type": "object",
+      "properties": {
+        "elevation_m": {
+          "enum": [
+            "ASSUMPTION",
+            "OBSERVED",
+            "BENCHMARK"
+          ]
+        },
+        "diameter_m": {
+          "enum": [
+            "ASSUMPTION",
+            "OBSERVED",
+            "BENCHMARK"
+          ]
+        },
+        "length_m": {
+          "enum": [
+            "CALCULATED",
+            "OBSERVED",
+            "BENCHMARK"
+          ]
+        }
+      },
+      "required": [
+        "elevation_m",
+        "diameter_m",
+        "length_m"
+      ],
+      "additionalProperties": false
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "kind": {
+            "enum": [
+              "junction",
+              "reservoir",
+              "tank"
+            ]
+          },
+          "x": {
+            "type": "number"
+          },
+          "y": {
+            "type": "number"
+          },
+          "zone": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "elevation_m": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "x",
+          "y",
+          "elevation_m"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "kind": {
+            "enum": [
+              "pipe",
+              "pump",
+              "valve"
+            ]
+          },
+          "start": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "end": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "tier": {
+            "enum": [
+              "transmission",
+              "submain",
+              "distribution"
+            ]
+          },
+          "diameter_m": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          },
+          "length_m": {
+            "type": "number",
+            "minimum": 0
+          },
+          "valve_kind": {
+            "enum": [
+              "isolation",
+              "prv"
+            ]
+          },
+          "route": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "description": "[x, y] in local metres (x east, y north)."
+            }
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "start",
+          "end"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "zones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "land_use": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "ring": {
+            "type": "array",
+            "minItems": 4,
+            "items": {
+              "type": "array",
+              "prefixItems": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "items": false,
+              "minItems": 2,
+              "description": "[x, y] in local metres (x east, y north)."
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "land_use",
+          "ring"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "sensors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "kind": {
+            "enum": [
+              "pressure",
+              "flow",
+              "level"
+            ]
+          },
+          "element": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "sets": {
+            "type": "array",
+            "items": {
+              "$ref": "common.schema.json#/$defs/identifier"
+            },
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "element",
+          "sets"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "network_hash",
+    "name",
+    "fidelity",
+    "coordinates",
+    "geometry_label",
+    "attribute_labels",
+    "nodes",
+    "links",
+    "zones",
+    "sensors"
+  ],
+  "additionalProperties": false,
+  "if": {
+    "properties": {
+      "geometry_label": {
+        "const": "PUBLIC_GEOMETRY"
+      }
+    },
+    "required": [
+      "geometry_label"
+    ]
+  },
+  "then": {
+    "required": [
+      "attribution"
+    ]
+  }
+}

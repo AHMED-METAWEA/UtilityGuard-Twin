@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://utilityguard.invalid/contracts/v1/whatif-request.schema.json",
+  "title": "Sensor what-if request",
+  "description": "Operator what-if on sensors (DEMO_PLAN D-01): disable a sensor, hold it stuck at its reading at from_tick, or add a drift. It changes telemetry only (SENSOR_SIM); the simulated network and its truth are never touched. Reset is the absence of a change.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "common.schema.json#/$defs/schema_version"
+    },
+    "run_id": {
+      "$ref": "common.schema.json#/$defs/identifier"
+    },
+    "changes": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "properties": {
+          "sensor_id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "mode": {
+            "enum": [
+              "disable",
+              "stuck",
+              "drift"
+            ]
+          },
+          "from_tick": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "drift_per_hour": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "sensor_id",
+          "mode",
+          "from_tick"
+        ],
+        "additionalProperties": false,
+        "if": {
+          "properties": {
+            "mode": {
+              "const": "drift"
+            }
+          },
+          "required": [
+            "mode"
+          ]
+        },
+        "then": {
+          "required": [
+            "drift_per_hour"
+          ]
+        },
+        "else": {
+          "not": {
+            "required": [
+              "drift_per_hour"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "run_id",
+    "changes"
+  ],
+  "additionalProperties": false
+}

@@ -17,6 +17,10 @@ Versioned JSON Schemas for data that crosses module boundaries (Master Spec prin
 | `evidence-record.schema.json` | A displayed number with its label, formula and inputs | 10.1 |
 | `assumption-set.schema.json` | A versioned set of assumptions | 11.1, Appendix A |
 | `incident.schema.json` | An incident with hypothesis, support and location | 8, 11.1 |
+| `network-view.schema.json` | The network as the map draws it: structure and geometry in local metres, no state, no fault | 13, DEMO_PLAN D-01 |
+| `time-series.schema.json` | A plotted series (sensor, expectation, residual, forecast); never SIMULATION, so truth cannot travel in it | 12.2, DEMO_PLAN D-01 |
+| `decision-comparison.schema.json` | Options compared by expected cost, worst case (p90), regret and break-even; advisory; every number an evidence record | 9.4, DEMO_PLAN D-01 |
+| `whatif-request.schema.json` | Operator sensor what-if (disable, stuck, drift): telemetry only | DEMO_PLAN D-01 |
 | `common.schema.json` | Shared definitions: labels, identifiers, timestamps, quality | 2 |
 
 ## Rules baked into the schemas

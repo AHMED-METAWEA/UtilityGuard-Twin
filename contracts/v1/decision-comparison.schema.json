@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://utilityguard.invalid/contracts/v1/decision-comparison.schema.json",
+  "title": "Decision comparison",
+  "description": "Options for one incident compared by expected cost, worst case (the 90th percentile of sampled costs), expected regret and break-even (DEMO_PLAN D-01, Master Spec 9.4). Advisory only: a human approves every action. Every number is an evidence record in `evidence`, referenced by id; savings are model-estimated, conditional on assumptions, and a negative net benefit is representable. No probability of a real-world event.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "common.schema.json#/$defs/schema_version"
+    },
+    "decision_id": {
+      "$ref": "common.schema.json#/$defs/identifier"
+    },
+    "run_id": {
+      "$ref": "common.schema.json#/$defs/identifier"
+    },
+    "incident_id": {
+      "$ref": "common.schema.json#/$defs/identifier"
+    },
+    "assumption_set": {
+      "$ref": "common.schema.json#/$defs/identifier"
+    },
+    "advisory": {
+      "const": true
+    },
+    "options": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "properties": {
+          "option_id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "action": {
+            "enum": [
+              "fix_now",
+              "wait",
+              "isolate_then_fix"
+            ]
+          },
+          "delay_hours": {
+            "type": "number",
+            "minimum": 0
+          },
+          "expected_cost": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "worst_case": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "expected_regret": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "cost_lines": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "common.schema.json#/$defs/identifier"
+            },
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "option_id",
+          "action",
+          "delay_hours",
+          "expected_cost",
+          "worst_case",
+          "expected_regret",
+          "cost_lines"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "break_even": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "between": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "common.schema.json#/$defs/identifier"
+              },
+              {
+                "$ref": "common.schema.json#/$defs/identifier"
+              }
+            ],
+            "items": false,
+            "minItems": 2
+          },
+          "parameter": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          },
+          "evidence_id": {
+            "$ref": "common.schema.json#/$defs/identifier"
+          }
+        },
+        "required": [
+          "between",
+          "parameter",
+          "evidence_id"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "preferred_by_expected_cost": {
+      "oneOf": [
+        {
+          "$ref": "common.schema.json#/$defs/identifier"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "evidence-record.schema.json"
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "decision_id",
+    "run_id",
+    "incident_id",
+    "assumption_set",
+    "advisory",
+    "options",
+    "break_even",
+    "preferred_by_expected_cost",
+    "evidence"
+  ],
+  "additionalProperties": false
+}
