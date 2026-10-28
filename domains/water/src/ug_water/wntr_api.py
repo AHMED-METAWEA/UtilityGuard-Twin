@@ -47,6 +47,8 @@ CALLABLES: tuple[str, ...] = (
     "wntr.network.controls.Control",
     "wntr.network.controls.ControlAction",
     "wntr.network.controls.SimTimeCondition",
+    "wntr.network.controls.AndCondition",
+    "wntr.network.controls.OrCondition",
     "wntr.network.controls.ValueCondition",
     "wntr.sim.WNTRSimulator",
     "wntr.sim.EpanetSimulator",

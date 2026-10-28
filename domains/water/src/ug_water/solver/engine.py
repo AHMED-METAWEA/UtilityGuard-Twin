@@ -41,6 +41,7 @@ from ug_core.truth import TruthSeries
 
 from ug_water.network.model import Network
 from ug_water.solver.build import DemandInput, build_model
+from ug_water.solver.faults import FaultPlan, leak_node
 from ug_water.solver.options import HydraulicOptions, load_options
 
 LABEL = "SIMULATION"
@@ -85,17 +86,21 @@ def simulate(
     network: Network,
     demand: DemandInput,
     options: HydraulicOptions | None = None,
+    faults: FaultPlan | None = None,
 ) -> HydraulicResult:
-    """The truth of the network under the demand series. Raises `HydraulicsError`."""
+    """The truth of the network under the demand series and the faults' plan (`plan_faults`).
+
+    Fire flows must already be in `demand` (`add_fire_flows`). Raises `HydraulicsError`.
+    """
     options = options or load_options()
     try:
-        wn = build_model(network, demand, options)
+        wn = build_model(network, demand, options, faults)
     except ValueError as exc:
         raise HydraulicsError(
             f"the network or the demand cannot be modelled: {exc}"
         ) from exc
     results = _run(wn, options)
-    return _truth(network, demand, results, options)
+    return _truth(network, demand, results, options, faults or FaultPlan())
 
 
 def _run(wn: Any, options: HydraulicOptions) -> Any:
@@ -170,7 +175,11 @@ class _Results:
 
 
 def _truth(
-    network: Network, demand: DemandInput, results: Any, options: HydraulicOptions
+    network: Network,
+    demand: DemandInput,
+    results: Any,
+    options: HydraulicOptions,
+    faults: FaultPlan,
 ) -> HydraulicResult:
     axis = _Results(results, demand.timebase)
     channels: dict[str, np.ndarray] = {}
@@ -199,6 +208,12 @@ def _truth(
     velocity = axis.at_ticks(axis.frame("link", "velocity", pipes, "velocity"))
     for k, pid in enumerate(pipes):
         channels[f"velocity:{pid}"] = velocity[:, k]
+    for leak in faults.leaks:
+        nodes = [leak_node(leak.pipe, k) for k in range(len(leak.steps))]
+        outflow = axis.at_ticks(
+            axis.frame("node", "leak_demand", nodes, "leak outflow")
+        )
+        channels[f"leak:{leak.pipe}"] = outflow.sum(axis=1)
     energy: dict[str, float] = {}
     if network.pumps:
         nodes = sorted({n for pump in network.pumps for n in (pump.start, pump.end)})
@@ -221,7 +236,9 @@ def _truth(
             if not (np.isfinite(power_kw).all() and math.isfinite(energy[pump.id])):
                 raise HydraulicsError(f"non-finite power or energy for {pump.id}")
     truth = TruthSeries(
-        demand.timebase, {name: v.tolist() for name, v in sorted(channels.items())}
+        demand.timebase,
+        {name: v.tolist() for name, v in sorted(channels.items())},
+        faults.events,
     )
     return HydraulicResult(
         truth=truth,

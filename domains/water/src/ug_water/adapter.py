@@ -28,14 +28,14 @@ from ug_water.network.model import Network
 from ug_water.network.procedural import ProceduralCapitalProvider
 from ug_water.scenarios import list_presets, load_preset
 from ug_water.solver import load_options, simulate
+from ug_water.solver.faults import add_fire_flows, plan_faults
 
 
 class _WaterSolver:
     def run(
         self, state: RunState, scenario: Mapping[str, Any], horizon: Timebase
     ) -> TruthSeries:
-        if scenario["faults"]:
-            raise ValueError("faults arrive with T-B1-017")
+        faults = plan_faults(scenario["faults"], state.asset, horizon)
         model = DemandModel(state.assumptions[scenario["assumption_set"]])
         settings = scenario["demand"]
         shift = timedelta(hours=model.parameter("utc_offset_hours", "h"))
@@ -60,8 +60,8 @@ class _WaterSolver:
             * settings["heatwave_multiplier"]
             for jid in demand.junction_ids
         ]
-        demand = replace(demand, values=demand.values * factors)
-        return simulate(state.asset, demand).truth
+        demand = add_fire_flows(replace(demand, values=demand.values * factors), faults)
+        return simulate(state.asset, demand, faults=faults).truth
 
 
 class WaterAdapter(AdapterBase):
