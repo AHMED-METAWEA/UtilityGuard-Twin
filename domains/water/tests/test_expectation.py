@@ -58,7 +58,9 @@ def test_noise_free_channel_mapping_all_kinds_and_sensor_selection(
     physical = run.truth
     # Compare the mapping exactly against one solver result; independent solver
     # runs use the project's canonical numeric precision (round_for_hash).
-    monkeypatch.setattr("ug_water.telemetry.expectation.simulate", lambda *args: run)
+    monkeypatch.setattr(
+        "ug_water.telemetry.expectation.simulate", lambda *args, **kwargs: run
+    )
     expected = expected_readings(net, "all", model)
     assert expected == {
         "p": tuple(physical.channels["pressure:j1"]),

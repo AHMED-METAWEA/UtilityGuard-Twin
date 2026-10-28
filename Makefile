@@ -40,3 +40,17 @@ demo-baseline:
 	@mkdir -p var/demo-runs
 	@OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OMP_NUM_THREADS=1 $(VPY) -m ug_cli run normal_week --network procedural --tier standard --seed 1 --duration-hours 48 --store var/demo-runs/store > var/demo-runs/baseline.txt
 	@OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OMP_NUM_THREADS=1 $(VPY) -m ug_cli export "$$(sed -n 's/^run_id: //p' var/demo-runs/baseline.txt)" --store var/demo-runs/store --out var/demo-runs/views
+
+# Demo runs (DEMO_PLAN): record once, then the demo needs only ug_api and the built frontend.
+.PHONY: demo-record demo-pack demo-verify demo-restore demo-serve
+demo-record:
+	PY=$(VPY) scripts/demo_record.sh
+demo-pack:
+	$(VPY) scripts/demo_bundles.py pack
+demo-verify:
+	$(VPY) scripts/demo_bundles.py verify
+demo-restore:
+	$(VPY) scripts/demo_bundles.py restore --archive "$(ARCHIVE)"
+demo-serve:
+	@test -f frontend/dist/index.html || { echo "build the frontend first: cd frontend && npm run build"; exit 1; }
+	UG_STATIC_DIR=frontend/dist UG_RUNS_DIR=var/demo-runs/views $(VPY) -m ug_api
