@@ -1,0 +1,12 @@
+.ug-scenarios { min-width: 0; }
+.ug-scenario-notice { border-inline-start: 3px solid var(--ug-amber); padding: var(--ug-space-3); background: var(--ug-surface); }
+.ug-scenario-choices { display: flex; flex-wrap: wrap; gap: var(--ug-space-2); }
+.ug-scenario-choices button[aria-pressed="true"] { border-color: var(--ug-teal); color: var(--ug-teal); }
+.ug-scenario-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--ug-space-4); }
+.ug-scenario-grid .ug-panel { min-width: 0; margin-block: 0; }
+.ug-scenario-fault { padding: var(--ug-space-3); margin-block: var(--ug-space-3); border: 1px dashed var(--ug-border); }
+.ug-scenarios .ug-identifier { overflow-wrap: anywhere; }
+.ug-scenario-horizon { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--ug-space-3); }
+.ug-scenario-track { position: relative; height: var(--ug-space-4); margin-block: var(--ug-space-3); border-bottom: 2px solid var(--ug-border); }
+.ug-scenario-track > span { position: absolute; height: 100%; border-inline-start: 3px solid var(--ug-amber); }
+@media (max-width: 1100px) { .ug-scenario-grid { grid-template-columns: minmax(0, 1fr); } }
