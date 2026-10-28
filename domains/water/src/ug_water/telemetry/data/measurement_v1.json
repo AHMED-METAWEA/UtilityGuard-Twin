@@ -1,0 +1,10 @@
+{
+  "label": "ASSUMPTION",
+  "version": "measurement_v1",
+  "note": "Synthetic placeholders, not calibrated sensor specifications or field-validated error rates. Noise and quantum use m for pressure/level and L/s for flow. Delivery is uniform in whole seconds, inclusive of both bounds; dropout probabilities are scenario assumptions per tick.",
+  "pressure": {"noise_sigma": 0.1, "noise_fraction": 0.0, "quantum": 0.01},
+  "flow": {"noise_sigma": 0.05, "noise_fraction": 0.005, "quantum": 0.01},
+  "level": {"noise_sigma": 0.005, "noise_fraction": 0.0, "quantum": 0.001},
+  "base_dropout_per_tick": 0.002,
+  "delivery_delay_s": [2, 30]
+}
