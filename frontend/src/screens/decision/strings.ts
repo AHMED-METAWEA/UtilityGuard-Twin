@@ -1,0 +1,16 @@
+export const DECISION_STRINGS = {
+  integration: "Run integration", runContext: "The panels above use local fixture data. Run-backed data is not connected here yet.",
+  title: "Cost and Decision Studio", fixture: "Fixture data, not a run",
+  advisory: "Model-estimated, conditional on assumptions. Advisory only: a human approves every action.",
+  waiting: "Cost of waiting", waitingDetail: "Additional operating cost per hour of delay, holding the modeled loss and unserved-demand rates fixed.",
+  options: "Decision options", option: "Option", delay: "Delay", expected: "Expected cost", worst: "Worst case", regret: "Expected regret",
+  lowest: "lowest expected cost", lines: "Cost lines", net: "Net benefit of acting now versus waiting",
+  breakEven: "Break-even", breakPrefix: "fixing now is cheaper when the leak exceeds", breakSuffix: "under the fixture assumptions for the short wait option.",
+  multiply: " × ", equals: " = ", versus: "versus", quantiles: "Price-range quantiles",
+  actions: { fix_now: "Fix now", wait: "Wait", isolate_then_fix: "Isolate then fix" },
+  categories: { lost_water: "Lost water", unserved_demand: "Unserved demand", energy: "Energy", repair: "Repair materials and excavation", crew: "Crew labor for excavation" },
+  scope: "Fixed synthetic quantities and unverified fixture prices. Repair and crew use excavated volume with separate material and labor rates. Quantiles are conditional price-range summaries, not field validation.",
+  aggregate: "Aggregate rate bundles the five disjoint cost lines per modeled lost-water volume. Regret is expected cost minus the lowest expected cost. No action is executed here.",
+  priceBasis: "Fixture price-range sensitivity with fixed quantities; all prices are unverified assumptions in fixture_prices_v1.",
+  units: { money: "EGP", hourly: "EGP/h", hours: "h", flow: "m3/h" },
+} as const;
