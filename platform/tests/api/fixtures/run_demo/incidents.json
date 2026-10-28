@@ -1,0 +1,43 @@
+[
+  {
+    "schema_version": "1",
+    "incident_id": "inc_003",
+    "run_id": "run_demo",
+    "status": "open",
+    "false_alarm": false,
+    "severity": "high",
+    "hypothesis": "leak",
+    "support": "strong",
+    "rules_fired": [
+      "R_SPATIAL_GRADIENT",
+      "R_DMA_IMBALANCE"
+    ],
+    "model_score": {
+      "value": 0.83,
+      "label": "MODEL",
+      "basis": "supervised model, conditional on the simulated scenario distribution"
+    },
+    "location": {
+      "zone_id": "res_east",
+      "candidates": [
+        {
+          "asset_id": "P_0217",
+          "score": 0.91,
+          "label": "MODEL"
+        },
+        {
+          "asset_id": "P_0218",
+          "score": 0.77,
+          "label": "MODEL"
+        }
+      ]
+    },
+    "first_detected_tick": 171,
+    "closed_at": null,
+    "contributing_sensors": [
+      "P05",
+      "P06",
+      "F02"
+    ]
+  }
+]
