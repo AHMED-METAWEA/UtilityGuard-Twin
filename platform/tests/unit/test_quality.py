@@ -116,7 +116,13 @@ def test_all_intelligence_modules_have_no_truth_ports_or_domain_imports() -> Non
     root = Path(__file__).resolve().parents[3]
     domains = {f"ug_{p.name}" for p in (root / "domains").iterdir() if p.is_dir()}
     forbidden = {"ug_core.truth", "ug_core.ports", "domains", *domains}
-    for path in (root / "platform/ug_intel/src/ug_intel").rglob("*.py"):
+    intel = root / "platform/ug_intel/src/ug_intel"
+    paths = set(intel.rglob("*.py"))
+    # Explicit coverage guard: new D-05a modules must exist and be scanned.
+    assert {
+        intel / name for name in ("detect/cusum.py", "detect/incident.py", "trend.py")
+    } <= paths
+    for path in paths:
         for node in ast.walk(ast.parse(path.read_text())):
             names: list[str] = []
             if isinstance(node, ast.Import):
