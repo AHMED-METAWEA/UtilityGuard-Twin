@@ -147,7 +147,7 @@ def test_unknown_preset_and_contract_errors(
     assert "'seed' is a required property" in capsys.readouterr().err
 
 
-def test_faults_are_explicitly_unavailable(
+def test_a_fault_on_an_unknown_pipe_is_refused(
     scenario_path: Path, tmp_path: Path, capsys: Any
 ) -> None:
     scenario = json.loads(scenario_path.read_text())
@@ -156,7 +156,7 @@ def test_faults_are_explicitly_unavailable(
     ]
     scenario_path.write_text(json.dumps(scenario))
     assert main(argv(scenario_path, tmp_path)) == 1
-    assert "faults arrive with T-B1-017" in capsys.readouterr().err
+    assert "unknown pipe 'P1'" in capsys.readouterr().err
     assert not (tmp_path / "runs").exists()
 
 
@@ -201,7 +201,7 @@ def test_calendar_and_zone_heatwave_scaling(monkeypatch: pytest.MonkeyPatch) -> 
         seen.append(calendar)
         return original(self, asset, axis, seed, calendar)
 
-    def simulate(asset: Any, demand: Any) -> Any:
+    def simulate(asset: Any, demand: Any, faults: Any = None) -> Any:
         calendar = seen[0]
         assert len(calendar.holidays) == 2
         assert calendar.holidays == calendar.ramadan

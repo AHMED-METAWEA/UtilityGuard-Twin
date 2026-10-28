@@ -23,6 +23,7 @@ import wntr  # type: ignore[import-untyped]
 from ug_core.timebase import Timebase
 
 from ug_water.network.model import Network
+from ug_water.solver.faults import FaultPlan, apply_faults, outside
 from ug_water.solver.options import HydraulicOptions
 
 
@@ -71,9 +72,15 @@ def check_demand(
 
 
 def build_model(
-    network: Network, demand: DemandInput, options: HydraulicOptions
+    network: Network,
+    demand: DemandInput,
+    options: HydraulicOptions,
+    faults: FaultPlan | None = None,
 ) -> Any:
-    """The WNTR model of the network with the demand series (a `WaterNetworkModel`)."""
+    """The WNTR model of the network with the demand series (a `WaterNetworkModel`).
+
+    The hydraulic faults of `faults` (fire flows excluded: they are demand) are added last.
+    """
     check_demand(network, demand, options)
     values = np.asarray(demand.values, dtype=float)
     column = {jid: k for k, jid in enumerate(demand.junction_ids)}
@@ -158,6 +165,7 @@ def build_model(
                 initial_setting=0.0,
                 initial_status="OPEN",
             )
+    outages = {o.pump: o for o in faults.outages} if faults is not None else {}
     for control in network.controls:
         # A pump switched by a tank level: two WNTR controls, on below and off above.
         tank, pump = wn.get_node(control.tank), wn.get_link(control.pump)
@@ -168,15 +176,23 @@ def build_model(
             ("on", "<", control.on_below_m, status.Open),
             ("off", ">", control.off_above_m, status.Closed),
         ):
+            condition = wntr.network.controls.ValueCondition(
+                tank, "level", relation, level
+            )
+            if control.pump in outages:
+                # The control rests while its pump is out (fault plan, D-03).
+                condition = outside(wn, condition, outages[control.pump])
             wn.add_control(
                 f"{control.id}:{suffix}",
                 wntr.network.controls.Control(
-                    wntr.network.controls.ValueCondition(
-                        tank, "level", relation, level
-                    ),
+                    condition,
                     wntr.network.controls.ControlAction(pump, "status", value),
                 ),
             )
+    if faults is not None:
+        if faults.leaks and options.engine != "wntr":
+            raise ValueError("a leak needs the wntr engine (EPANET has no leak model)")
+        apply_faults(wn, network, faults)
     step = demand.timebase.step_seconds
     wn.options.time.duration = (demand.timebase.n_ticks - 1) * step
     wn.options.time.hydraulic_timestep = step
