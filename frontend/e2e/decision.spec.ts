@@ -13,7 +13,7 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844
     await expect(page.getByText(S.advisory, { exact: true })).toBeVisible();
     await expect(page.getByRole("table").getByRole("row")).toHaveCount(5);
     await expect(page.getByTestId("net-wait_short")).toContainText("-60");
-    await expect(page.getByText(S.lowest)).toBeVisible();
+    await expect(page.getByText(S.lowest, { exact: true })).toBeVisible();
     await page.getByRole("table").getByRole("row").nth(1).getByRole("button").nth(1).click();
     await expect(page.getByRole("dialog").getByText("quantity * unit_price")).toBeVisible();
     await expect(page.getByRole("dialog").getByText("unit_price", { exact: true })).toBeVisible();

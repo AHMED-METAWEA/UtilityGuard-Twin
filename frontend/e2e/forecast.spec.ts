@@ -12,7 +12,7 @@ for (const viewport of [{ width: 1440, height: 1000 }, { width: 390, height: 844
     await expect(page.getByText(S.fixture, { exact: true })).toBeVisible();
     await expect(page.getByTestId("range-band")).toHaveCount(4);
     await expect(page.getByTestId("series-line")).toHaveCount(10);
-    await page.getByRole("button", { name: /^4hCALCULATED$/ }).click();
+    await page.getByRole("button", { name: /^4 h CALCULATED$/ }).click();
     await expect(page.getByRole("dialog").getByText("(threshold - current_level) / forecast_slope")).toBeVisible();
     await expect(page.getByRole("dialog").getByText(S.fallingReason)).toBeVisible();
     const unlabelled = await page.locator("body").evaluate(root => {
