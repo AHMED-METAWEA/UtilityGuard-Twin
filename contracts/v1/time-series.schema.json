@@ -1,0 +1,211 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://utilityguard.invalid/contracts/v1/time-series.schema.json",
+  "title": "Time series",
+  "description": "A series the operator view plots (DEMO_PLAN D-01): sensor readings, the expectation, residuals and forecasts. Twin truth never travels in this shape: SIMULATION is not an allowed label. A missing value is null, never 0.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "$ref": "common.schema.json#/$defs/schema_version"
+    },
+    "series_id": {
+      "$ref": "common.schema.json#/$defs/identifier"
+    },
+    "run_id": {
+      "$ref": "common.schema.json#/$defs/identifier"
+    },
+    "kind": {
+      "enum": [
+        "sensor",
+        "expectation",
+        "residual",
+        "demand_forecast",
+        "tank_forecast"
+      ]
+    },
+    "element": {
+      "$ref": "common.schema.json#/$defs/identifier"
+    },
+    "quantity": {
+      "enum": [
+        "pressure",
+        "flow",
+        "level",
+        "demand"
+      ]
+    },
+    "unit": {
+      "$ref": "common.schema.json#/$defs/physical_unit"
+    },
+    "label": {
+      "enum": [
+        "SENSOR_SIM",
+        "OBSERVED",
+        "BENCHMARK",
+        "MODEL",
+        "CALCULATED"
+      ]
+    },
+    "version": {
+      "$ref": "common.schema.json#/$defs/model_version"
+    },
+    "formula_ref": {
+      "$ref": "common.schema.json#/$defs/template_id"
+    },
+    "start": {
+      "$ref": "common.schema.json#/$defs/utc_timestamp"
+    },
+    "step_seconds": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "values": {
+      "type": "array",
+      "items": {
+        "type": [
+          "number",
+          "null"
+        ]
+      }
+    },
+    "band": {
+      "type": "object",
+      "properties": {
+        "p10": {
+          "type": "array",
+          "items": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "p90": {
+          "type": "array",
+          "items": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        }
+      },
+      "required": [
+        "p10",
+        "p90"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "series_id",
+    "run_id",
+    "kind",
+    "element",
+    "quantity",
+    "unit",
+    "label",
+    "start",
+    "step_seconds",
+    "values"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "sensor"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "label": {
+            "$ref": "common.schema.json#/$defs/telemetry_label"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "enum": [
+              "expectation",
+              "demand_forecast",
+              "tank_forecast"
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "label": {
+            "const": "MODEL"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "residual"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "then": {
+        "properties": {
+          "label": {
+            "const": "CALCULATED"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "label": {
+            "const": "MODEL"
+          }
+        },
+        "required": [
+          "label"
+        ]
+      },
+      "then": {
+        "required": [
+          "version"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "label": {
+            "const": "CALCULATED"
+          }
+        },
+        "required": [
+          "label"
+        ]
+      },
+      "then": {
+        "required": [
+          "formula_ref"
+        ]
+      }
+    }
+  ]
+}

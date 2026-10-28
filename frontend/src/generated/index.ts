@@ -36,8 +36,18 @@ export type {
 } from './evidence-record';
 
 export type {
+  DecisionComparison,
+  EvidenceRecord as DecisionComparisonEvidenceRecord,
+  Input as DecisionComparisonInput,
+} from './decision-comparison';
+
+export type {
   Incident,
 } from './incident';
+
+export type {
+  NetworkView,
+} from './network-view';
 
 export type {
   BackgroundLeakageFault,
@@ -74,3 +84,11 @@ export type {
   Quality as TelemetryReadingQuality,
   TelemetryReading,
 } from './telemetry-reading';
+
+export type {
+  TimeSeries,
+} from './time-series';
+
+export type {
+  SensorWhatIfRequest,
+} from './whatif-request';

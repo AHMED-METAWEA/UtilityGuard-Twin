@@ -1,0 +1,117 @@
+{
+  "schema_version": "1",
+  "decision_id": "dec1",
+  "run_id": "run_0042",
+  "incident_id": "inc_003",
+  "assumption_set": "v1",
+  "advisory": false,
+  "options": [
+    {
+      "option_id": "fix_now",
+      "action": "fix_now",
+      "delay_hours": 0,
+      "expected_cost": "ev_dec1_fix_now_total",
+      "worst_case": "ev_dec1_fix_now_p90",
+      "expected_regret": "ev_dec1_fix_now_regret",
+      "cost_lines": [
+        "ev_dec1_fix_now_lost_water",
+        "ev_dec1_fix_now_repair"
+      ]
+    },
+    {
+      "option_id": "wait_24h",
+      "action": "wait",
+      "delay_hours": 24,
+      "expected_cost": "ev_dec1_wait_24h_total",
+      "worst_case": "ev_dec1_wait_24h_p90",
+      "expected_regret": "ev_dec1_wait_24h_regret",
+      "cost_lines": [
+        "ev_dec1_wait_24h_lost_water",
+        "ev_dec1_wait_24h_repair"
+      ]
+    }
+  ],
+  "break_even": [
+    {
+      "between": [
+        "fix_now",
+        "wait_24h"
+      ],
+      "parameter": "lost_water_m3_per_h",
+      "evidence_id": "ev_dec1_break_even"
+    }
+  ],
+  "preferred_by_expected_cost": "fix_now",
+  "evidence": [
+    {
+      "schema_version": "1",
+      "evidence_id": "ev_dec1_fix_now_total",
+      "value": 50280.0,
+      "unit": "EGP",
+      "label": "CALCULATED",
+      "formula": "sum(cost lines of fix_now)",
+      "inputs": [
+        {
+          "name": "cost_lines",
+          "value": 50280.0,
+          "unit": "EGP",
+          "label": "CALCULATED",
+          "ref": "ev_dec1_fix_now_lost_water"
+        }
+      ],
+      "provenance": {
+        "run_id": "run_0042",
+        "scenario_id": "leak_gradual_medium",
+        "seed": 42,
+        "network_version": "capital_f1_v1",
+        "detector_version": "d2_v1",
+        "assumption_set": "v1",
+        "cost_model": "v1",
+        "git_commit": "abc123"
+      },
+      "explanation_template": "cost.total.v1",
+      "uncertainty": {
+        "p10": 35196.0,
+        "p50": 50280.0,
+        "p90": 80448.0,
+        "basis": "1000 seeded samples of the assumption ranges (assumption set v1)"
+      },
+      "kind": "cost"
+    },
+    {
+      "schema_version": "1",
+      "evidence_id": "ev_dec1_wait_24h_total",
+      "value": 61200.0,
+      "unit": "EGP",
+      "label": "CALCULATED",
+      "formula": "sum(cost lines of wait_24h)",
+      "inputs": [
+        {
+          "name": "cost_lines",
+          "value": 61200.0,
+          "unit": "EGP",
+          "label": "CALCULATED",
+          "ref": "ev_dec1_wait_24h_lost_water"
+        }
+      ],
+      "provenance": {
+        "run_id": "run_0042",
+        "scenario_id": "leak_gradual_medium",
+        "seed": 42,
+        "network_version": "capital_f1_v1",
+        "detector_version": "d2_v1",
+        "assumption_set": "v1",
+        "cost_model": "v1",
+        "git_commit": "abc123"
+      },
+      "explanation_template": "cost.total.v1",
+      "uncertainty": {
+        "p10": 42840.0,
+        "p50": 61200.0,
+        "p90": 97920.0,
+        "basis": "1000 seeded samples of the assumption ranges (assumption set v1)"
+      },
+      "kind": "cost"
+    }
+  ]
+}

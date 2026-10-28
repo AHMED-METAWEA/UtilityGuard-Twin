@@ -45,6 +45,13 @@ ALLOWED: dict[tuple[str, str], set[str]] = {
     ("assumption-set", "assumptions/*/source_note"): {"str"},
     ("assumption-set", "note"): {"str"},
     ("assumption-set", "parent"): {"null"},
+    # D-01 (demo): embedded evidence records keep the evidence-record allowances; a tie leaves no
+    # preferred option (null); delays may be fractional hours.
+    ("decision-comparison", "evidence/*/formula"): {"str"},
+    ("decision-comparison", "evidence/*/inputs/*/unit"): {"null"},
+    ("decision-comparison", "evidence/*/uncertainty/basis"): {"str"},
+    ("decision-comparison", "options/*/delay_hours"): {"num"},
+    ("decision-comparison", "preferred_by_expected_cost"): {"null"},
     ("evidence-record", "formula"): {"str"},
     ("evidence-record", "inputs/*/unit"): {"null"},
     ("evidence-record", "inputs/*/value"): {"bool", "str"},
@@ -75,6 +82,12 @@ ALLOWED: dict[tuple[str, str], set[str]] = {
     ("stream-envelope", "payload/readings/*/value"): {"null", "num"},
     ("stream-envelope", "payload/speed"): {"num"},
     ("telemetry-reading", "value"): {"null", "num"},
+    # D-01: free text; missing series values are null, never 0 (the band too).
+    ("network-view", "attribution"): {"str"},
+    ("network-view", "zones/*/name"): {"str"},
+    ("time-series", "band/p10/*"): {"null"},
+    ("time-series", "band/p90/*"): {"null"},
+    ("time-series", "values/*"): {"null", "num"},
 }
 
 

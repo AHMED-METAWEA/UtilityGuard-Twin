@@ -266,6 +266,10 @@ EXPECTED: dict[str, Expect] = {
     "evidence-record/money_labelled_model": ({"enum"}, "label", "MODEL"),
     "evidence-record/unknown_label": ({"enum"}, "label", "VERIFIED"),
     "evidence-record/value_missing_under_a_real_label": ({"not"}, "value", ""),
+    "decision-comparison/missing_schema_version": ({"required"}, "", "schema_version"),
+    "decision-comparison/not_advisory": ({"const"}, "advisory", ""),
+    "decision-comparison/probability_field": (ADDITIONAL, "", "probability"),
+    "decision-comparison/single_option": ({"minItems"}, "options", ""),
     "incident/closed_without_timestamp": ({"type"}, "closed_at", ""),
     "incident/missing_schema_version": ({"required"}, "", "schema_version"),
     "incident/model_score_without_label": ({"required"}, "model_score", "label"),
@@ -273,6 +277,13 @@ EXPECTED: dict[str, Expect] = {
     "incident/probability_field": (ADDITIONAL, "", "probability"),
     "incident/unknown_hypothesis": ({"enum"}, "hypothesis", "gremlins"),
     "incident/unknown_status": ({"enum"}, "status", "finished"),
+    "network-view/extra_field": (ADDITIONAL, "", "leak_size"),
+    "network-view/missing_schema_version": ({"required"}, "", "schema_version"),
+    "network-view/public_geometry_without_attribution": (
+        {"required"},
+        "",
+        "attribution",
+    ),
     "run-manifest/bad_output_hash": ({"pattern"}, "output_hashes/truth", ""),
     "run-manifest/config_is_not_a_scenario": ({"required"}, "config", "faults"),
     "run-manifest/extra_field": (ADDITIONAL, "", "truth"),
@@ -407,6 +418,13 @@ EXPECTED: dict[str, Expect] = {
     "evidence-record/money_value_as_formatted_text": ({"type"}, "value", "1,000"),
     "evidence-record/unit_with_lookalike_letters": ({"anyOf"}, "unit", ""),
     "telemetry-reading/unknown_label": ({"enum"}, "label", "VERIFIED"),
+    "time-series/missing_schema_version": ({"required"}, "", "schema_version"),
+    "time-series/model_without_version": ({"required"}, "", "version"),
+    "time-series/simulation_label": ({"enum"}, "label", "SIMULATION"),
+    "whatif-request/drift_without_rate": ({"required"}, "changes/1", "drift_per_hour"),
+    "whatif-request/missing_schema_version": ({"required"}, "", "schema_version"),
+    "whatif-request/rate_without_drift": ({"not"}, "changes/0", ""),
+    "whatif-request/unknown_mode": ({"enum"}, "changes/0/mode", "explode"),
 }
 
 

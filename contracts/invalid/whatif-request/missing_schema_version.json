@@ -1,0 +1,16 @@
+{
+  "run_id": "run_0042",
+  "changes": [
+    {
+      "sensor_id": "s_p_0001",
+      "mode": "disable",
+      "from_tick": 120
+    },
+    {
+      "sensor_id": "s_p_0007",
+      "mode": "drift",
+      "from_tick": 96,
+      "drift_per_hour": -0.2
+    }
+  ]
+}

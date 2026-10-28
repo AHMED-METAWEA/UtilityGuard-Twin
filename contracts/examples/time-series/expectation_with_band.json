@@ -1,0 +1,33 @@
+{
+  "schema_version": "1",
+  "series_id": "s_p_0001.expected",
+  "run_id": "run_0042",
+  "kind": "expectation",
+  "element": "s_p_0001",
+  "quantity": "pressure",
+  "unit": "m",
+  "label": "MODEL",
+  "version": "expectation_v1",
+  "start": "2027-03-04T22:00:00Z",
+  "step_seconds": 300,
+  "values": [
+    31.5,
+    31.48,
+    31.45,
+    31.43
+  ],
+  "band": {
+    "p10": [
+      31.2,
+      31.18,
+      31.15,
+      31.13
+    ],
+    "p90": [
+      31.8,
+      31.78,
+      31.75,
+      31.73
+    ]
+  }
+}

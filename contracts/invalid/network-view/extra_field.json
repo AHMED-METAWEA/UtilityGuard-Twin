@@ -1,0 +1,130 @@
+{
+  "schema_version": "1",
+  "network_hash": "3e07f0daa529aca5b5504984848caa5c550aa14b21b01431a4da10a92c535398",
+  "name": "procedural_capital_v1",
+  "fidelity": "F0",
+  "coordinates": "local_m",
+  "geometry_label": "ASSUMPTION",
+  "attribute_labels": {
+    "elevation_m": "ASSUMPTION",
+    "diameter_m": "ASSUMPTION",
+    "length_m": "CALCULATED"
+  },
+  "nodes": [
+    {
+      "id": "source",
+      "kind": "reservoir",
+      "x": -100.0,
+      "y": 100.0,
+      "elevation_m": 122.6
+    },
+    {
+      "id": "j_0001",
+      "kind": "junction",
+      "x": 0.0,
+      "y": 0.0,
+      "zone": "government",
+      "elevation_m": 110.4
+    },
+    {
+      "id": "j_0002",
+      "kind": "junction",
+      "x": 250.0,
+      "y": 0.0,
+      "zone": "government",
+      "elevation_m": 111.0
+    },
+    {
+      "id": "tank_north",
+      "kind": "tank",
+      "x": 20.0,
+      "y": 20.0,
+      "elevation_m": 153.6
+    }
+  ],
+  "links": [
+    {
+      "id": "station_north_duty_0",
+      "kind": "pump",
+      "start": "source",
+      "end": "j_0001"
+    },
+    {
+      "id": "p_0001",
+      "kind": "pipe",
+      "start": "j_0001",
+      "end": "j_0002",
+      "tier": "distribution",
+      "diameter_m": 0.2,
+      "length_m": 250.0,
+      "route": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          120.0,
+          8.0
+        ],
+        [
+          250.0,
+          0.0
+        ]
+      ]
+    },
+    {
+      "id": "p_0002",
+      "kind": "pipe",
+      "start": "j_0001",
+      "end": "tank_north",
+      "tier": "transmission",
+      "diameter_m": 0.6,
+      "length_m": 28.3
+    }
+  ],
+  "zones": [
+    {
+      "id": "government",
+      "name": "Government cluster",
+      "land_use": "government",
+      "ring": [
+        [
+          -50.0,
+          -50.0
+        ],
+        [
+          300.0,
+          -50.0
+        ],
+        [
+          300.0,
+          60.0
+        ],
+        [
+          -50.0,
+          -50.0
+        ]
+      ]
+    }
+  ],
+  "sensors": [
+    {
+      "id": "s_p_0001",
+      "kind": "pressure",
+      "element": "j_0002",
+      "sets": [
+        "S_base",
+        "S_dense"
+      ]
+    },
+    {
+      "id": "s_l_0001",
+      "kind": "level",
+      "element": "tank_north",
+      "sets": [
+        "S_base"
+      ]
+    }
+  ],
+  "leak_size": 0.01
+}
