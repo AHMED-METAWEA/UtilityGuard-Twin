@@ -533,3 +533,25 @@ def test_unreadable_series_never_returns_partial_bundle(runs_root, monkeypatch):
         create_app(runs_root=runs_root), "/api/runs/run_demo/network"
     )
     assert status == 500 and "LEAK_SENTINEL" not in json.dumps(body)
+
+
+def test_the_app_starts_without_jsonschema_and_refuses_bundles_loudly(runs_root):
+    # The API container installs neither jsonschema nor contracts/ (deploy/requirements-api.lock).
+    import subprocess
+    import sys
+
+    code = (
+        "import sys; sys.modules['jsonschema'] = None; sys.modules['referencing'] = None\n"
+        f"sys.path.insert(0, {str(Path(__file__).parent)!r})\n"
+        "from pathlib import Path\n"
+        "from test_runs import request\n"
+        "from ug_api.app import create_app\n"
+        "status, body = request(create_app(), '/api/runs')\n"
+        "assert status == 200 and body == [], body\n"
+        f"status, body = request(create_app(runs_root=Path({str(runs_root)!r})), '/api/runs')\n"
+        "assert status == 500 and 'not installed' in body['detail'], body\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code], capture_output=True, text=True
+    )
+    assert result.returncode == 0, result.stderr[-2000:]

@@ -10,10 +10,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from jsonschema import Draft202012Validator  # type: ignore[import-untyped]
-from jsonschema.exceptions import ValidationError  # type: ignore[import-untyped]
-from referencing import Registry, Resource
-
 IDENTIFIER = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:@-]{0,127}")
 SCHEMAS = Path(__file__).resolve().parents[4] / "contracts/v1"
 
@@ -62,7 +58,24 @@ class Contracts:
     """Resolve only the checked-in v1 schemas; no network retrieval is installed."""
 
     def __init__(self) -> None:
-        schemas = [parse_json(p.read_bytes()) for p in sorted(SCHEMAS.glob("*.json"))]
+        # Imported here, not at module load: the API container installs neither jsonschema nor
+        # contracts/, and must start (it serves no run bundle). Reading a bundle there fails
+        # loudly with a 500 instead of serving unvalidated data.
+        try:
+            from jsonschema import (  # type: ignore[import-untyped]
+                Draft202012Validator,
+            )
+            from jsonschema.exceptions import (  # type: ignore[import-untyped]
+                ValidationError,
+            )
+            from referencing import Registry, Resource
+        except ImportError:
+            raise RunError(500, "Contract validation is not installed") from None
+        paths = sorted(SCHEMAS.glob("*.json"))
+        if not paths:
+            raise RunError(500, "Contract schemas are not installed")
+        self.error = ValidationError
+        schemas = [parse_json(p.read_bytes()) for p in paths]
         registry: Registry[Any] = Registry().with_resources(
             (schema["$id"], Resource.from_contents(schema)) for schema in schemas
         )
@@ -80,7 +93,7 @@ class Contracts:
             # Also guards hook outputs, which did not pass through the JSON parser.
             parse_json(json.dumps(value, allow_nan=False))
             self.validators[name].validate(value)
-        except (ValidationError, ValueError, TypeError):
+        except (self.error, ValueError, TypeError):
             raise RunError(status, f"Invalid payload: {file}") from None
 
 
@@ -106,7 +119,14 @@ class RunStore:
 
     def __init__(self, root: Path | None) -> None:
         self.root = root.resolve() if root is not None else None
-        self.contracts = Contracts()
+        self._contracts: Contracts | None = None
+
+    @property
+    def contracts(self) -> Contracts:
+        """Built on first use, so the app starts where validation is not installed."""
+        if self._contracts is None:
+            self._contracts = Contracts()
+        return self._contracts
 
     def list(self) -> list[dict[str, Any]]:
         if self.root is None or not self.root.exists():
