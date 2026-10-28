@@ -14,6 +14,12 @@ const NAMESPACES = new Set([
 const INERT_IN_BUNDLE = [
   /^https:\/\/reactjs\.org\/docs\/error-decoder\.html\?invariant=/,
   /^javascript:throw new Error\('React has blocked a javascript: URL as a security precaution\.'\)$/,
+  // Documentation links inside luma.gl's WebGL helpers (comments kept as strings).
+  /^https:\/\/en\.wikipedia\.org\/wiki\/(?:Find_first_set#CLZ|Single-precision_floating-point_format|Double-precision_floating-point_format)$/,
+  // loaders.gl's worker-URL template; never reached: the app loads no data through loaders.gl and the
+  // CSP sets worker-src 'none'.
+  /^https:\/\/unpkg\.com\/@loaders\.gl$/, // its default `CDN` option, same reason
+  /^https:\/\/unpkg\.com\/@loaders\.gl\/\$\{[a-z.]+\}\$\{[a-z]+\}\/dist\/\$\{[a-z]+\}$/,
 ];
 
 const NAMED_ENTITIES = {
@@ -78,7 +84,7 @@ function unescapeJs(text) {
     .replace(/\\(.)/g, "$1");
 }
 
-export function jsReferences(js, { bundle = false } = {}) {
+export function jsReferences(js, { bundle = false, vendor = false } = {}) {
   const found = [];
   const inert = (text) => bundle && INERT_IN_BUNDLE.some((re) => re.test(text));
   // Every string literal, read as a browser would read it as a URL (escapes, case, backslashes).
@@ -96,8 +102,10 @@ export function jsReferences(js, { bundle = false } = {}) {
   for (const m of js.matchAll(/\bimport\s*\(\s*(["'`])([^"'`]+)\1/g)) {
     if (leavesTheApplication(unescapeJs(m[2]))) found.push(`js dynamic import ${m[2]}`);
   }
+  // In a built vendor chunk the name of a network API may appear (third-party code paths the app
+  // never calls); in app code and in source it may not.
   const api = js.match(NETWORK_API);
-  if (api) found.push(`js network api ${api[1]}`);
+  if (api && !(bundle && vendor)) found.push(`js network api ${api[1]}`);
   return [...new Set(found)];
 }
 
@@ -174,6 +182,7 @@ export function requiredCsp(html) {
   only("img-src", ["'self'"]);
   only("connect-src", ["'self'"]);
   only("object-src", ["'none'"]);
+  only("worker-src", ["'none'"]);
   only("base-uri", ["'self'"]);
   only("form-action", ["'self'"]);
   return problems;
