@@ -11,6 +11,8 @@ from starlette.responses import JSONResponse, Response
 from starlette.staticfiles import StaticFiles
 
 import ug_api
+from ug_api.run_routes import mount_runs
+from ug_api.runs import RunError, RunStore, WhatIfHook
 
 DISCLAIMER = (
     "Virtual twin. Not ACUD data and not a survey of any real network. "
@@ -19,10 +21,17 @@ DISCLAIMER = (
 )
 
 
-def problem(status: int, headers: Mapping[str, str] | None = None) -> JSONResponse:
+def problem(
+    status: int, headers: Mapping[str, str] | None = None, detail: str | None = None
+) -> JSONResponse:
     """Return the minimal RFC 7807 representation, preserving protocol headers."""
     return JSONResponse(
-        {"type": "about:blank", "title": HTTPStatus(status).phrase, "status": status},
+        {
+            "type": "about:blank",
+            "title": HTTPStatus(status).phrase,
+            "status": status,
+            **({"detail": detail} if detail is not None else {}),
+        },
         status_code=status,
         headers=headers,
         media_type="application/problem+json",
@@ -34,12 +43,23 @@ async def http_error(request: Request, exc: Exception) -> Response:
     return problem(exc.status_code, exc.headers)
 
 
-def create_app(static_dir: Path | None = None) -> FastAPI:
+def create_app(
+    static_dir: Path | None = None,
+    runs_root: Path | None = None,
+    whatif: WhatIfHook | None = None,
+) -> FastAPI:
     """Create isolated applications; importing this module starts no server."""
     app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     api = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
     app.add_exception_handler(HTTPException, http_error)
     api.add_exception_handler(HTTPException, http_error)
+
+    async def run_error(request: Request, exc: Exception) -> Response:
+        assert isinstance(exc, RunError)
+        return problem(exc.status, detail=exc.detail)
+
+    api.add_exception_handler(RunError, run_error)
+    mount_runs(api, RunStore(runs_root), whatif)
 
     @app.middleware("http")
     async def api_headers(
@@ -50,6 +70,8 @@ def create_app(static_dir: Path | None = None) -> FastAPI:
         if path == "/api" or path.startswith("/api/"):
             response.headers["Cache-Control"] = "no-store"
             response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-UG-Disclaimer"] = DISCLAIMER
+        response.headers["X-UG-Stream-Source"] = "REPLAY"
         return response
 
     @api.get("/health")
