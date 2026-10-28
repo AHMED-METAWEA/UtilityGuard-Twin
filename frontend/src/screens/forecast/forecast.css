@@ -1,0 +1,6 @@
+.ug-forecast { display: grid; gap: var(--ug-space-4); min-width: 0; }
+.ug-forecast-fixture { color: var(--ug-amber); border-inline-start: 3px solid var(--ug-amber); padding-inline-start: var(--ug-space-3); }
+.ug-forecast-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: var(--ug-space-5); }
+.ug-forecast-grid section { min-width: 0; }
+.ug-forecast details { margin-block: var(--ug-space-3); overflow-wrap: anywhere; }
+.ug-forecast li { margin-block: var(--ug-space-2); }

@@ -1,0 +1,13 @@
+.ug-decision { display: grid; gap: var(--ug-space-4); min-width: 0; }
+.ug-decision-fixture { color: var(--ug-amber); border-inline-start: 3px solid var(--ug-amber); padding-inline-start: var(--ug-space-3); }
+.ug-decision-advisory { padding: var(--ug-space-4); background: var(--ug-surface-raised); border: 1px solid var(--ug-amber); border-radius: var(--ug-radius); }
+.ug-decision-scroll { max-width: 100%; overflow-x: auto; }
+.ug-decision table { width: 100%; border-collapse: collapse; text-align: start; }
+.ug-decision th, .ug-decision td { padding: var(--ug-space-3); border-bottom: 1px solid var(--ug-border); text-align: start; }
+.ug-decision tr[data-lowest="true"] { background: var(--ug-surface-raised); }
+.ug-decision-lowest { color: var(--ug-teal); display: block; font-size: var(--ug-text-sm); }
+.ug-decision-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr)); gap: var(--ug-space-4); }
+.ug-decision ul { padding-inline-start: var(--ug-space-5); }
+.ug-decision li { margin-block: var(--ug-space-3); }
+.ug-decision-equation { display: flex; align-items: center; flex-wrap: wrap; gap: var(--ug-space-2); }
+.ug-decision .ug-metric { max-width: 100%; overflow-wrap: anywhere; }
