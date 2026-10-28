@@ -19,8 +19,9 @@ def main() -> None:
     if not re.fullmatch(r"[0-9]+", raw_port) or not 1 <= port <= 65535:
         raise SystemExit(message)
     static_dir = os.environ.get("UG_STATIC_DIR")
+    runs_dir = os.environ.get("UG_RUNS_DIR", "var/demo-runs/views")
     uvicorn.run(
-        create_app(Path(static_dir) if static_dir else None),
+        create_app(Path(static_dir) if static_dir else None, runs_root=Path(runs_dir)),
         host=os.environ.get("UG_API_HOST", "127.0.0.1"),
         port=port,
         reload=False,

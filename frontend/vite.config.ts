@@ -32,9 +32,20 @@ export default defineConfig({
     // vendor chunks only, tolerates the NAME of a network API (deck.gl's loaders carry fetch and a
     // worker loader that the app never calls); URLs are still refused everywhere, and the CSP
     // (connect-src 'self', worker-src 'none') plus the Playwright run prove no request is made.
-    rolldownOptions: { output: { codeSplitting: { groups: [{ name: "vendor", test: /node_modules/ }] } } },
+    // The recorded-run client goes to its own app-api-* chunk: the only app code allowed to call
+    // fetch, for same-origin /api/ paths (connect-src 'self').
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            { name: "app-api", test: /src[\\/]app[\\/]api\.ts$/, priority: 2 },
+            { name: "vendor", test: /node_modules/, priority: 1 },
+          ],
+        },
+      },
+    },
   },
-  server: { host: "127.0.0.1" },
+  server: { host: "127.0.0.1", proxy: { "/api": "http://127.0.0.1:8080" } },
   test: {
     environment: "jsdom",
     include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.mjs"],

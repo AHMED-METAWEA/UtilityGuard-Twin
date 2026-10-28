@@ -232,3 +232,4 @@ frontend/dist/
 
 # Local data: runs and the geometry cache (OpenStreetMap extracts stay local, decision G2).
 /data/
+/var/demo-runs/

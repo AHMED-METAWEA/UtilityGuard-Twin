@@ -121,7 +121,6 @@ def test_cli_determinism_provenance_and_restricted_truth(
     "extra, message",
     [
         (["--network", "osm"], "T-B1-013"),
-        (["--tier", "standard"], "T-B1-013"),
         (["--tier", "full"], "T-B1-013"),
         (["--seed", "-1"], "minimum"),
     ],
@@ -275,3 +274,26 @@ def test_assumption_id_must_match(
     assert main(argv(scenario_path, tmp_path, "--assumptions", str(tmp_path))) == 1
     assert "does not match" in capsys.readouterr().err
     assert not (tmp_path / "runs").exists()
+
+
+def test_standard_tier_and_duration_override(scenario_path, tmp_path, capsys):
+    assert (
+        main(
+            argv(
+                scenario_path,
+                tmp_path,
+                "--tier",
+                "standard",
+                "--duration-hours",
+                "0.25",
+            )
+        )
+        == 0
+    )
+    run_id = capsys.readouterr().out.split("run_id: ")[1].splitlines()[0]
+    manifest = RunStore(tmp_path / "runs").verify(run_id)
+    assert manifest.config["duration_hours"] == 0.25
+    assert manifest.config["network_version"] == "procedural-capital-v1-seed1-standard"
+    network = WaterAdapter().asset_model(manifest.config)
+    assert 790 <= len(network.junctions) <= 820
+    assert network.content_hash() == manifest.versions["network"]

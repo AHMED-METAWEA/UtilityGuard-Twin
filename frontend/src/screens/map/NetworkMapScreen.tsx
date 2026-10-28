@@ -1,3 +1,4 @@
+import { useReplay, replayTick } from "../../app/api";
 import { useEffect, useMemo, useRef, useState } from "react";
 // The 9.4.0 root barrel eagerly imports optional widgets, whose peer is absent.
 // Use the installed, typed component directly; no widget dependency or loader is needed.
@@ -33,10 +34,10 @@ function readPalette(element: HTMLElement): Palette {
   return { low: read("--ug-border"), high: read("--ug-accent"), neutral: read("--ug-muted"), warning: read("--ug-warn") };
 }
 
-export interface NetworkMapProps { network: NetworkView; state: TickState; candidates: readonly Candidate[] }
+export interface NetworkMapProps { fixture?: boolean; network: NetworkView; state: TickState; candidates: readonly Candidate[] }
 
 /** Fixture-independent boundary ready for a validated network-view and telemetry/model snapshot. */
-export function NetworkMap({ network, state, candidates }: NetworkMapProps) {
+export function NetworkMap({ network, state, candidates, fixture = true }: NetworkMapProps) {
   const host = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [palette, setPalette] = useState<Palette>();
@@ -84,7 +85,7 @@ export function NetworkMap({ network, state, candidates }: NetworkMapProps) {
   const legend: Record<Toggle, string> = { zones: S.zoneLegend, links: S.linkLegend, nodes: S.nodeLegend, equipment: S.equipmentLegend, sensors: S.sensorLegend, faults: S.faultLegend, pressure: S.pressureLegend, flow: S.flowLegend };
   const value = (name: string, amount: number | undefined, unit: string, evidence: string) => <div>{name}{S.separator}<span data-evidence-label={evidence}>{amount === undefined ? S.unavailable : amount.toFixed(2)}{unit}{S.separator}{evidence}</span></div>;
   return <div className="ug-network-map">
-    <p className="ug-map-fixture">{S.fixture}</p>
+    {fixture && <p className="ug-map-fixture">{S.fixture}</p>}
     <p data-evidence-label={network.geometry_label}>{network.fidelity === "F1" && network.geometry_label === "PUBLIC_GEOMETRY" ? S.f1 : S.fidelity}</p>
     {network.geometry_label === "PUBLIC_GEOMETRY" && <p data-evidence-label="PUBLIC_GEOMETRY">{S.attribution}{network.attribution && <span>{S.space}{network.attribution}</span>}</p>}
     <div className="ug-map-layout">
@@ -113,7 +114,9 @@ export function NetworkMap({ network, state, candidates }: NetworkMapProps) {
 }
 
 export function NetworkMapScreen({ route }: ScreenProps) {
-  const network = useMemo(() => createMapFixture(), []);
-  const state = useMemo(() => createTickFixture(network), [network]);
-  return <><h1>{route.title}</h1><p>{route.empty}</p><NetworkMap network={network} state={state} candidates={MAP_CANDIDATES} /></>;
+  const { replay, reason } = useReplay();
+  const fixture = useMemo(() => createMapFixture(), []);
+  const network = replay?.network ?? fixture;
+  const state = useMemo(() => replay ? replayTick(replay) : createTickFixture(network), [network, replay]);
+  return <><h1>{route.title}</h1><p>{replay ? "Recorded sensor snapshot" : route.empty}</p>{!replay && <p role="status">{reason}</p>}<NetworkMap fixture={!replay} network={network} state={state} candidates={replay ? [] : MAP_CANDIDATES} /></>;
 }

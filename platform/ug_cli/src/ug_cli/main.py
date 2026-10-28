@@ -10,6 +10,7 @@ from pathlib import Path
 
 from ug_cli import __version__, fetch_geometry
 from ug_cli.doctor import run_doctor
+from ug_cli.export import export_command
 from ug_cli.run import run_command
 
 
@@ -31,18 +32,24 @@ def main(argv: list[str] | None = None) -> int:
     run.add_argument("--seed", type=int)
     run.add_argument("--store", type=Path)
     run.add_argument("--assumptions", type=Path)
+    run.add_argument("--duration-hours", type=float)
+    export = commands.add_parser("export", help="export an operator replay bundle")
+    export.add_argument("run_id")
+    export.add_argument("--store", type=Path, required=True)
+    export.add_argument("--out", type=Path, required=True)
     fetch_geometry.add_parser(commands)
     for command, milestone in (
         ("reproduce", "M4"),
         ("eval", "M5"),
         ("import", "M1"),
-        ("export", "M4"),
     ):
         stub = commands.add_parser(
             command, help=f"planned for Spec milestone {milestone}"
         )
         stub.set_defaults(milestone=milestone)
     args = parser.parse_args(argv)
+    if args.command == "export":
+        return export_command(args)
     if args.command == "run":
         return run_command(args)
     if args.command == "fetch-geometry":
