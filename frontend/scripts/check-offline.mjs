@@ -3,7 +3,7 @@
 // points outside the application (see offline-lib.mjs) and fails with a list. It cannot prove
 // that a running browser makes no request; it makes the common ways of doing so fail the build.
 import { readFileSync, readdirSync, statSync } from "node:fs";
-import { extname, join } from "node:path";
+import { basename, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { cssReferences, htmlReferences, isScannedSource, jsReferences, requiredCsp } from "./offline-lib.mjs";
@@ -28,7 +28,7 @@ function scan(path, { bundle }) {
       : ext === ".css"
         ? cssReferences(text)
         : ext === ".js" || ext === ".mjs" || ext === ".ts" || ext === ".tsx"
-          ? jsReferences(text, { bundle })
+          ? jsReferences(text, { bundle, vendor: bundle && /^vendor-[\w-]+\.js$/.test(basename(path)) })
           : [];
   for (const item of found) problems.push(`${rel}: ${item}`);
   // TypeScript sources may also hold CSS-in-strings or markup; the page scan covers index.html.

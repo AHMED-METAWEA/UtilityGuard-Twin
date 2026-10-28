@@ -1,0 +1,15 @@
+.ug-network-map { font-size: 0.85rem; }
+.ug-map-fixture { display: inline-block; color: var(--ug-warn); border: 1px solid var(--ug-warn); padding: 4px 12px; border-radius: var(--ug-radius); }
+.ug-map-layout { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: var(--ug-gap); }
+.ug-map-panel { background: var(--ug-surface); border: 1px solid var(--ug-border); border-radius: var(--ug-radius); padding: 12px; }
+.ug-map-panel fieldset { border: 0; padding: 0; }
+.ug-map-panel label { display: block; padding: 3px 0; }
+.ug-map-panel input { accent-color: var(--ug-accent); margin-right: 8px; }
+.ug-map-panel h2 { font-size: 0.85rem; }
+.ug-map-panel ul { padding-left: 16px; color: var(--ug-muted); }
+.ug-map-panel li { margin: 8px 0; }
+.ug-map-candidates { list-style: none; padding: 0; }
+.ug-map-canvas { position: relative; height: 580px; overflow: hidden; background: var(--ug-bg); border: 1px solid var(--ug-border); border-radius: var(--ug-radius); }
+.ug-map-tooltip { position: absolute; z-index: 2; bottom: 12px; left: 12px; max-width: calc(100% - 24px); pointer-events: none; padding: 12px; background: var(--ug-surface); border: 1px solid var(--ug-border); }
+.ug-map-scale { display: block; height: 8px; background: linear-gradient(to right, var(--ug-border), var(--ug-accent)); margin-bottom: 4px; }
+@media (max-width: 850px) { .ug-map-layout { grid-template-columns: 1fr; } .ug-map-canvas { height: 450px; } }

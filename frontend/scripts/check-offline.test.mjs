@@ -61,6 +61,22 @@ describe("javascript", () => {
     expect(jsReferences(message, { bundle: false }).length).toBeGreaterThan(0);
     expect(jsReferences('var u="https://reactjs.org/other"', { bundle: true }).length).toBeGreaterThan(0);
   });
+  it("tolerates a network API name only in a built vendor chunk, never a URL there", () => {
+    expect(jsReferences('fetch(a)', { bundle: true, vendor: true })).toEqual([]);
+    expect(jsReferences('fetch(a)', { bundle: true }).length).toBeGreaterThan(0);
+    expect(jsReferences('fetch(a)', { vendor: true }).length).toBeGreaterThan(0); // source is always strict
+    expect(jsReferences('fetch("https://example.invalid/a")', { bundle: true, vendor: true }).length).toBeGreaterThan(0);
+  });
+  it("allows only the exact loaders.gl worker template and luma.gl doc links in a bundle", () => {
+    const template = "var u=`https://unpkg.com/@loaders.gl/${e.module}${n}/dist/${r}`";
+    expect(jsReferences(template, { bundle: true })).toEqual([]);
+    expect(jsReferences(template, { bundle: false }).length).toBeGreaterThan(0);
+    expect(jsReferences("var u=`https://unpkg.com/@loaders.gl/core/dist/x.js`", { bundle: true }).length).toBeGreaterThan(0);
+    expect(jsReferences("var o={CDN:`https://unpkg.com/@loaders.gl`,worker:!0}", { bundle: true })).toEqual([]);
+    expect(jsReferences("var o={CDN:`https://unpkg.com/other`}", { bundle: true }).length).toBeGreaterThan(0);
+    expect(jsReferences('var d="https://en.wikipedia.org/wiki/Find_first_set#CLZ"', { bundle: true })).toEqual([]);
+    expect(jsReferences('var d="https://en.wikipedia.org/wiki/Other"', { bundle: true }).length).toBeGreaterThan(0);
+  });
 });
 
 describe("which source files are scanned", () => {

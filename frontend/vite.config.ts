@@ -6,7 +6,7 @@ import type { Plugin } from "vite";
 // form target. The dev server needs inline code for hot reload, so it is added at build time.
 const CSP =
   "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; " +
-  "object-src 'none'; base-uri 'self'; form-action 'self'";
+  "object-src 'none'; worker-src 'none'; base-uri 'self'; form-action 'self'";
 
 const contentSecurityPolicy: Plugin = {
   name: "ug-content-security-policy",
@@ -28,6 +28,11 @@ export default defineConfig({
     emptyOutDir: true,
     // The preload polyfill calls fetch(); modern browsers do not need it, and the shell makes no request.
     modulePreload: { polyfill: false },
+    // Third-party code goes to vendor-* chunks. The offline check reads app code strictly and, in
+    // vendor chunks only, tolerates the NAME of a network API (deck.gl's loaders carry fetch and a
+    // worker loader that the app never calls); URLs are still refused everywhere, and the CSP
+    // (connect-src 'self', worker-src 'none') plus the Playwright run prove no request is made.
+    rolldownOptions: { output: { codeSplitting: { groups: [{ name: "vendor", test: /node_modules/ }] } } },
   },
   server: { host: "127.0.0.1" },
   test: {

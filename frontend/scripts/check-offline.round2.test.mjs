@@ -39,7 +39,7 @@ describe("javascript strings are normalised like URLs", () => {
 });
 
 describe("content security policy of the built page", () => {
-  const good = "default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'";
+  const good = "default-src 'self'; connect-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; object-src 'none'; worker-src 'none'; base-uri 'self'; form-action 'self'";
   const page = (csp) => `<html><head><meta http-equiv="Content-Security-Policy" content="${csp}"></head></html>`;
   it("accepts a strict policy", () => expect(requiredCsp(page(good))).toEqual([]));
   it.each([
@@ -50,6 +50,8 @@ describe("content security policy of the built page", () => {
     ["a wildcard", page(good.replace("img-src 'self'", "img-src *"))],
     ["no default-src", page(good.replace("default-src 'self'; ", ""))],
     ["objects allowed", page(good.replace("object-src 'none'", "object-src 'self'"))],
+    ["workers allowed", page(good.replace("worker-src 'none'", "worker-src 'self'"))],
+    ["no worker-src", page(good.replace("worker-src 'none'; ", ""))],
     ["no base-uri", page(good.replace("base-uri 'self'; ", ""))],
     ["no form-action", page(good.replace("; form-action 'self'", ""))],
     ["data: scripts", page(good.replace("script-src 'self'", "script-src 'self' data:"))],
