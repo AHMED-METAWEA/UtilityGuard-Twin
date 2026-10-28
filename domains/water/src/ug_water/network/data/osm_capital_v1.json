@@ -1,15 +1,26 @@
 {
   "version": "1",
   "label": "ASSUMPTION",
-  "note": "Parameters of the F1 network built on the OpenStreetMap street graph. Every value is a synthetic placeholder, not ACUD data: terrain, pipe sizes, roughness, demand densities, the source and the tanks are chosen, not observed. Only the street geometry is public.",
+  "note": "Parameters of the F1 network built on the OpenStreetMap street graph. Every value is a synthetic placeholder, not ACUD data: terrain, pipe sizes, roughness, demand densities, the source and the tanks are chosen, not observed. Only the street geometry is public. Design (demo card D-02, the procedural rules of #59): a ground clearwell source 5 m above its site; the pumps sized for 1.2 x the average demand; three elevated tanks on the transmission main, all on one grade (bottom 30 m above the highest junction), switched by tank_0's level with one duty pump kept on; occupancy_fraction 0.12 of the planned rates (an early-phase city); 1.2 m transmission and 0.4 m submain pipes. Seven-day validation recorded in docs/progress/claude-code/D-02.md. Design (demo card D-02): a ground clearwell source, three tanks on one common grade (bottom 30 m above the highest junction) on the transmission main, duty pumps sized near average demand and switched by tank_0's level; occupancy_fraction scales the planned area rates to an early-phase city. Still synthetic, not a design to build.",
   "terrain": {
     "base_m": 300.0,
-    "gradient_m_per_km": [-1.5, 0.8],
+    "gradient_m_per_km": [
+      -1.5,
+      0.8
+    ],
     "noise_m": 4.0,
     "wavelength_km": 6.0
   },
-  "diameters_m": {"transmission": 0.6, "submain": 0.3, "distribution": 0.15},
-  "roughness": {"transmission": 130.0, "submain": 120.0, "distribution": 110.0},
+  "diameters_m": {
+    "transmission": 1.2,
+    "submain": 0.4,
+    "distribution": 0.15
+  },
+  "roughness": {
+    "transmission": 130.0,
+    "submain": 120.0,
+    "distribution": 110.0
+  },
   "demand_l_s_per_ha": {
     "residential": 0.45,
     "residential_low": 0.15,
@@ -28,16 +39,40 @@
   "source": {
     "side": "west",
     "head_above_site_m": 5.0,
-    "offset_m": [-150.0, 0.0]
+    "offset_m": [
+      -150.0,
+      0.0
+    ]
   },
-  "pumps": {"duty": 2, "standby": 1, "design_head_m": 45.0, "efficiency": 0.78, "peak_factor": 1.8},
+  "pumps": {
+    "duty": 3,
+    "standby": 1,
+    "design_head_m": 75.0,
+    "efficiency": 0.78,
+    "peak_factor": 1.2
+  },
   "tanks": {
     "count": 3,
-    "height_above_site_m": 20.0,
     "init_level_m": 4.0,
     "min_level_m": 0.5,
     "max_level_m": 8.0,
-    "diameter_m": 30.0,
-    "offset_m": [60.0, 60.0]
+    "diameter_m": 40.0,
+    "offset_m": [
+      60.0,
+      60.0
+    ],
+    "site": "main",
+    "bottom_above_highest_m": 30.0,
+    "pipe_tier": "transmission"
+  },
+  "occupancy_fraction": 0.12,
+  "pattern_land_use": {
+    "residential_low": "residential"
+  },
+  "level_control": {
+    "tank": "tank_0",
+    "on_below_m": 2.5,
+    "off_above_m": 7.0,
+    "keep_on": 1
   }
 }

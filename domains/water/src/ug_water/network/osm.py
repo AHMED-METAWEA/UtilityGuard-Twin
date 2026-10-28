@@ -40,6 +40,7 @@ from ug_core.rng import SeedStreams
 
 from ug_water.network.model import (
     Junction,
+    LevelControl,
     Network,
     NetworkProvenance,
     Pipe,
@@ -262,7 +263,10 @@ class OsmCapitalProvider:
                 )
             # The district's area inside the study box: the network covers only that part.
             area_ha = districts[zone].area_within_ha(graph.box_xy)
-            total = float(rates[land_use]) * area_ha / 1000.0  # m3/s
+            # `occupancy_fraction` (ASSUMPTION, default 1): the share of the planned demand that
+            # is present; the capital is in an early phase, so its rates are not all drawn yet.
+            occupancy = float(cfg.get("occupancy_fraction", 1.0))
+            total = float(rates[land_use]) * area_ha * occupancy / 1000.0  # m3/s
             for node in nodes:
                 demand[node] = total / len(nodes)
         junctions = [
@@ -305,9 +309,15 @@ class OsmCapitalProvider:
                  _role(k < duty), curve, float(pc["efficiency"]))
             for k in range(duty + int(pc["standby"]))
         ]  # fmt: skip
-        tanks, tank_pipes = self._tanks(junctions, cfg["tanks"], cfg)
+        tanks, tank_pipes = self._tanks(junctions, cfg["tanks"], cfg, set(main))
+        controls = self._controls(pumps, tanks, cfg)
+        # `pattern_land_use` (ASSUMPTION): the demand pattern a district follows when its land use
+        # has a rate here but no daily pattern of its own (for example residential_low).
+        alias = cfg.get("pattern_land_use", {})
         zones = [
-            Zone(d.id, d.name, d.land_use) for d in overlay.districts if d.id in members
+            Zone(d.id, d.name, alias.get(d.land_use, d.land_use))
+            for d in overlay.districts
+            if d.id in members
         ]
         provenance = NetworkProvenance(
             provider="osm",
@@ -338,11 +348,15 @@ class OsmCapitalProvider:
             tanks=tuple(tanks),
             pipes=tuple(pipes + tank_pipes),
             pumps=tuple(pumps),
+            controls=controls,
         )
 
     @staticmethod
     def _tanks(
-        junctions: list[Junction], tc: Mapping[str, Any], cfg: Mapping[str, Any]
+        junctions: list[Junction],
+        tc: Mapping[str, Any],
+        cfg: Mapping[str, Any],
+        main: set[str] | None = None,
     ) -> tuple[list[Tank], list[Pipe]]:
         cx = math.fsum(j.x for j in junctions) / len(junctions)
         cy = math.fsum(j.y for j in junctions) / len(junctions)
@@ -354,13 +368,43 @@ class OsmCapitalProvider:
         tanks: list[Tank] = []
         pipes: list[Pipe] = []
         dx, dy = tc["offset_m"]
+        top = max(j.elevation for j in junctions)
+        tier = tc.get("pipe_tier", "submain")
         for k in range(count):
             if not sectors[k]:
                 raise ValueError(f"tank sector {k} holds no junction")
+            # `site`: "highest" (default) junction of the sector, or "main": its highest junction
+            # on the transmission main, so the tank feeds the sector without distribution pipes.
+            # A sector without a transmission junction (a small network) takes the transmission
+            # junction nearest to its highest junction, so the tank still stands on the main.
             site = max(sectors[k], key=lambda j: (j.elevation, j.id))
+            if tc.get("site", "highest") == "main":
+                if not main:
+                    raise ValueError(
+                        "tank site main: the network has no transmission main"
+                    )
+                on_main = [j for j in sectors[k] if j.id in main]
+                if on_main:
+                    site = max(on_main, key=lambda j: (j.elevation, j.id))
+                else:
+                    anchor = site
+                    site = min(
+                        (j for j in junctions if j.id in main),
+                        key=lambda j: (
+                            math.hypot(j.x - anchor.x, j.y - anchor.y),
+                            j.id,
+                        ),
+                    )
+            # `bottom_above_highest_m`: every tank's bottom that far above the highest junction
+            # (one common grade); otherwise `height_above_site_m` above its own site.
+            bottom = (
+                top + float(tc["bottom_above_highest_m"])
+                if "bottom_above_highest_m" in tc
+                else site.elevation + float(tc["height_above_site_m"])
+            )
             tank = Tank(
                 f"tank_{k}", site.x + dx, site.y + dy,
-                site.elevation + float(tc["height_above_site_m"]), float(tc["init_level_m"]),
+                bottom, float(tc["init_level_m"]),
                 float(tc["min_level_m"]), float(tc["max_level_m"]), float(tc["diameter_m"]),
                 elevated=True,
             )  # fmt: skip
@@ -368,11 +412,40 @@ class OsmCapitalProvider:
             pipes.append(
                 Pipe(
                     f"p_tank_{k}", site.id, tank.id, math.hypot(dx, dy),
-                    float(cfg["diameters_m"]["submain"]), float(cfg["roughness"]["submain"]),
-                    "submain",
+                    float(cfg["diameters_m"][tier]), float(cfg["roughness"][tier]),
+                    tier,
                 )
             )  # fmt: skip
         return tanks, pipes
+
+    @staticmethod
+    def _controls(
+        pumps: list[Pump], tanks: list[Tank], cfg: Mapping[str, Any]
+    ) -> tuple[LevelControl, ...]:
+        """Duty pumps switched by one reference tank's level (optional `level_control`: `tank`,
+        `on_below_m`, `off_above_m`, `keep_on` duty pumps that stay on)."""
+        lc = cfg.get("level_control")
+        if lc is None:
+            return ()
+        if lc["tank"] not in {t.id for t in tanks}:
+            raise ValueError(f"level control: unknown tank {lc['tank']!r}")
+        duty = [p for p in pumps if p.role == "duty"]
+        keep_on = lc.get("keep_on", 0)
+        if (
+            not isinstance(keep_on, int)
+            or isinstance(keep_on, bool)
+            or not 0 <= keep_on < len(duty)
+        ):
+            raise ValueError(
+                f"keep_on must be a whole number from 0 to {len(duty) - 1}"
+            )
+        return tuple(
+            LevelControl(
+                f"ctl_{p.id}", p.id, lc["tank"],
+                float(lc["on_below_m"]), float(lc["off_above_m"]),
+            )
+            for p in duty[keep_on:]
+        )  # fmt: skip
 
 
 def _role(duty: bool) -> PumpRole:

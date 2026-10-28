@@ -205,7 +205,9 @@ def test_a_zone_demand_is_its_rate_times_its_area() -> None:
     rates = provider().config["demand_l_s_per_ha"]
     o = load_overlay(two_zones(), grid(2, 2).projection.xy)
     for district in o.districts:
-        expected = rates[district.land_use] * district.area_ha / 1000
+        # D-02: the planned rate times the occupancy fraction (an early-phase city).
+        occupancy = provider().config.get("occupancy_fraction", 1.0)
+        expected = rates[district.land_use] * district.area_ha * occupancy / 1000
         assert by_zone[district.id] == pytest.approx(expected, rel=1e-9)
 
 
@@ -308,7 +310,10 @@ def test_demand_counts_the_zone_area_inside_the_study_box() -> None:
         by_zone[j.zone] += j.base_demand
     rate = provider().config["demand_l_s_per_ha"]["government"]
     # The east zone runs from x = 500 to 1100; the box ends at 800: half of it counts.
-    assert by_zone["east"] == pytest.approx(rate * 300 * 1200 / 10_000 / 1000, rel=1e-9)
+    occupancy = provider().config.get("occupancy_fraction", 1.0)
+    assert by_zone["east"] == pytest.approx(
+        rate * 300 * 1200 / 10_000 * occupancy / 1000, rel=1e-9
+    )
 
 
 def test_a_joined_route_counts_towards_the_pipe_tier() -> None:
@@ -404,3 +409,40 @@ def test_a_pipe_route_cannot_be_changed_after_construction() -> None:
     pipe = Pipe("p1", "a", "b", 10.0, 0.1, 100.0, "distribution", route=source)
     source.extend([(0.0, 0.0), (1.0, 1.0)])
     assert pipe.route == ()
+
+
+def test_d02_design_options_on_the_synthetic_graph() -> None:
+    """D-02: tanks on the main, one common grade, transmission connections, level controls."""
+    net = provider().from_graph(grid(6, 6, main_row=2), "test", 1, TierRule(ALL, None))
+    cfg = provider().config
+    main = {
+        e
+        for p in net.pipes
+        if p.tier == "transmission" and not p.id.startswith("p_tank")
+        for e in (p.start, p.end)
+    }
+    top = max(j.elevation for j in net.junctions)
+    for tank in net.tanks:
+        assert tank.elevation == pytest.approx(
+            top + cfg["tanks"]["bottom_above_highest_m"]
+        )
+        (pipe,) = [p for p in net.pipes if tank.id in (p.start, p.end)]
+        assert pipe.tier == "transmission"
+        assert (pipe.start if pipe.end == tank.id else pipe.end) in main
+    duty = [p for p in net.pumps if p.role == "duty"]
+    assert {c.pump for c in net.controls} == {
+        p.id for p in duty[cfg["level_control"]["keep_on"] :]
+    }
+    assert {c.tank for c in net.controls} == {cfg["level_control"]["tank"]}
+    land_uses = {z.land_use for z in net.zones}
+    assert land_uses <= set(provider().config["demand_l_s_per_ha"])
+
+
+@pytest.mark.parametrize("keep_on", [-1, 0.5, 3, True])
+def test_d02_keep_on_is_bounded(keep_on: object) -> None:
+    cfg = dict(provider().config)
+    cfg["level_control"] = {**cfg["level_control"], "keep_on": keep_on}
+    with pytest.raises(ValueError, match="keep_on"):
+        OsmCapitalProvider(cfg, overlay=two_zones()).from_graph(
+            grid(6, 6, main_row=2), "test", 1, TierRule(ALL, None)
+        )
