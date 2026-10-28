@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 
+import { COMMAND_STRINGS } from "../screens/command/strings";
+import { ReplayContext, useRecordedRun } from "./api";
 import { SCREENS } from "../screens";
 import { EvidenceProvider } from "../ui/evidence";
 import { Boundary } from "../ui/Boundary";
@@ -137,23 +139,31 @@ export function App(props: { state?: ShellState; path?: string }) {
   );
 }
 
-function Shell({ state = INITIAL_STATE, path }: { state?: ShellState; path?: string }) {
+function Shell({ state: supplied, path }: { state?: ShellState; path?: string }) {
+  const replayState = useRecordedRun(supplied === undefined);
+  const run = replayState.replay;
+  const state = supplied ?? (run ? {
+    ...INITIAL_STATE,
+    network: { network_version: run.network.network_hash, fidelity: run.network.fidelity },
+    lastEnvelope: { payload: { stream_source: "REPLAY" } },
+  } : INITIAL_STATE);
   const hashPath = useHashPath();
   const current = path ?? hashPath;
   const read = readNetwork(state);
   return (
-    <div className="ug-shell">
+    <ReplayContext.Provider value={replayState}><div className="ug-shell">
       <header className="ug-topbar">
         <span className="ug-brand">{STRINGS.appName}</span>
+        {run && <span>{COMMAND_STRINGS.recorded} <code data-identifier>{run.runId}</code></span>}
         <Boundary fallback={<BadgeFallback />} resetKey={state}>
-          <BadgeFromRead read={read} />
+          {run ? <span className="ug-badge" data-level={run.network.fidelity} data-evidence-label={run.network.geometry_label} aria-label={`${STRINGS.fidelity.label}: ${run.network.fidelity}`}>{run.network.fidelity}</span> : <BadgeFromRead read={read} />}
         </Boundary>
         <Boundary fallback={<PillFallback />} resetKey={state}>
           <PillFromState state={state} />
         </Boundary>
       </header>
       <Boundary fallback={<HonestyStrip />} resetKey={state}>
-        <HonestyFromRead read={read} />
+        {run?.network.fidelity === "F1" ? <HonestyStrip geometryNotice={STRINGS.fidelity.f1Notice} /> : <HonestyFromRead read={read} />}
       </Boundary>
       <div className="ug-body">
         <nav aria-label={STRINGS.nav.label}>
@@ -173,6 +183,6 @@ function Shell({ state = INITIAL_STATE, path }: { state?: ShellState; path?: str
           </Boundary>
         </main>
       </div>
-    </div>
+    </div></ReplayContext.Provider>
   );
 }

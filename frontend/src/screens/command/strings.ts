@@ -1,5 +1,12 @@
 export const COMMAND_STRINGS = {
   fixture: "Fixture data, not a run",
+  readings: "Recorded sensor readings",
+  latest: "Latest recorded readings",
+  caveat: "Sensor simulation; missing readings are unavailable.",
+  unavailable: "Unavailable",
+  separator: " · ",
+  recorded: "Recorded run",
+  replayAlerts: "No incident is loaded for this recorded run. KPIs and the cost of delay are not computed for recorded runs yet, so none are shown.",
   eyebrow: "Water operations / Command",
   subtitle: "Network condition, signals and the cost of delay.",
   runConnection: "Run connection",

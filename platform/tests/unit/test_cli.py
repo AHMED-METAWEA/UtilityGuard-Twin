@@ -44,7 +44,6 @@ def test_parser(
         ("reproduce", "M4"),
         ("eval", "M5"),
         ("import", "M1"),
-        ("export", "M4"),
     ],
 )
 def test_stubs(

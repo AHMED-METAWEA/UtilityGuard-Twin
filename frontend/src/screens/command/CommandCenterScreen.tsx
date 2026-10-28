@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 import type { EvidenceRecord } from "../../generated/evidence-record";
+import { replayTick, useReplay } from "../../app/api";
+import type { Replay } from "../../app/api";
 import { createCommandFixture, tickTime } from "../../fixtures/command";
 import { Identifier } from "../../ui/Identifier";
 import { Metric } from "../../ui/Metric";
@@ -13,7 +15,39 @@ function EvidenceMetric({ record }: { record: EvidenceRecord }) {
   return <Metric value={record.value} unit={record.unit} label={record.label} evidence={record} range={record.uncertainty} />;
 }
 
+function RecordedCommand({ title, replay }: { title: string; replay: Replay }) {
+  return <div className="ug-command">
+    <div className="ug-command-header">
+      <div><p className="ug-command-eyebrow">{S.eyebrow}</p><h1>{title}</h1><p>{S.subtitle}</p></div>
+    </div>
+    <div className="ug-command-status"><span>{S.recorded} <Identifier text={replay.runId} /></span></div>
+    <div className="ug-command-layout">
+      <div className="ug-command-network"><Panel title={S.network}>
+        <NetworkMap fixture={false} network={replay.network} state={replayTick(replay)} candidates={[]} />
+        <a className="ug-command-link" href="#/map">{S.mapLink}</a>
+      </Panel></div>
+      <div className="ug-command-sidebar">
+        <Panel title={S.alerts}><p>{S.replayAlerts}</p></Panel>
+        <Panel title={S.latest}>
+          <p>{S.caveat}</p>
+          <section aria-label={S.readings}><dl>{replay.series.map((series) => {
+            const last = series.values.at(-1);
+            return <div key={series.series_id}><dt><Identifier text={series.series_id} /></dt>
+              <dd data-evidence-label={series.label}>{last == null ? S.unavailable : `${last.toFixed(2)} ${series.unit}`}{S.separator}{series.label}</dd></div>;
+          })}</dl></section>
+        </Panel>
+      </div>
+    </div>
+  </div>;
+}
+
 export function CommandCenterScreen({ route }: ScreenProps) {
+  const { replay, reason } = useReplay();
+  if (replay) return <RecordedCommand title={route.title} replay={replay} />;
+  return <FixtureCommand route={route} reason={reason} />;
+}
+
+function FixtureCommand({ route, reason }: Pick<ScreenProps, "route"> & { reason: string }) {
   const fixture = useMemo(createCommandFixture, []);
   const incidents = fixture.incidents.filter((incident) => incident.status === "open");
   const top = incidents[0]!;
@@ -25,7 +59,7 @@ export function CommandCenterScreen({ route }: ScreenProps) {
         <span>{S.clock}</span><time dateTime={clock.dateTime}>{clock.text}</time><small>{S.clockNote}</small>
       </div>
     </div>
-    <div className="ug-command-status"><span className="ug-fixture-marker">{S.fixture}</span>
+    <div className="ug-command-status"><span className="ug-fixture-marker">{S.fixture}</span>{reason && <span role="status">{reason}</span>}
       <details><summary>{S.runConnection}</summary><p>{route.empty}</p><p>{S.fixtureExplanation}</p></details>
     </div>
     <section className="ug-command-kpis" aria-label={S.kpis}>

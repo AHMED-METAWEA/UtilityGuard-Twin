@@ -39,7 +39,7 @@ def _root() -> Path:
     raise ValueError("Contracts folder contracts/v1 not found; run from the repository")
 
 
-def _validate(scenario: Any, root: Path) -> None:
+def _validator(root: Path, contract: str) -> Any:
     registry: Registry[Any] = Registry()
     for path in sorted((root / "contracts/v1").glob("*.schema.json")):
         resource = Resource.from_contents(
@@ -48,8 +48,12 @@ def _validate(scenario: Any, root: Path) -> None:
         registry = registry.with_resource(
             resource.id() or path.resolve().as_uri(), resource
         )
-    schema = _read_json(root / "contracts/v1/scenario-config.schema.json")
-    Draft202012Validator(schema, registry=registry).validate(scenario)
+    schema = _read_json(root / f"contracts/v1/{contract}.schema.json")
+    return Draft202012Validator(schema, registry=registry)
+
+
+def _validate(scenario: Any, root: Path, contract: str = "scenario-config") -> None:
+    _validator(root, contract).validate(scenario)
 
 
 def _git_commit(root: Path) -> str | None:
@@ -82,7 +86,7 @@ def _git_commit(root: Path) -> str | None:
 
 def run_command(args: argparse.Namespace) -> int:
     try:
-        if args.network == "osm" or args.tier != "lite":
+        if args.network == "osm" or args.tier == "full":
             raise ValueError("not available before T-B1-013")
         root = _root()
         adapter = discover().get("water")
@@ -105,6 +109,10 @@ def run_command(args: argparse.Namespace) -> int:
                 "procedural-capital-v1-seed"
             ):
                 scenario["network_version"] = f"procedural-capital-v1-seed{args.seed}"
+        if args.tier == "standard":
+            scenario["network_version"] += "-standard"
+        if getattr(args, "duration_hours", None) is not None:
+            scenario["duration_hours"] = args.duration_hours
         _validate(scenario, root)
         assumption_id = scenario["assumption_set"]
         assumption = load_assumptions(

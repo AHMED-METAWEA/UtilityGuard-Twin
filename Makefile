@@ -34,3 +34,9 @@ check-layout:
 	python3 scripts/check_layout.py
 
 -include mk/*.mk
+
+.PHONY: demo-baseline
+demo-baseline:
+	@mkdir -p var/demo-runs
+	@OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OMP_NUM_THREADS=1 $(VPY) -m ug_cli run normal_week --network procedural --tier standard --seed 1 --duration-hours 48 --store var/demo-runs/store > var/demo-runs/baseline.txt
+	@OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OMP_NUM_THREADS=1 $(VPY) -m ug_cli export "$$(sed -n 's/^run_id: //p' var/demo-runs/baseline.txt)" --store var/demo-runs/store --out var/demo-runs/views
