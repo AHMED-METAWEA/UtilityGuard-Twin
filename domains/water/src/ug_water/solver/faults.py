@@ -10,9 +10,11 @@ Rules (every WNTR call used here is declared in the WNTR API manifest):
   `GRADUAL_STEPS` leaks of equal area along the pipe (each split halves the remaining downstream
   segment), starting at k x ramp / steps (k = 0 .. steps - 1); the area reaches `final_area_cm2`
   in the last step, an approximation of the linear ramp (ASSUMPTION);
-- pump outage: a time control closes the pump at the start tick, and the
-  pump's level controls are gated (`outside`) so they rest while the outage lasts; a pump without
-  a level control is reopened at the end tick, a pump with one is left to its control; the
+- pump outage: the pump discharges through a lossless gate valve (TCV, loss coefficient 0, added
+  by `build_model`) that exact time controls close at the start tick and reopen at the end tick;
+  the pump's own status and level controls are untouched, so the run equals the fault-free run
+  before the onset (neither `Pump.add_outage` nor a priority time control holds a pump against
+  a level control in WNTR 1.5.0); the
   station's first free standby pump takes over (opened at the start, switched by the duty pump's
   level controls while the outage lasts, closed at the end)
   (`Pump.add_outage` is not used: its rule acts two steps late in WNTR 1.5.0);
@@ -55,6 +57,9 @@ class OutagePlan:
     start_s: int
     end_s: int | None
     standby: str | None = None  # the station's standby pump that takes over
+    horizon_s: int = (
+        0  # the run's end (n_ticks x step): an open outage lasts until then
+    )
 
 
 @dataclass(frozen=True)
@@ -80,8 +85,9 @@ def _tick(hours: float, timebase: Timebase, what: str) -> int:
     return tick
 
 
-def _end(start: int, hours: float, timebase: Timebase) -> int | None:
-    end = start + math.ceil(round(hours * 3600.0 / timebase.step_seconds, 9))
+def _end(start_hour: float, hours: float, timebase: Timebase) -> int | None:
+    # Rounded once, from the absolute end time (not start tick + rounded duration).
+    end = math.ceil(round((start_hour + hours) * 3600.0 / timebase.step_seconds, 9))
     return None if end >= timebase.n_ticks else end
 
 
@@ -132,37 +138,82 @@ def plan_faults(
             pump = fault["pump_id"]
             if pump not in pumps:
                 raise ValueError(f"unknown pump {pump!r} in fault pump_outage")
-            end = _end(start, fault["duration_hours"], timebase)
-            out = {o.pump for o in outages} | {pump}
-            taken = {o.standby for o in outages}
-            station = next(p.station for p in network.pumps if p.id == pump)
-            standby = next(
-                (
-                    p.id
-                    for p in network.pumps
-                    if p.station == station
-                    and p.role == "standby"
-                    and p.id not in out | taken
-                ),
-                None,
-            )
+            end = _end(fault["start_hour"], fault["duration_hours"], timebase)
+            if pump in {o.pump for o in outages}:
+                raise ValueError(f"more than one outage of pump {pump!r}")
             outages.append(
                 OutagePlan(
-                    pump, start * step, None if end is None else end * step, standby
+                    pump,
+                    start * step,
+                    None if end is None else end * step,
+                    None,
+                    timebase.n_ticks * step,
                 )
             )
-            events.append(TruthEvent(kind, pump, start, end, {"standby": standby}))
+            events.append(TruthEvent(kind, pump, start, end, {}))
         else:
             node = fault["node"].removeprefix("node:")
             if node not in junctions:
                 raise ValueError(f"unknown junction {node!r} in fault fire_flow")
-            end = _end(start, fault["duration_hours"], timebase)
+            end = _end(fault["start_hour"], fault["duration_hours"], timebase)
             flow = fault["flow_l_s"] / 1000.0
             fires.append(FireFlowPlan(node, start, end, flow))
             events.append(
                 TruthEvent(kind, node, start, end, {"flow_l_s": fault["flow_l_s"]})
             )
+    outages = _assign_standbys(outages, network)
+    standby = {o.pump: o.standby for o in outages}
+    events = [
+        replace(e, parameters={"standby": standby[e.target]})
+        if e.kind == "pump_outage"
+        else e
+        for e in events
+    ]
     return FaultPlan(tuple(leaks), tuple(outages), tuple(fires), tuple(events))
+
+
+def _assign_standbys(outages: list[OutagePlan], network: Network) -> list[OutagePlan]:
+    """Give each outage the station's first standby that is free over its window.
+
+    Outages are taken in (start, pump) order, so the result does not depend on the order of the
+    scenario's list; a standby is busy only while an earlier assigned window overlaps.
+    """
+    pumps = {p.id: p for p in network.pumps}
+    out = {o.pump for o in outages}
+    done: list[OutagePlan] = []
+    for outage in sorted(outages, key=lambda o: (o.start_s, o.pump)):
+        end = outage.end_s if outage.end_s is not None else outage.horizon_s
+        busy = {
+            d.standby
+            for d in done
+            if d.standby is not None
+            and d.start_s < end
+            and outage.start_s < (d.end_s if d.end_s is not None else d.horizon_s)
+        }
+        standby = next(
+            (
+                p.id
+                for p in network.pumps
+                if p.station == pumps[outage.pump].station
+                and p.role == "standby"
+                and p.id not in out | busy
+            ),
+            None,
+        )
+        done.append(replace(outage, standby=standby))
+    return done
+
+
+# Any size works: a TCV with loss coefficient 0 has no head loss.
+GATE_DIAMETER_M = 1.0
+
+
+def gate_node(pump: str) -> str:
+    return f"{pump}~gate_in"
+
+
+def gate_valve(pump: str) -> str:
+    return f"{pump}~gate"
 
 
 def leak_node(pipe: str, k: int) -> str:
@@ -204,14 +255,14 @@ def apply_faults(wn: Any, network: Network, plan: FaultPlan) -> None:
             junction.add_leak(
                 wn, area=area, discharge_coeff=LEAK_DISCHARGE_COEFF, start_time=start_s
             )
-    controlled = {control.pump for control in network.controls}
     controls = wntr.network.controls
     for outage in plan.outages:
         pump = wn.get_link(outage.pump)
         status = type(pump.status)  # WNTR's LinkStatus, read from the pump
-        times = [(outage.pump, outage.start_s, status.Closed, "start")]
-        if outage.end_s is not None and outage.pump not in controlled:
-            times.append((outage.pump, outage.end_s, status.Open, "end"))
+        gate = gate_valve(outage.pump)
+        times = [(gate, outage.start_s, status.Closed, "start")]
+        if outage.end_s is not None:
+            times.append((gate, outage.end_s, status.Open, "end"))
         if outage.standby is not None:
             # Failover: the standby starts with the outage, follows the duty pump's level
             # controls while it lasts, and stops at its end.
@@ -245,17 +296,6 @@ def apply_faults(wn: Any, network: Network, plan: FaultPlan) -> None:
                     controls.ControlAction(wn.get_link(link), "status", value),
                 ),
             )
-
-
-def outside(wn: Any, condition: Any, outage: OutagePlan) -> Any:
-    """`condition`, but false while the outage lasts (from its start, until its end if any)."""
-    controls = wntr.network.controls
-    before = controls.SimTimeCondition(wn, "<", outage.start_s)
-    if outage.end_s is not None:
-        before = controls.OrCondition(
-            before, controls.SimTimeCondition(wn, ">=", outage.end_s)
-        )
-    return controls.AndCondition(condition, before)
 
 
 def inside(wn: Any, outage: OutagePlan) -> Any:

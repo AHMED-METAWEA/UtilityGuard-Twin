@@ -246,3 +246,88 @@ def test_every_event_targets_an_element_with_channels() -> None:
     truth, _ = run([leak(), fire, outage])
     elements = {name.partition(":")[2] for name in truth.channels}
     assert {e.target for e in truth.events} == {"p2", "j2", "pu1"} <= elements
+
+
+def test_before_an_outage_the_run_equals_the_fault_free_run() -> None:
+    # Review S1: the level controls are untouched (the outage closes a gate valve).
+    net = replace(
+        pumped_loop(), controls=(LevelControl("ctl_pu1", "pu1", "t1", 2.5, 3.5),)
+    )
+    outage = {
+        "type": "pump_outage",
+        "start_hour": 2,
+        "pump_id": "pu1",
+        "duration_hours": 0.5,
+    }
+    faulty, _ = run([outage], net)
+    clean, _ = run([], net)
+    for name in ("flowrate:pu1", "level:t1", "pressure:j3"):
+        assert np.allclose(
+            channel(faulty, name)[:24], channel(clean, name)[:24], atol=1e-4
+        )
+
+
+def test_the_order_of_the_faults_does_not_change_the_failover() -> None:
+    # Review S1: the standby goes to the earlier outage whatever the list order.
+    a = {
+        "type": "pump_outage",
+        "start_hour": 1,
+        "pump_id": "pu1",
+        "duration_hours": 0.5,
+    }
+    b = {
+        "type": "pump_outage",
+        "start_hour": 2,
+        "pump_id": "pu2",
+        "duration_hours": 0.5,
+    }
+    net = pumped_loop()
+    tb = demand(net, TICKS).timebase
+    first = plan_faults([a, b], net, tb)
+    second = plan_faults([b, a], net, tb)
+    assert (
+        {o.pump: o.standby for o in first.outages}
+        == {o.pump: o.standby for o in second.outages}
+        == {"pu1": None, "pu2": None}
+    )  # pu2 is the only standby and is itself out
+
+
+def test_a_window_ends_at_the_first_tick_at_or_after_its_end_time() -> None:
+    net = pumped_loop()
+    tb = demand(net, TICKS).timebase
+    fire = {
+        "type": "fire_flow",
+        "start_hour": 1.01,
+        "node": "node:j2",
+        "flow_l_s": 1,
+        "duration_hours": 0.98,
+    }
+    assert (
+        plan_faults([fire], net, tb).events[0].end_tick == 24
+    )  # ceil(1.99 h), not 13 + 12
+
+
+def test_repeated_outages_and_epanet_outages_are_refused() -> None:
+    net = pumped_loop()
+    series = demand(net, TICKS)
+    o = {
+        "type": "pump_outage",
+        "start_hour": 1,
+        "pump_id": "pu1",
+        "duration_hours": 0.5,
+    }
+    with pytest.raises(ValueError, match="more than one outage"):
+        plan_faults([o, {**o, "start_hour": 2}], net, series.timebase)
+    plan = plan_faults([o], net, series.timebase)
+    with pytest.raises(ValueError, match="wntr engine"):
+        build_model(net, series, replace(load_options(), engine="epanet"), plan)
+
+
+def test_an_idle_standby_stays_closed_after_its_own_outage() -> None:
+    o = {
+        "type": "pump_outage",
+        "start_hour": 1,
+        "pump_id": "pu2",
+        "duration_hours": 0.5,
+    }
+    assert np.all(np.abs(channel(run([o])[0], "flowrate:pu2")) < 1e-6)

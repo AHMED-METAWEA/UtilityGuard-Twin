@@ -23,7 +23,13 @@ import wntr  # type: ignore[import-untyped]
 from ug_core.timebase import Timebase
 
 from ug_water.network.model import Network
-from ug_water.solver.faults import FaultPlan, apply_faults, outside
+from ug_water.solver.faults import (
+    GATE_DIAMETER_M,
+    FaultPlan,
+    apply_faults,
+    gate_node,
+    gate_valve,
+)
 from ug_water.solver.options import HydraulicOptions
 
 
@@ -125,7 +131,18 @@ def build_model(
             roughness=pipe.roughness,
             minor_loss=pipe.minor_loss,
         )
+    outaged = {o.pump for o in faults.outages} if faults is not None else set()
+    heights = {
+        **{j.id: j.elevation for j in network.junctions},
+        **{t.id: t.elevation for t in network.tanks},
+    }
     for pump in network.pumps:
+        end = pump.end
+        if pump.id in outaged:
+            # A pump with an outage discharges through a lossless gate valve (TCV, loss 0),
+            # which the fault closes for the window (D-03); its level controls stay untouched.
+            end = gate_node(pump.id)
+            wn.add_junction(end, base_demand=0.0, elevation=heights.get(pump.end, 0.0))
         if len(pump.curve) == 2:
             # WNTR 1.5 computes the slope of a two-point curve from squared flows but solves it
             # as a straight line (wntr/network/elements.py:1438-1441): the operating point is
@@ -139,11 +156,21 @@ def build_model(
         wn.add_pump(
             pump.id,
             pump.start,
-            pump.end,
+            end,
             pump_type="HEAD",
             pump_parameter=curve,
             initial_status="OPEN" if pump.role == "duty" else "CLOSED",
         )
+        if pump.id in outaged:
+            wn.add_valve(
+                gate_valve(pump.id),
+                end,
+                pump.end,
+                diameter=GATE_DIAMETER_M,
+                valve_type="TCV",
+                initial_setting=0.0,
+                initial_status="OPEN",
+            )
     for valve in network.valves:
         if valve.kind == "prv":
             wn.add_valve(
@@ -165,7 +192,6 @@ def build_model(
                 initial_setting=0.0,
                 initial_status="OPEN",
             )
-    outages = {o.pump: o for o in faults.outages} if faults is not None else {}
     for control in network.controls:
         # A pump switched by a tank level: two WNTR controls, on below and off above.
         tank, pump = wn.get_node(control.tank), wn.get_link(control.pump)
@@ -176,22 +202,22 @@ def build_model(
             ("on", "<", control.on_below_m, status.Open),
             ("off", ">", control.off_above_m, status.Closed),
         ):
-            condition = wntr.network.controls.ValueCondition(
-                tank, "level", relation, level
-            )
-            if control.pump in outages:
-                # The control rests while its pump is out (fault plan, D-03).
-                condition = outside(wn, condition, outages[control.pump])
             wn.add_control(
                 f"{control.id}:{suffix}",
                 wntr.network.controls.Control(
-                    condition,
+                    wntr.network.controls.ValueCondition(
+                        tank, "level", relation, level
+                    ),
                     wntr.network.controls.ControlAction(pump, "status", value),
                 ),
             )
     if faults is not None:
         if faults.leaks and options.engine != "wntr":
             raise ValueError("a leak needs the wntr engine (EPANET has no leak model)")
+        if faults.outages and options.engine != "wntr":
+            raise ValueError(
+                "a pump outage needs the wntr engine (EPANET drops its compound controls)"
+            )
         apply_faults(wn, network, faults)
     step = demand.timebase.step_seconds
     wn.options.time.duration = (demand.timebase.n_ticks - 1) * step
