@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { SCREENS } from "../screens";
+import { EvidenceProvider } from "../ui/evidence";
 import { Boundary } from "../ui/Boundary";
 import { FidelityBadge } from "../ui/FidelityBadge";
 import { HonestyStrip } from "../ui/HonestyStrip";
@@ -129,7 +130,9 @@ function StaticShell() {
 export function App(props: { state?: ShellState; path?: string }) {
   return (
     <Boundary fallback={<StaticShell />}>
-      <Shell {...props} />
+      <EvidenceProvider>
+        <Shell {...props} />
+      </EvidenceProvider>
     </Boundary>
   );
 }
