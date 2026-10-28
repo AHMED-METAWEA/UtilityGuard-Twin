@@ -535,6 +535,20 @@ def test_unreadable_series_never_returns_partial_bundle(runs_root, monkeypatch):
     assert status == 500 and "LEAK_SENTINEL" not in json.dumps(body)
 
 
+def test_a_cached_bundle_is_revalidated_when_a_file_changes(runs_root):
+    store = RunStore(runs_root)
+    first = store.load("run_demo")
+    assert store.load("run_demo") is first  # cached after full validation
+    network = runs_root / "run_demo" / "network.json"
+    network.write_text(
+        network.read_text().replace(
+            '"schema_version"', '"truth": 1, "schema_version"', 1
+        )
+    )
+    with pytest.raises(Exception, match="Invalid payload"):
+        store.load("run_demo")
+
+
 def test_the_app_starts_without_jsonschema_and_refuses_bundles_loudly(runs_root):
     # The API container installs neither jsonschema nor contracts/ (deploy/requirements-api.lock).
     import subprocess

@@ -61,6 +61,15 @@ describe("javascript", () => {
     expect(jsReferences(message, { bundle: false }).length).toBeGreaterThan(0);
     expect(jsReferences('var u="https://reactjs.org/other"', { bundle: true }).length).toBeGreaterThan(0);
   });
+  it("lets only the recorded-run client call fetch, for a path, never a URL or another API", () => {
+    expect(jsReferences('fetch(path)', { apiClient: true })).toEqual([]);
+    expect(jsReferences('fetch(path)', { bundle: true, apiClient: true })).toEqual([]);
+    expect(jsReferences('fetch(path)', {}).length).toBeGreaterThan(0); // any other app code
+    expect(jsReferences('new XMLHttpRequest()', { apiClient: true }).length).toBeGreaterThan(0);
+    expect(jsReferences('new WebSocket(u); fetch(p)', { apiClient: true })).toEqual(["js network api WebSocket"]);
+    expect(jsReferences('fetch("https://example.invalid/a")', { apiClient: true }).length).toBeGreaterThan(0);
+  });
+
   it("tolerates a network API name only in a built vendor chunk, never a URL there", () => {
     expect(jsReferences('fetch(a)', { bundle: true, vendor: true })).toEqual([]);
     expect(jsReferences('fetch(a)', { bundle: true }).length).toBeGreaterThan(0);

@@ -28,7 +28,11 @@ function scan(path, { bundle }) {
       : ext === ".css"
         ? cssReferences(text)
         : ext === ".js" || ext === ".mjs" || ext === ".ts" || ext === ".tsx"
-          ? jsReferences(text, { bundle, vendor: bundle && /^vendor-[\w-]+\.js$/.test(basename(path)) })
+          ? jsReferences(text, {
+              bundle,
+              vendor: bundle && /^vendor-[\w-]+\.js$/.test(basename(path)),
+              apiClient: bundle ? /^app-api-[\w-]+\.js$/.test(basename(path)) : rel === "src/app/api.ts",
+            })
           : [];
   for (const item of found) problems.push(`${rel}: ${item}`);
   // TypeScript sources may also hold CSS-in-strings or markup; the page scan covers index.html.

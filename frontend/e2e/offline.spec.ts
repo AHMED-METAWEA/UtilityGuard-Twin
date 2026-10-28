@@ -38,6 +38,8 @@ const ROUTES = [
 // Runs in the page before any of its own script: records every policy violation, and every
 // attempt of the page's own code to open a connection.
 test.beforeEach(async ({ page }) => {
+  // No recorded run here: the same-origin API answers an empty list, so screens show fixtures.
+  await page.route("**/api/runs", (route) => route.fulfill({ json: [] }));
   await page.addInitScript(() => {
     const probe: Probe = { violations: [], calls: [] };
     (window as unknown as ProbeWindow).__ug = probe;
@@ -112,7 +114,12 @@ test("the shell makes no request to another origin on any route", async ({ page,
   const outside = requests.filter((url) => !url.startsWith(`${origin}/`) && !url.startsWith("data:") && url !== "about:blank");
   expect(outside, "requests to another origin").toEqual([]);
   expect(sockets, "WebSockets opened").toEqual([]);
-  expect(calls, "fetch, beacon, WebSocket or EventSource calls made by the shell").toEqual([]);
+  // The recorded-run client (src/app/api.ts) may fetch same-origin /api/runs paths; nothing else.
+  const apiCall = /^fetch \/api\/runs(?:\/[A-Za-z0-9_.:@-]+)*$/;
+  expect(
+    calls.filter((call) => !apiCall.test(call)),
+    "fetch, beacon, WebSocket or EventSource calls made by the shell",
+  ).toEqual([]);
   expect(violations, "Content-Security-Policy violations").toEqual([]);
   expect(problems, "errors reported by the page").toEqual([]);
 });

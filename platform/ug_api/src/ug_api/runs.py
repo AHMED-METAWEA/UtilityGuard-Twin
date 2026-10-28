@@ -120,6 +120,9 @@ class RunStore:
     def __init__(self, root: Path | None) -> None:
         self.root = root.resolve() if root is not None else None
         self._contracts: Contracts | None = None
+        # Fully validated bundles only, keyed by the stat signature of their files: any change
+        # on disk (name, size, mtime) forces a full revalidation.
+        self._valid: dict[str, tuple[tuple[tuple[str, int, int], ...], RunBundle]] = {}
 
     @property
     def contracts(self) -> Contracts:
@@ -149,7 +152,34 @@ class RunStore:
                 )
         return summaries
 
+    def _signature(self, directory: Path) -> tuple[tuple[str, int, int], ...]:
+        entries = []
+        for path in sorted(directory.rglob("*")):
+            info = path.lstat()
+            entries.append(
+                (path.relative_to(directory).as_posix(), info.st_size, info.st_mtime_ns)
+            )
+        return tuple(entries)
+
     def load(self, run_id: str) -> RunBundle:
+        identifier(run_id)
+        if self.root is not None:
+            directory = self.root / run_id
+            try:
+                if directory.is_dir() and not directory.is_symlink():
+                    signature = self._signature(directory)
+                    cached = self._valid.get(run_id)
+                    if cached is not None and cached[0] == signature:
+                        return cached[1]
+                    bundle = self._load(run_id)
+                    if self._signature(directory) == signature:
+                        self._valid[run_id] = (signature, bundle)
+                    return bundle
+            except OSError:
+                raise RunError(500, "Cannot read bundle") from None
+        return self._load(run_id)
+
+    def _load(self, run_id: str) -> RunBundle:
         identifier(run_id)
         if self.root is None:
             raise RunError(404, "Unknown run")

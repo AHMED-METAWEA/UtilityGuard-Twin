@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 import { MAP_STRINGS as S } from "../src/screens/map/strings";
 
 test("fixture map renders, toggles legends and stays entirely offline", async ({ page, context, baseURL }) => {
+  // No recorded run here: the same-origin API answers an empty list, so screens show fixtures.
+  await page.route("**/api/runs", (route) => route.fulfill({ json: [] }));
   const requests: string[] = [], errors: string[] = [], sockets: string[] = [];
   context.on("request", (request) => requests.push(request.url()));
   page.on("websocket", (socket) => sockets.push(socket.url()));
@@ -53,7 +55,8 @@ test("fixture map renders, toggles legends and stays entirely offline", async ({
   });
   expect(unlabelled).toEqual([]);
   const probe = await page.evaluate(() => (window as unknown as { __mapProbe: { calls: string[]; violations: string[] } }).__mapProbe);
-  expect(probe.calls).toEqual([]);
+  // Only the recorded-run client's same-origin /api/runs fetch is allowed.
+  expect(probe.calls.filter((c: string) => !/^fetch \/api\/runs(?:\/[A-Za-z0-9_.:@-]+)*$/.test(c))).toEqual([]);
   expect(probe.violations).toEqual([]);
   expect(sockets).toEqual([]);
   expect(errors).toEqual([]);

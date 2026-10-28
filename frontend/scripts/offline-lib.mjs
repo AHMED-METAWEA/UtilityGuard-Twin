@@ -84,7 +84,7 @@ function unescapeJs(text) {
     .replace(/\\(.)/g, "$1");
 }
 
-export function jsReferences(js, { bundle = false, vendor = false } = {}) {
+export function jsReferences(js, { bundle = false, vendor = false, apiClient = false } = {}) {
   const found = [];
   const inert = (text) => bundle && INERT_IN_BUNDLE.some((re) => re.test(text));
   // Every string literal, read as a browser would read it as a URL (escapes, case, backslashes).
@@ -104,8 +104,14 @@ export function jsReferences(js, { bundle = false, vendor = false } = {}) {
   }
   // In a built vendor chunk the name of a network API may appear (third-party code paths the app
   // never calls); in app code and in source it may not.
-  const api = js.match(NETWORK_API);
-  if (api && !(bundle && vendor)) found.push(`js network api ${api[1]}`);
+  // The recorded-run client (src/app/api.ts, built alone as app-api-*.js) may call fetch for its
+  // same-origin /api/ paths; every other network API stays refused there, and URLs everywhere.
+  const apis = [...js.matchAll(new RegExp(NETWORK_API.source, "g"))].map((m) => m[1]);
+  for (const name of new Set(apis)) {
+    if (bundle && vendor) continue;
+    if (apiClient && name === "fetch") continue;
+    found.push(`js network api ${name}`);
+  }
   return [...new Set(found)];
 }
 
