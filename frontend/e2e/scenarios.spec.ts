@@ -25,7 +25,7 @@ for (const width of [1440, 390]) {
       expect(unlabelled).toEqual([]);
     }
     await expect(page.getByText(S.sensorNote)).toBeVisible();
-    await page.getByRole("region", { name: S.impact }).getByRole("button", { name: "41mSIMULATION", exact: true }).click();
+    await page.getByRole("region", { name: S.impact }).getByRole("button", { name: "41 m SIMULATION", exact: true }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await expect(page.getByText("min(pressure_samples)")).toBeVisible();
     expect(external).toEqual([]);
