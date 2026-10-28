@@ -1,0 +1,15 @@
+export const MAP_STRINGS = {
+  fixture: "Fixture data, not a run", title: "Network Map", layers: "Map layers", legend: "Active layer legend",
+  map: "Synthetic network in local metres", help: "Drag to pan; scroll to zoom. East is right; north is up.",
+  fit: "Fit network", unavailable: "Unavailable", failed: "Map rendering unavailable on this device.",
+  fidelity: "Fidelity F0: Generic synthetic", f1: "Fidelity F1: Real OSM streets, hand-drawn districts, inferred pipes, synthetic hydraulics",
+  attribution: "Street network © OpenStreetMap contributors (ODbL). District boundaries are hand-drawn approximations. Pipes, demands and equipment are synthetic.",
+  pressure: "Pressure", flow: "Flow magnitude", flowValue: "Flow", elevation: "Elevation", diameter: "Diameter", length: "Length",
+  metres: " m", flowUnit: " L/s", space: " ", separator: " · ", score: "Relative model score (dimensionless, not probability)", rank: "Rank", candidates: "Candidate ranking",
+  zones: "Zones", links: "Links", nodes: "Nodes", equipment: "Equipment", sensors: "Sensors", faults: "Fault location",
+  zoneLegend: "Hand-drawn zones · local m · ASSUMPTION", linkLegend: "Tier widths: transmission 5 px / submain 3 px / distribution 1.5 px · ASSUMPTION",
+  nodeLegend: "Junctions · local m · geometry", equipmentLegend: "Radii: reservoir 15 px, tanks 12 px, pumps 9 px, PRVs 6 px · ASSUMPTION",
+  sensorLegend: "Hollow rings · local m · SENSOR_SIM at sensor elements", faultLegend: "Candidate rings in local m: rank shown in key, largest first · MODEL",
+  pressureLegend: "Pressure: 0–80 m · SENSOR_SIM at sensors / MODEL elsewhere",
+  flowLegend: "Flow magnitude: 0–100 L/s · SENSOR_SIM at sensors / MODEL elsewhere",
+} as const;
