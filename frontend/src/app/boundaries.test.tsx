@@ -21,7 +21,8 @@ describe("a failing part of the top bar", () => {
     expect(screen.getByRole("region", { name: STRINGS.honesty.regionLabel })).toBeTruthy();
     const badge = screen.getByLabelText(`${STRINGS.fidelity.label}: ${STRINGS.fidelity.unknown}`);
     expect(badge.textContent).toBe(STRINGS.fidelity.unknown);
-    expect(document.body.textContent).not.toMatch(/Fidelity F\d/);
+    // The shell must not claim a fidelity; a screen may state its own fixture's fidelity.
+    expect(document.querySelector(".ug-topbar")?.textContent).not.toMatch(/Fidelity F\d/);
     expect(screen.getByLabelText(STRINGS.stream.label).textContent).toContain("REPLAY");
     vi.doUnmock("../ui/FidelityBadge");
   });

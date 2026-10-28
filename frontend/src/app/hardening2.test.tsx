@@ -36,7 +36,7 @@ describe("state is read inside the boundaries", () => {
     expect(host.querySelector(".ug-badge")).not.toBeNull();
     expect(host.querySelector(".ug-pill")).not.toBeNull();
     expect(host.querySelector("nav")).not.toBeNull(); // only the failing part is replaced
-    expect(host.textContent).not.toMatch(/Fidelity F\d/);
+    expect(host.querySelector(".ug-topbar")?.textContent).not.toMatch(/Fidelity F\d/);
     expect(host.textContent).not.toContain("LIVE");
     act(() => root.unmount());
     host.remove();
