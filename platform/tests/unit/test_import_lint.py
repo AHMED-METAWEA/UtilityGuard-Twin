@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import ast
+import runpy
 import subprocess
 import sys
 from pathlib import Path
@@ -10,6 +12,49 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[3]
 SCRIPT = REPO / "scripts" / "check_imports.py"
+IMPORT_LINT = runpy.run_path(str(SCRIPT))
+
+
+def intel_import_violations(source: str) -> list[tuple[int, str]]:
+    """Reuse the import scanner for ug_intel's stricter physical-input boundary."""
+    domain_names = IMPORT_LINT["domain_packages"](REPO / "domains")
+    forbidden = {"ug_core.truth", "ug_core.ports", "domains", *domain_names}
+    return [
+        (line, module)
+        for line, module in IMPORT_LINT["imported_modules"](ast.parse(source))
+        if any(module == name or module.startswith(name + ".") for name in forbidden)
+    ]
+
+
+def test_ug_intel_never_imports_truth_ports_or_domains() -> None:
+    paths = sorted((REPO / "platform/ug_intel/src/ug_intel").rglob("*.py"))
+    assert paths
+    for path in paths:
+        assert not intel_import_violations(path.read_text()), str(path)
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "import ug_core.truth",
+        "from ug_core import ports as p",
+        "from ug_core.ports import MeasurementPort",
+        "import domains.water",
+        "import ug_water",
+        "from importlib import import_module as load; load('ug_core.truth')",
+        "import importlib as il; il.import_module(name='ug_core.ports')",
+    ],
+)
+def test_ug_intel_import_guard_detects_forbidden_imports(source: str) -> None:
+    assert intel_import_violations(source)
+
+
+def test_ug_intel_import_guard_allows_physical_evidence_and_assumptions() -> None:
+    assert not intel_import_violations(
+        "from ug_core.evidence import Evidenced\n"
+        "from ug_core.assumptions import AssumptionSet\n"
+        "from ug_intel.cost import compare\n"
+    )
 
 
 def make_tree(root: Path) -> Path:
