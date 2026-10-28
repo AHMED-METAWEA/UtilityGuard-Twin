@@ -1,26 +1,22 @@
-# Handoff: demo work, state on 2026-10-28 (lead)
+# Handoff: demo work, state on 2026-10-28 evening (lead)
 
 Plan of record: `docs/DEMO_PLAN.md`. Feature freeze Fri 30 Oct; demo Mon 2 Nov ("best partial version").
-Load limits (owner): at most 2 heavy jobs (Codex lanes, full pytest, Playwright, fresh-clone make ci, long sims); `OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OMP_NUM_THREADS=1`; Playwright `--workers=1`; check `vm_stat`/`ps` before launching. The Mac has 8 GB; a vitest run timed out at 457 s while swapping (passes in 3 s alone).
+Load limits (owner): at most 2 heavy jobs; `OPENBLAS_NUM_THREADS=1 VECLIB_MAXIMUM_THREADS=1 OMP_NUM_THREADS=1`; Playwright `--workers=1`; check `vm_stat` before launching. `make demo-baseline` peaks at 3.6 GB: run it alone. A fault run peaks at about 1 GB.
+Safety net: `~/Desktop/UG-wt/tools/safety.sh dev` (installs like CI, then `make ci`).
 
-## Dev
-Head 3ccedd6 (#65-#69, #71, #72 merged). Safety net: fresh-clone `make ci` EXIT=0 (`~/Desktop/UG-wt/tools/safety.sh dev`, it runs `make install install-dev frontend-install` first) and hosted ci success.
-
-## Open PRs (all for the owner)
+## Open PRs (owner merges)
 | PR | What | State |
 |---|---|---|
-| #70 | D-05a detection (Tier 2) | rebased onto dev (D-04 commits dropped, newer test_quality.py kept); 3,527 tests; ci/audit/container green: mergeable |
-| #73 | D-02 OSM calibration (Tier 2) | 2-day validation passed (33.7/30.5 m, 2.23 m/s) |
-| #74 | D-07 API (Tier 2) | lead review + 2 mutations caught |
-| #75 | U-02 Command Center (Tier 1, owner merges: lead edited two shell tests) | 376 tests, Playwright 4 passed |
-| #76 | D-03 faults (Tier 2) | 434 water tests; Codex adversarial review running -> `tools/D-03.review.md`; log it in `docs/reviews/D-03.md` |
-
-## Running
-- Codex W-01 in `~/Desktop/UG-wt/codex-demo-w01` (branch `codex/demo-w01-baseline`, = #74 + #70 merged locally): `ug export`, `make demo-baseline`, app loads the bundle with REPLAY. Card `tools/W-01.prompt.md`; result `tools/W-01.result.md`. Rebase onto dev once #70/#74 merge.
+| #74 | D-07 API | container fixed (validation loaded on first use; the image has no jsonschema/contracts); ci, audit, container green; mergeable |
+| #76 | D-03 faults | Codex review: 2 S1 + 6 S2 fixed (outage through a lossless gate valve, order-free failover), 3 S2 accepted; `docs/reviews/D-03.md` |
+| #78 | W-01 baseline in the app | contains #74 (merge #74 first); review + mutation in `docs/reviews/W-01.md`; lead changes: offline gate allows fetch only in `src/app/api.ts` (`app-api-*.js`), RunStore cache by stat signature, Command Center recorded mode |
+| #77 | this handoff | Tier 0 |
 
 ## Next
-1. D-03 review -> fix S0/S1, log review.
-2. W-01 result: review (Tier 2: truth walk on the bundle, mutation), commit, PR.
-3. Five scenarios as bundles (leak_sudden, leak_gradual_medium, burst_main, pump_outage_standby, fire_flow_event) via `ug export` once D-03 + W-01 merge; Scenario Lab lists them.
-4. W-01 offline proof (Playwright offline run against the built app + API), R-01 rehearsal script.
-5. Worktree cleanup (73 worktrees, 22 GB disk): needs the owner's OK.
+1. After #74, #76 and #78 merge: export the five fault scenarios as bundles (`ug run <preset> --duration-hours 48` + `ug export`, one at a time) into `var/demo-runs/views`; Scenario Lab and Runs screen list them (W-02 card: run picker in the shell, incidents and decision for fault runs).
+2. Command Center recorded mode shows only map + readings: add KPIs computed from the bundle (CALCULATED) and the incident panel from `incidents.json`.
+3. Offline proof (W-01b): Playwright offline run against the built app + API with the baseline bundle; R-01 rehearsal script (`docs/DEMO_SCRIPT.md`).
+4. Worktree cleanup (73 worktrees, 22 GB): owner's OK needed.
+
+## How to see the baseline
+`cd ~/Desktop/UG-wt/codex-demo-w01 && make demo-baseline && UG_RUNS_DIR=var/demo-runs/views .venv/bin/python -m ug_api` and, in another terminal, `cd frontend && npm run build && npx vite preview`; open the printed URL (`#/` and `#/map`). The first load validates the bundle (about 5 s).
