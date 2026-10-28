@@ -1,0 +1,63 @@
+"""Prototype D-05b: hourly re-anchored expectation; counts incidents per run."""
+import sys
+from dataclasses import replace
+import numpy as np
+import ug_water.telemetry.measurement as m
+import ug_water.telemetry.expectation as ex
+from ug_core.timebase import Timebase
+from ug_water.solver import build_model, load_options
+from ug_water.solver import engine as en
+
+STASH = {}
+orig = m.WaterMeasurement.measure_with_delivery
+def mwd(self, *a, **k):
+    r = orig(self, *a, **k); STASH["telemetry"] = r[0]; return r
+m.WaterMeasurement.measure_with_delivery = mwd
+SEG = int(sys.argv.pop(1))  # ticks per segment
+
+def anchored(network, sensor_set, forecast):
+    tel = STASH["telemetry"].readings
+    level_sensor = {s.element: s.id for s in network.sensors if s.kind == "level" and s.id in tel}
+    q = {"pressure": "pressure", "flow": "flowrate", "level": "level"}
+    sel = [s for s in network.sensors if s.id in set(network.sensor_sets[sensor_set])]
+    need = {f"{q[s.kind]}:{s.element}" for s in sel}
+    n = forecast.timebase.n_ticks; step = forecast.timebase.step_seconds
+    out = {s.id: [None] * n for s in sel}
+    levels = {t.id: t.init_level for t in network.tanks}
+    status = {p.id: p.role == "duty" for p in network.pumps}
+    opts = load_options()
+    for a in range(0, n - 1, SEG):
+        b = min(a + SEG, n - 1)
+        for t in network.tanks:  # anchor: latest valid observed level at tick a (causal)
+            sid = level_sensor.get(t.id)
+            if sid is not None:
+                v = next((x for x in reversed(tel[sid][: a + 1]) if x is not None), None)
+                if v is not None:
+                    levels[t.id] = min(max(v, t.min_level), t.max_level)
+        for c in network.controls:  # pump state from the observed level (causal)
+            sid = level_sensor.get(c.tank)
+            obs = [x for x in tel[sid][max(0, a - 3) : a + 1] if x is not None] if sid else []
+            if len(obs) >= 2:
+                lv = obs[-1]
+                status[c.pump] = True if lv < c.on_below_m else False if lv > c.off_above_m else obs[-1] > obs[0]
+        net = replace(network, tanks=tuple(replace(t, init_level=levels[t.id]) for t in network.tanks))
+        tb = Timebase(forecast.timebase.time_at(a), step, b - a + 1)
+        demand = replace(forecast, timebase=tb, values=np.asarray(forecast.values)[a : b + 1])
+        wn = build_model(net, demand, opts)
+        for pid, on in status.items():
+            wn.get_link(pid).initial_status = "OPEN" if on else "CLOSED"
+        res = en._run(wn, opts)
+        tr = en._truth(net, demand, res, opts, en.FaultPlan(), need).truth.channels
+        for s in sel:
+            vals = tr[f"{q[s.kind]}:{s.element}"]
+            for i, v in enumerate(vals):
+                if out[s.id][a + i] is None or i > 0:
+                    out[s.id][a + i] = v * (1000 if s.kind == "flow" else 1)
+        for t in network.tanks:
+            levels[t.id] = tr.get(f"level:{t.id}", [levels[t.id]])[-1] if f"level:{t.id}" in tr else levels[t.id]
+        flows = en._truth(net, demand, res, opts, en.FaultPlan(), {f"flowrate:{p.id}" for p in network.pumps}).truth.channels
+        status = {p.id: flows[f"flowrate:{p.id}"][-1] > 1e-4 for p in network.pumps}
+    return {k: tuple(v) for k, v in out.items()}
+ex.expected_readings = anchored
+from ug_cli.main import main
+sys.exit(main(sys.argv[1:]))
